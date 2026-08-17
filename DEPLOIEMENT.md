@@ -1,5 +1,9 @@
 # Déploiement — PSY0 Trainer en ligne
 
+**En production : https://psy.makht.art** (Coolify, projet « PSY0 Trainer »,
+application `psy0-trainer`, uuid `mdc91vk8d1n6v4tfyuadn3r4`).
+
+
 L'application reste **utilisable hors-ligne** : le serveur ne sert qu'à sauvegarder
 la progression entre deux séances et à la retrouver sur un autre appareil.
 Aucun appel réseau n'a lieu pendant un exercice — un M2 Back à 1 s ou des Formes
@@ -51,9 +55,28 @@ tronquée au copier-coller validerait n'importe quel code d'accès.
 
 ## 3. Déployer
 
-Ressource **Docker Compose** dans Coolify, depuis `git@github.com:amdiakhate/psy0.git`,
-fichier `docker-compose.yml`. Domaine : `psy.makht.art` sur le service `app`,
-port 3000.
+Ressource **Docker Compose** dans Coolify, depuis `https://github.com/amdiakhate/psy0`,
+fichier `docker-compose.yml`.
+
+Le domaine ne se règle pas via le champ `domains` (l'API le refuse pour un
+compose) mais par service :
+
+```bash
+curl -X PATCH -H "Authorization: Bearer $COOLIFY_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"docker_compose_domains":[{"name":"app","domain":"https://psy.makht.art"}]}' \
+  https://owner.makht.art/api/v1/applications/mdc91vk8d1n6v4tfyuadn3r4
+```
+
+Redéployer après un push :
+
+```bash
+curl -H "Authorization: Bearer $COOLIFY_TOKEN" \
+  "https://owner.makht.art/api/v1/deploy?uuid=mdc91vk8d1n6v4tfyuadn3r4&force=true"
+```
+
+Coolify crée deux jeux de variables : celles de production (`is_preview: false`)
+et celles des déploiements de preview (`is_preview: true`, vides). Seules les
+premières comptent ; les vides sont normales.
 
 Le volume `psy0-db` porte tout l'historique d'entraînement : **le supprimer
 efface la progression**. Il survit aux redéploiements.
