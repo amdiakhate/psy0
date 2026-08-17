@@ -1,0 +1,50 @@
+# Règles officielles des 16 tests PSY0 cadets
+
+Source : pages de règles Pilotest (`pilotest.com/fr/tests/<slug>`), relevées le 16/08/2026.
+**Toute implémentation ou modification d'un exercice doit être vérifiée contre ce fichier.**
+Statut au 17/08 : les 16 exercices sont conformes, vérifiés en jeu, et disposent chacun d'une leçon (mode apprentissage).
+
+| # | Exercice | slug | Règle officielle (résumé fidèle) | Timing officiel | Statut |
+|---|----------|------|----------------------------------|-----------------|--------|
+| 1 | Un mot sur deux | `un_mot_sur_deux` | Mots de **deux thématiques** en désordre. Depuis le mot marqué **START**, cliquer alternativement un mot de chaque thématique, en respectant **l'ordre alphabétique dans chaque thématique**. Erreur → on recommence la série. | 10 séries, le plus vite possible | ✅ |
+| 2 | Pair ou impair | `pair_ou_impair` | Nombres en désordre. Depuis **START**, cliquer alternativement **un pair puis un impair**, en respectant l'**ordre croissant dans chaque catégorie**. Erreur → on recommence. | 10 séries | ✅ |
+| 3 | M2 Back numérique | `m2back_numerique` | Un chiffre affiché **1 s**, puis boutons **Oui / Non pendant 3 s**. Répondre Oui si le chiffre est le même que **2 coups avant**. N = 2 fixe. | séries de **42 chiffres** | ✅ |
+| 4 | Formes et couleurs | `formes` | **Deux règles** données au début, en cascade : selon le **remplissage** (vide/rempli) puis la **couleur** ou la **forme** → appuyer sur **N** ou **X**. Ex. : Règle 1, si VIDE : N si BLEUE, X si ORANGE. Règle 2, si REMPLIE : N si CARRÉE, X si TRIANGULAIRE. | 30 formes, une toutes les 3 s, affichée **0,5 s** | ✅ |
+| 5 | Airways | `airways` | Triangles = avions ; **bleus vers la gauche, violets vers la droite**. Les **boutons de couleur déroutent** les avions de cette couleur sur les lignes concernées. **Dérouter le moins d'avions possible.** Par groupe de 6 lignes : jamais plus de **4 avions** ni plus de **2 bleus** dans la **zone grise**. Sinon accident. Compteurs à l'extérieur du groupe. | **10 séries** | ✅ |
+| 6 | Psychomoteur | `psychomot0` | **Trois tâches simultanées de même importance** : ① suivre le **cercle** avec les flèches (maintenir la flèche du sens de déplacement ; un `>` vert apparaît quand c'est correct) ; ② quand la **forme dans le cercle** et celle de **l'encart pointillé** sont identiques → **Espace** ; ③ quand le **calcul entouré est FAUX** → touche **F**. | **5 minutes** | ✅ |
+| 7 | Empilements | `empilements` | **Trois empilements de cubes**. Deux sont identiques **à une rotation près** ; le troisième a **en plus subi une symétrie**. Désigner **celui qui a subi la symétrie**. | 20 questions, **10 s** chacune | ✅ |
+| 8 | Objets 3D | `objets3d` | Une **scène d'objets posés dans le désert**. Déterminer **depuis lequel des 8 points de vue** disposés en cercle la scène a été vue (chaque point de vue regarde vers le **centre**). | 20 questions, **10 s** | ✅ |
+| 9 | Billes | `billes` | Billes empilées dans **trois tubes en U** ; disposition de **départ** en haut, d'**arrivée** en bas. Compter le **nombre MINIMUM de déplacements**. Une bille se prend **sur le dessus** d'un tube et se pose **sur le dessus** d'un autre. Capacités **3, 2, 3** de gauche à droite. | 20 questions, **40 s** | ✅ |
+| 10 | Formes glissées - II | `formes_glissees2` | **Règles de superposition** : marine + marine = marine ; marine + gris = gris ; gris + gris = marine. **3 à 4 formes** en bas à glisser sur la grille centrale pour **reproduire la figure de gauche**. L'ordre de dépose n'a pas d'importance, seule compte la position. | — | ✅ |
+| 11 | Cubes 2D/3D | `cubes_psy0` | Un **patron de cube déplié** à gauche ; un **patron à faces manquantes** à droite. **Glisser-déposer** les faces proposées pour reconstituer le cube de gauche. Certaines faces peuvent devoir être **retournées** (clic). | 10 questions, **60 s** (4 questions au test AF 2020) | ✅ |
+| 12 | Grilles de calculs | `grille_calculs` | Une **grille de 9 calculs**, dont **0 à 4 sont faux**. **Cliquer les cases fausses**, puis **Valider**. | 10 grilles, **45 s** | ✅ |
+| 13 | Séries logiques | `series_psy0_af` | Séries de **4 ou 5 items** à compléter par **QCM à 4 choix**. Trouver la loi. **Mauvaise réponse = −1/3 point.** | 15 questions, **30 s** | ✅ |
+| 14 | Boîtes à mots | `boxes` | **Boîtes vides de 4 à 6 cases**. Un mot apparaît brièvement au centre → le classer **par champ lexical**. **Au premier mot d'un thème, on choisit librement la boîte** ; ensuite il faut rester cohérent. | **5 séries**, minimum d'erreurs | ✅ |
+| 15 | Mots en étoile | `mots_en_etoile` | Liste de **9 mots de 7 lettres**. En **sélectionner 6** et les placer sur une **étoile** de sorte que les **cases communes à deux mots** portent une seule et même lettre. Plusieurs solutions possibles. | 10 questions, **50 s** | ✅ |
+| 16 | Anglais | `english` | **30 QCM**, réponse à l'automatisme plus qu'à la réflexion. Distingue bilingues et bons non-bilingues. | **7 min 30** pour 30 questions (15 s/question) | ✅ |
+
+## Vérifier le projet (piège à éviter)
+
+`npx tsc --noEmit` **ne vérifie RIEN** dans ce projet : le `tsconfig.json` racine est un fichier
+solution (`"files": []` + références), donc la commande sort en 0 sans rien analyser. La vraie
+vérification est :
+
+```bash
+npm run verify
+```
+
+(soit `tsc -b --force` puis `vitest run`). Ne jamais conclure « ça compile » sur autre chose.
+
+## Notes transverses
+
+- Notation en **classes Stanine 1-9** ; viser la classe 7 sur chaque test.
+- Airways a été **remanié le 17/12/2019** pour tenir compte de la **stratégie** (nombre d'avions déroutés), pas seulement de la survie. Un candidat rapporte un **demi-point** pour une série sauvée avec la grosse croix (3 avions déroutés au lieu d'un).
+- Air France modifie légèrement le programme d'une session à l'autre : en janvier 2020, 85 % des tests étaient identiques à ceux de 2019 ; les **formes glissées** et les **cubes à plier-déplier** ont été ajoutés cette année-là.
+- Les candidats **PRO** passent les mêmes tests, sans l'anglais ni la culture générale aéronautique.
+
+## Adaptations assumées dans cette application
+
+Certaines interactions du test original reposent sur le **glisser-déposer** à la souris. Quand c'est le cas,
+l'app peut proposer une interaction équivalente au clavier/clic **à condition de préserver exactement la
+mécanique cognitive** (mêmes contraintes, même raisonnement, même piège). Toute adaptation doit être
+documentée ici et signalée dans la page d'astuces de l'exercice.
