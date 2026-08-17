@@ -14,7 +14,7 @@ export const SYMBOL_PATHS = [
   'M24 12 H76 V30 H44 V44 H76 V88 H24 V70 H56 V56 H24 Z', // S
 ];
 
-function Glyph({ sym, rot, color = '#e4e4e7' }: { sym: number; rot: number; color?: string }) {
+function Glyph({ sym, rot, color = 'var(--ink-200)' }: { sym: number; rot: number; color?: string }) {
   // rot = quarts de tour anti-horaires dans le repère (u droite, v haut) de la
   // face ⇒ rotate(-90·rot) en SVG (y vers le bas). Convention IDENTIQUE patron/cube.
   return (
@@ -39,7 +39,7 @@ export function NetSvg({ cube, size = 44 }: { cube: Cube; size?: number }) {
     <svg width={4 * s + 2} height={3 * s + 2} viewBox={`0 0 ${4 * s + 2} ${3 * s + 2}`}>
       {cells.map(({ pos, col, row }) => (
         <g key={pos} transform={`translate(${col * s + 1} ${row * s + 1})`}>
-          <rect width={s} height={s} fill="#27272a" stroke="#71717a" />
+          <rect width={s} height={s} fill="var(--ink-800)" stroke="var(--ink-500)" />
           <g transform={`scale(${s / 100})`}>
             <Glyph sym={cube[pos].sym} rot={cube[pos].rot} />
           </g>
@@ -99,11 +99,11 @@ function IsoFace({
       <polygon
         points={`${p00} ${p10} ${p11} ${p01}`}
         fill={fill}
-        stroke="#52525b"
+        stroke="var(--ink-600)"
         strokeWidth={1}
       />
       <g transform={`matrix(${a} ${b} ${c} ${d} ${e} ${f})`}>
-        <Glyph sym={cube[pos].sym} rot={cube[pos].rot} color="#18181b" />
+        <Glyph sym={cube[pos].sym} rot={cube[pos].rot} color="var(--ink-900)" />
       </g>
     </g>
   );
@@ -118,9 +118,9 @@ export function IsoCubeSvg({ cube, size = 40 }: { cube: Cube; size?: number }) {
   const cy = h / 2;
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`}>
-      <IsoFace cube={cube} pos={POS.U} corner={{ x: -1, y: 1, z: 1 }} eu={{ x: 2, y: 0, z: 0 }} ev={{ x: 0, y: 0, z: -2 }} fill="#a1a1aa" s={s} cx={cx} cy={cy} />
-      <IsoFace cube={cube} pos={POS.F} corner={{ x: -1, y: -1, z: 1 }} eu={{ x: 2, y: 0, z: 0 }} ev={{ x: 0, y: 2, z: 0 }} fill="#d4d4d8" s={s} cx={cx} cy={cy} />
-      <IsoFace cube={cube} pos={POS.R} corner={{ x: 1, y: -1, z: 1 }} eu={{ x: 0, y: 0, z: -2 }} ev={{ x: 0, y: 2, z: 0 }} fill="#71717a" s={s} cx={cx} cy={cy} />
+      <IsoFace cube={cube} pos={POS.U} corner={{ x: -1, y: 1, z: 1 }} eu={{ x: 2, y: 0, z: 0 }} ev={{ x: 0, y: 0, z: -2 }} fill="var(--ink-400)" s={s} cx={cx} cy={cy} />
+      <IsoFace cube={cube} pos={POS.F} corner={{ x: -1, y: -1, z: 1 }} eu={{ x: 2, y: 0, z: 0 }} ev={{ x: 0, y: 2, z: 0 }} fill="var(--ink-300)" s={s} cx={cx} cy={cy} />
+      <IsoFace cube={cube} pos={POS.R} corner={{ x: 1, y: -1, z: 1 }} eu={{ x: 0, y: 0, z: -2 }} ev={{ x: 0, y: 2, z: 0 }} fill="var(--ink-500)" s={s} cx={cx} cy={cy} />
     </svg>
   );
 }

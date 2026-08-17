@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './index.css';
 import App from './app/App';
+import { applyTheme, readPreference } from './core/theme';
 import Today from './pages/Today';
 import Dashboard from './pages/Dashboard';
 import Train from './pages/Train';
@@ -34,6 +35,13 @@ const router = createBrowserRouter([
     ],
   },
 ]);
+
+// Le script de index.html a déjà posé l'attribut ; on resynchronise ici, et on
+// suit les changements du système tant que la préférence est « systeme ».
+applyTheme(readPreference());
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  if (readPreference() === 'systeme') applyTheme('systeme');
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

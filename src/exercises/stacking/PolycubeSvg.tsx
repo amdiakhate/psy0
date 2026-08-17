@@ -12,7 +12,7 @@ import type { IsoFaceKind, Shape } from './model';
  * même taille, chacun centré sur sa propre boîte.
  */
 
-const NEUTRAL: Record<IsoFaceKind, string> = { 1: '#e4e4e7', 2: '#a1a1aa', 3: '#71717a' };
+const NEUTRAL: Record<IsoFaceKind, string> = { 1: 'var(--ink-200)', 2: 'var(--ink-400)', 3: 'var(--ink-500)' };
 const ACCENT: Record<IsoFaceKind, string> = { 1: '#bae6fd', 2: '#38bdf8', 3: '#0369a1' };
 
 /** Côté (en unités cube) du viewBox nécessaire pour contenir toutes ces formes. */
@@ -57,7 +57,7 @@ export function PolycubeSvg({
           key={i}
           points={f.points.map(([x, y]) => `${x.toFixed(3)},${y.toFixed(3)}`).join(' ')}
           fill={palette[f.kind]}
-          stroke="#18181b"
+          stroke="var(--ink-900)"
           strokeWidth={0.035}
           strokeLinejoin="round"
         />

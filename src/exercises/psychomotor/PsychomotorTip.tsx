@@ -17,7 +17,7 @@ export function PsychomotorTip() {
               <svg width="48" height="48" viewBox="0 0 100 100">
                 <path
                   d="M50,10 L61,40 L93,40 L67,59 L77,89 L50,71 L23,89 L33,59 L7,40 L39,40 Z"
-                  fill="#a1a1aa"
+                  fill="var(--ink-400)"
                 />
               </svg>
             </div>
@@ -30,7 +30,7 @@ export function PsychomotorTip() {
                 <svg width="56" height="56" viewBox="0 0 100 100">
                   <path
                     d="M50,10 L61,40 L93,40 L67,59 L77,89 L50,71 L23,89 L33,59 L7,40 L39,40 Z"
-                    fill="#e4e4e7"
+                    fill="var(--ink-200)"
                   />
                 </svg>
               </div>

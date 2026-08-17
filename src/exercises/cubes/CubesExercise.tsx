@@ -21,9 +21,9 @@ function PieceSvg({ piece, flipped, size = 46 }: { piece: Piece; flipped: boolea
   const mirrored = piece.mirrored !== flipped; // état visuel courant
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
-      <rect width="100" height="100" fill="#27272a" stroke="#71717a" />
+      <rect width="100" height="100" fill="var(--ink-800)" stroke="var(--ink-500)" />
       <g transform={`${mirrored ? 'translate(100,0) scale(-1,1) ' : ''}rotate(${-90 * piece.rot} 50 50)`}>
-        <path d={SYMBOL_PATHS[piece.sym]} fill="#e4e4e7" />
+        <path d={SYMBOL_PATHS[piece.sym]} fill="var(--ink-200)" />
       </g>
     </svg>
   );
@@ -99,15 +99,15 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
                   <rect
                     width={S}
                     height={S}
-                    fill={isHole ? (put ? '#1e3a5f' : '#0c0a09') : '#27272a'}
-                    stroke={isHole && selected !== null && !put ? '#0ea5e9' : '#71717a'}
+                    fill={isHole ? (put ? '#1e3a5f' : '#0c0a09') : 'var(--ink-800)'}
+                    stroke={isHole && selected !== null && !put ? '#0ea5e9' : 'var(--ink-500)'}
                     strokeWidth={isHole && selected !== null && !put ? 2.5 : 1}
                     strokeDasharray={isHole && !put ? '4 3' : undefined}
                   />
                   <g transform={`scale(${S / 100})`}>
                     {face && (
                       <g transform={`rotate(${-90 * face.rot} 50 50)`}>
-                        <path d={SYMBOL_PATHS[face.sym]} fill="#e4e4e7" />
+                        <path d={SYMBOL_PATHS[face.sym]} fill="var(--ink-200)" />
                       </g>
                     )}
                     {piece && (

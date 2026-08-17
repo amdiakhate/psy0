@@ -17,6 +17,7 @@ import { getEvents } from '../core/eventlog';
 import { getSessions, getSavedLevel } from '../core/session';
 import { VERDICT_LABEL, gapExplanation, isAtLocalCeiling, pilotestGap } from '../analysis/pilotestGap';
 import type { GapVerdict } from '../analysis/pilotestGap';
+import { chartColors, readPreference, resolveTheme, systemPrefersDark } from '../core/theme';
 import { computeStats, rankWeakest } from '../analysis/scores';
 import { weakestTagOf } from '../analysis/errorTaxonomy';
 import { fatigueReport } from '../analysis/fatigue';
@@ -41,6 +42,9 @@ const MODE_LABELS: Record<string, string> = {
 };
 
 export default function Dashboard() {
+  // recharts prend ses couleurs en props : elles n'héritent pas des variables
+  // CSS redéfinies par le thème, il faut donc les lui passer explicitement.
+  const chart = chartColors(resolveTheme(readPreference(), systemPrefersDark()));
   const events = getEvents();
   const sessions = getSessions();
   const stats = computeStats();
@@ -91,10 +95,10 @@ export default function Dashboard() {
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radar} outerRadius="70%">
-                <PolarGrid stroke="#3f3f46" />
-                <PolarAngleAxis dataKey="family" tick={{ fill: '#a1a1aa', fontSize: 11 }} />
+                <PolarGrid stroke={chart.grid} />
+                <PolarAngleAxis dataKey="family" tick={{ fill: chart.axis, fontSize: 11 }} />
                 <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                <Radar dataKey="score" stroke="#38bdf8" fill="#38bdf8" fillOpacity={0.25} />
+                <Radar dataKey="score" stroke={chart.line} fill={chart.line} fillOpacity={0.25} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
@@ -109,13 +113,13 @@ export default function Dashboard() {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={progress.map((p) => ({ ...p, pct: Math.round(p.accuracy * 100) }))}>
-                  <XAxis dataKey="day" tick={{ fill: '#71717a', fontSize: 10 }} tickFormatter={(d: string) => d.slice(5)} />
-                  <YAxis domain={[0, 100]} tick={{ fill: '#71717a', fontSize: 10 }} width={30} />
+                  <XAxis dataKey="day" tick={{ fill: chart.axis, fontSize: 10 }} tickFormatter={(d: string) => d.slice(5)} />
+                  <YAxis domain={[0, 100]} tick={{ fill: chart.axis, fontSize: 10 }} width={30} />
                   <Tooltip
-                    contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 8 }}
-                    labelStyle={{ color: '#a1a1aa' }}
+                    contentStyle={{ background: chart.tooltipBg, border: `1px solid ${chart.tooltipBorder}`, borderRadius: 8 }}
+                    labelStyle={{ color: chart.axis }}
                   />
-                  <Line type="monotone" dataKey="pct" stroke="#38bdf8" strokeWidth={2} dot={false} name="Précision %" />
+                  <Line type="monotone" dataKey="pct" stroke={chart.line} strokeWidth={2} dot={false} name="Précision %" />
                 </LineChart>
               </ResponsiveContainer>
             )}

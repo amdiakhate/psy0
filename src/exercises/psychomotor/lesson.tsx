@@ -6,7 +6,7 @@ import type { Lesson } from '../../core/types';
  */
 type Scene = 'circle-ok' | 'circle-ko' | 'circle-change' | 'shapes-match' | 'shapes-diff' | 'calc-wrong' | 'all';
 
-function Shape({ name, size = 48, color = '#e4e4e7' }: { name: string; size?: number; color?: string }) {
+function Shape({ name, size = 48, color = 'var(--ink-200)' }: { name: string; size?: number; color?: string }) {
   const paths: Record<string, string> = {
     rond: 'M50,12 A38,38 0 1,1 49.9,12 Z',
     etoile: 'M50,10 L61,40 L93,40 L67,59 L77,89 L50,71 L23,89 L33,59 L7,40 L39,40 Z',
@@ -31,7 +31,7 @@ function PsychoScene({ scene }: { scene: string; stepIndex: number }) {
       <div className="flex items-center gap-6">
         {/* Encart pointillé */}
         <div className="flex h-24 w-24 items-center justify-center rounded-xl border-2 border-dashed border-zinc-600 bg-zinc-900">
-          <Shape name={left} color="#a1a1aa" />
+          <Shape name={left} color="var(--ink-400)" />
         </div>
         {/* Le cercle */}
         <div className="relative flex h-32 w-32 items-center justify-center">

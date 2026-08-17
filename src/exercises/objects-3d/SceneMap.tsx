@@ -22,11 +22,11 @@ function ObjectGlyph({ o }: { o: SceneObject }) {
   const w = label.length * 5.2 + 8;
   return (
     <g>
-      <rect x={cx - w / 2} y={cy - 22} width={w} height={13} rx={3} fill="#09090be6" />
-      <text x={cx} y={cy - 12} textAnchor="middle" fontSize={9} fill="#e4e4e7" className="select-none">
+      <rect x={cx - w / 2} y={cy - 22} width={w} height={13} rx={3} fill="var(--ink-950)e6" />
+      <text x={cx} y={cy - 12} textAnchor="middle" fontSize={9} fill="var(--ink-200)" className="select-none">
         {label}
       </text>
-      <circle cx={cx} cy={cy} r={6.5} fill={color} stroke="#18181b" strokeWidth={1.5} />
+      <circle cx={cx} cy={cy} r={6.5} fill={color} stroke="var(--ink-900)" strokeWidth={1.5} />
     </g>
   );
 }
@@ -58,11 +58,11 @@ export function SceneMap({
         cy={CENTER}
         r={VIEW_RADIUS * SCALE}
         fill="none"
-        stroke="#3f3f46"
+        stroke="var(--ink-700)"
         strokeWidth={1.5}
         strokeDasharray="4 4"
       />
-      <circle cx={CENTER} cy={CENTER} r={3} fill="#52525b" />
+      <circle cx={CENTER} cy={CENTER} r={3} fill="var(--ink-600)" />
 
       {Array.from({ length: VIEWPOINT_COUNT }, (_, k) => {
         const p = viewpointPosition(k);
@@ -78,7 +78,7 @@ export function SceneMap({
             y1={cy}
             x2={cx + (CENTER - cx) * len}
             y2={cy + (CENTER - cy) * len}
-            stroke={active ? '#0ea5e9' : '#3f3f46'}
+            stroke={active ? '#0ea5e9' : 'var(--ink-700)'}
             strokeWidth={active ? 1.6 : 1}
             strokeDasharray={active ? undefined : '3 3'}
           />
@@ -104,8 +104,8 @@ export function SceneMap({
               cx={cx}
               cy={cy}
               r={13}
-              fill={reveal === k ? '#166534' : active ? '#0369a1' : '#27272a'}
-              stroke={active ? '#38bdf8' : '#52525b'}
+              fill={reveal === k ? '#166534' : active ? '#0369a1' : 'var(--ink-800)'}
+              stroke={active ? '#38bdf8' : 'var(--ink-600)'}
               strokeWidth={1.5}
             />
             <text
@@ -114,7 +114,7 @@ export function SceneMap({
               textAnchor="middle"
               fontSize={12}
               fontWeight="bold"
-              fill={active ? '#f0f9ff' : '#a1a1aa'}
+              fill={active ? '#f0f9ff' : 'var(--ink-400)'}
               className="select-none"
             >
               {k + 1}

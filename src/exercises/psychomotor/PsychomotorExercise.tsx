@@ -13,7 +13,7 @@ const SHAPE_PATH: Record<ShapeName, string> = {
   losange: 'M50,10 L88,50 L50,90 L12,50 Z',
 };
 
-function Shape({ name, size = 60, color = '#e4e4e7' }: { name: ShapeName; size?: number; color?: string }) {
+function Shape({ name, size = 60, color = 'var(--ink-200)' }: { name: ShapeName; size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
       <path d={SHAPE_PATH[name]} fill={color} />
@@ -240,7 +240,7 @@ export function PsychomotorExercise({
       <div className="flex items-center justify-center gap-8">
         {/* ② Encart pointillé : la forme de référence */}
         <div className="flex h-32 w-32 items-center justify-center rounded-xl border-2 border-dashed border-zinc-600 bg-zinc-900">
-          <Shape name={ui.left} size={64} color="#a1a1aa" />
+          <Shape name={ui.left} size={64} color="var(--ink-400)" />
         </div>
 
         {/* ① Le cercle et son sens de déplacement, ② la forme qu'il contient */}
@@ -250,7 +250,7 @@ export function PsychomotorExercise({
               ui.correct ? 'border-green-500' : 'border-zinc-600'
             } bg-zinc-900`}
           >
-            <Shape name={ui.inCircle} size={72} color="#e4e4e7" />
+            <Shape name={ui.inCircle} size={72} color="var(--ink-200)" />
           </div>
           {/* Le « > » vert quand la bonne flèche est maintenue */}
           {ui.correct && (

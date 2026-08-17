@@ -47,8 +47,8 @@ function PartialNet({ highlight }: { highlight?: number[] }) {
             <rect
               width={S}
               height={S}
-              fill={face === null ? '#0c0a09' : '#27272a'}
-              stroke={hot ? '#0ea5e9' : '#71717a'}
+              fill={face === null ? '#0c0a09' : 'var(--ink-800)'}
+              stroke={hot ? '#0ea5e9' : 'var(--ink-500)'}
               strokeWidth={hot ? 3 : 1}
               strokeDasharray={face === null ? '4 3' : undefined}
             />
@@ -66,7 +66,7 @@ function PartialNet({ highlight }: { highlight?: number[] }) {
                         'M24 12 H76 V30 H44 V44 H76 V88 H24 V70 H56 V56 H24 Z',
                       ][face.sym]
                     }
-                    fill="#e4e4e7"
+                    fill="var(--ink-200)"
                   />
                 </g>
               </g>

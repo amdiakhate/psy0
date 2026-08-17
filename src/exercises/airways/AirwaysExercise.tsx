@@ -190,16 +190,16 @@ export function AirwaysExercise({
                       y={line * ROW}
                       width={(span.end - span.start + 1) * CELL}
                       height={ROW}
-                      fill={faulty ? '#f59e0b' : '#a1a1aa'}
+                      fill={faulty ? '#f59e0b' : 'var(--ink-400)'}
                       opacity={faulty ? 0.95 : 0.5}
                     />
                   ))}
                   {/* Grille */}
                   {Array.from({ length: q.cols + 1 }, (_, c) => (
-                    <line key={`c${c}`} x1={c * CELL} y1={0} x2={c * CELL} y2={6 * ROW} stroke="#d4d4d8" strokeWidth={0.5} />
+                    <line key={`c${c}`} x1={c * CELL} y1={0} x2={c * CELL} y2={6 * ROW} stroke="var(--ink-300)" strokeWidth={0.5} />
                   ))}
                   {Array.from({ length: 7 }, (_, r) => (
-                    <line key={`r${r}`} x1={0} y1={r * ROW} x2={boardWidth} y2={r * ROW} stroke="#a1a1aa" strokeWidth={0.7} />
+                    <line key={`r${r}`} x1={0} y1={r * ROW} x2={boardWidth} y2={r * ROW} stroke="var(--ink-400)" strokeWidth={0.7} />
                   ))}
                   {/* Avions */}
                   {q.planes
@@ -235,10 +235,10 @@ export function AirwaysExercise({
                             height={ROW}
                             fill={COLORS[color].bar}
                           />
-                          <circle cx={x} cy={line * ROW + ROW / 2} r={7} fill="none" stroke="#ffffff" strokeWidth={1.5} />
+                          <circle cx={x} cy={line * ROW + ROW / 2} r={7} fill="none" stroke="var(--ink-0)" strokeWidth={1.5} />
                           <path
                             d={`M${x - 4},${line * ROW + ROW / 2 - 4} l8,8 M${x + 4},${line * ROW + ROW / 2 - 4} l-8,8`}
-                            stroke="#ffffff"
+                            stroke="var(--ink-0)"
                             strokeWidth={1.5}
                           />
                         </g>,
@@ -285,8 +285,8 @@ function SideBar({ color, onClick, count }: { color: PlaneColor; onClick: () => 
       style={{ backgroundColor: COLORS[color].bar }}
     >
       <svg width="34" height="34" viewBox="0 0 34 34">
-        <circle cx="17" cy="17" r="15" fill="none" stroke="#fff" strokeWidth="2" />
-        <path d="M10,10 L24,24 M24,10 L10,24" stroke="#fff" strokeWidth="2" />
+        <circle cx="17" cy="17" r="15" fill="none" stroke="var(--ink-0)" strokeWidth="2" />
+        <path d="M10,10 L24,24 M24,10 L10,24" stroke="var(--ink-0)" strokeWidth="2" />
       </svg>
     </button>
   );

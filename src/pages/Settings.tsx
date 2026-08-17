@@ -7,6 +7,8 @@ import { EXERCISES } from '../exercises';
 import { exportDayLog } from '../core/logs';
 import { parisMoment } from '../coach/daily-logic';
 import { isCadredPhase } from '../core/config';
+import { PREFERENCE_LABEL, THEME_PREFERENCES, readPreference, savePreference } from '../core/theme';
+import type { ThemePreference } from '../core/theme';
 import type { ExerciseId } from '../core/types';
 
 export default function Settings() {
@@ -40,6 +42,7 @@ export default function Settings() {
     <div>
       <h2 className="text-2xl font-bold">Réglages</h2>
       <div className="mt-6 space-y-6 max-w-xl">
+        <ThemeSection />
         <PrioritiesSection />
         <PilotestSection />
         <DayLogSection />
@@ -92,6 +95,42 @@ export default function Settings() {
         </section>
       </div>
     </div>
+  );
+}
+
+/** Choix du thème. Appliqué immédiatement, sans rechargement. */
+function ThemeSection() {
+  const [preference, setPreference] = useState<ThemePreference>(readPreference);
+
+  const choose = (p: ThemePreference) => {
+    setPreference(p);
+    savePreference(p);
+  };
+
+  return (
+    <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+      <h3 className="font-semibold">Apparence</h3>
+      <p className="mt-1 text-sm text-zinc-400">
+        Le thème clair conserve les couleurs officielles des exercices — bleu et violet d'Airways,
+        marine et gris des Formes glissées, bleu et orange des Formes et couleurs.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {THEME_PREFERENCES.map((p) => (
+          <button
+            key={p}
+            onClick={() => choose(p)}
+            aria-pressed={preference === p}
+            className={`rounded-lg border px-4 py-2 text-sm transition-colors ${
+              preference === p
+                ? 'border-sky-600 bg-sky-950/40 text-sky-300'
+                : 'border-zinc-800 text-zinc-400 hover:border-zinc-600'
+            }`}
+          >
+            {PREFERENCE_LABEL[p]}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 

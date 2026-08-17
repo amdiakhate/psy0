@@ -48,7 +48,18 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<T> {
     const body = (await response.json().catch(() => ({}))) as { error?: string };
     throw new SyncError(body.error ?? `HTTP ${response.status}`, response.status);
   }
+
+  // Une réponse HTML au lieu de JSON signifie qu'aucune API n'écoute derrière :
+  // serveur de développement seul, proxy mal configuré, page d'erreur d'un
+  // hébergeur. C'est fonctionnellement un « hors-ligne », pas une panne à
+  // signaler en rouge — et sûrement pas un « Unexpected token '<' ».
+  if (!isJson(response)) throw new SyncError('API indisponible', 0);
+
   return (await response.json()) as T;
+}
+
+function isJson(response: Response): boolean {
+  return (response.headers.get('content-type') ?? '').toLowerCase().includes('application/json');
 }
 
 export function login(code: string): Promise<{ ok: true }> {

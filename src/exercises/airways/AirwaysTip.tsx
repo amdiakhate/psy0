@@ -34,22 +34,22 @@ export function AirwaysTip() {
           {/* Grosse croix violette */}
           <div className="flex w-8 items-center justify-center rounded-lg bg-violet-500">
             <svg width="22" height="22" viewBox="0 0 34 34">
-              <circle cx="17" cy="17" r="15" fill="none" stroke="#fff" strokeWidth="2.5" />
-              <path d="M10,10 L24,24 M24,10 L10,24" stroke="#fff" strokeWidth="2.5" />
+              <circle cx="17" cy="17" r="15" fill="none" stroke="var(--ink-0)" strokeWidth="2.5" />
+              <path d="M10,10 L24,24 M24,10 L10,24" stroke="var(--ink-0)" strokeWidth="2.5" />
             </svg>
           </div>
           <svg viewBox={`0 0 ${cols * CELL} ${6 * ROW}`} className="flex-1 rounded border border-zinc-600 bg-zinc-100">
             {Array.from({ length: 6 }, (_, line) => {
               const s = span(line);
               return (
-                <rect key={line} x={s.start * CELL} y={line * ROW} width={(s.end - s.start + 1) * CELL} height={ROW} fill="#a1a1aa" opacity={0.5} />
+                <rect key={line} x={s.start * CELL} y={line * ROW} width={(s.end - s.start + 1) * CELL} height={ROW} fill="var(--ink-400)" opacity={0.5} />
               );
             })}
             {Array.from({ length: cols + 1 }, (_, c) => (
-              <line key={`c${c}`} x1={c * CELL} y1={0} x2={c * CELL} y2={6 * ROW} stroke="#d4d4d8" strokeWidth={0.5} />
+              <line key={`c${c}`} x1={c * CELL} y1={0} x2={c * CELL} y2={6 * ROW} stroke="var(--ink-300)" strokeWidth={0.5} />
             ))}
             {Array.from({ length: 7 }, (_, r) => (
-              <line key={`r${r}`} x1={0} y1={r * ROW} x2={cols * CELL} y2={r * ROW} stroke="#a1a1aa" strokeWidth={0.7} />
+              <line key={`r${r}`} x1={0} y1={r * ROW} x2={cols * CELL} y2={r * ROW} stroke="var(--ink-400)" strokeWidth={0.7} />
             ))}
             {planes.map((p, i) => {
               const cx = p.col * CELL + CELL / 2;
@@ -70,10 +70,10 @@ export function AirwaysTip() {
             {[0, 2, 4].map((line) => (
               <g key={line}>
                 <rect x={(cols - 1) * CELL} y={line * ROW} width={CELL} height={ROW} fill="#7dd3fc" />
-                <circle cx={(cols - 0.5) * CELL} cy={line * ROW + ROW / 2} r={7} fill="none" stroke="#fff" strokeWidth={1.5} />
+                <circle cx={(cols - 0.5) * CELL} cy={line * ROW + ROW / 2} r={7} fill="none" stroke="var(--ink-0)" strokeWidth={1.5} />
                 <path
                   d={`M${(cols - 0.5) * CELL - 4},${line * ROW + ROW / 2 - 4} l8,8 M${(cols - 0.5) * CELL + 4},${line * ROW + ROW / 2 - 4} l-8,8`}
-                  stroke="#fff"
+                  stroke="var(--ink-0)"
                   strokeWidth={1.5}
                 />
               </g>
@@ -82,8 +82,8 @@ export function AirwaysTip() {
           {/* Grosse croix bleue */}
           <div className="flex w-8 items-center justify-center rounded-lg bg-sky-300">
             <svg width="22" height="22" viewBox="0 0 34 34">
-              <circle cx="17" cy="17" r="15" fill="none" stroke="#fff" strokeWidth="2.5" />
-              <path d="M10,10 L24,24 M24,10 L10,24" stroke="#fff" strokeWidth="2.5" />
+              <circle cx="17" cy="17" r="15" fill="none" stroke="var(--ink-0)" strokeWidth="2.5" />
+              <path d="M10,10 L24,24 M24,10 L10,24" stroke="var(--ink-0)" strokeWidth="2.5" />
             </svg>
           </div>
         </div>

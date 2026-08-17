@@ -25,8 +25,8 @@ export function TubesSvg({ state, size = 1, label }: { state: State; size?: numb
               {/* Tube en U : ouvert en haut, arrondi en bas */}
               <path
                 d={`M${x},${y} L${x},${y + tubeH - TUBE_W / 2} A${TUBE_W / 2},${TUBE_W / 2} 0 0 0 ${x + TUBE_W},${y + tubeH - TUBE_W / 2} L${x + TUBE_W},${y}`}
-                fill="#18181b"
-                stroke="#71717a"
+                fill="var(--ink-900)"
+                stroke="var(--ink-500)"
                 strokeWidth={2 * size}
               />
               {/* Billes, du fond vers le haut */}
@@ -37,7 +37,7 @@ export function TubesSvg({ state, size = 1, label }: { state: State; size?: numb
                   cy={y + tubeH - 8 * size - R - i * (2 * R + GAP)}
                   r={R}
                   fill={MARBLE_COLORS[color % MARBLE_COLORS.length]}
-                  stroke="#09090b"
+                  stroke="var(--ink-950)"
                   strokeWidth={1.5}
                 />
               ))}

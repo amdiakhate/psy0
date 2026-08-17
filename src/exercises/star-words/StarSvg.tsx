@@ -142,7 +142,7 @@ export function StarSvg({
             y1={y1}
             x2={x2}
             y2={y2}
-            stroke="#3f3f46"
+            stroke="var(--ink-700)"
             strokeWidth={1.5}
           />
         );
@@ -191,14 +191,14 @@ export function StarSvg({
             ? '#164e63'
             : isShared
               ? '#082f49'
-              : '#18181b';
+              : 'var(--ink-900)';
         const stroke = inConflict
           ? '#ef4444'
           : isHighlighted
             ? '#22d3ee'
             : isShared
               ? '#0ea5e9'
-              : '#3f3f46';
+              : 'var(--ink-700)';
 
         return (
           <g key={i} pointerEvents="none">
@@ -232,7 +232,7 @@ export function StarSvg({
                   textAnchor="middle"
                   fontSize={20}
                   fontWeight={700}
-                  fill={isShared ? '#7dd3fc' : '#e4e4e7'}
+                  fill={isShared ? '#7dd3fc' : 'var(--ink-200)'}
                   fontFamily="ui-monospace, monospace"
                 >
                   {shown}
@@ -257,8 +257,8 @@ export function StarSvg({
               cx={x}
               cy={y}
               r={13}
-              fill={activeSlot === slot ? '#0369a1' : filled ? '#27272a' : '#18181b'}
-              stroke={activeSlot === slot ? '#38bdf8' : filled ? '#52525b' : '#71717a'}
+              fill={activeSlot === slot ? '#0369a1' : filled ? 'var(--ink-800)' : 'var(--ink-900)'}
+              stroke={activeSlot === slot ? '#38bdf8' : filled ? 'var(--ink-600)' : 'var(--ink-500)'}
               strokeWidth={1.5}
             />
             <text
@@ -267,7 +267,7 @@ export function StarSvg({
               textAnchor="middle"
               fontSize={14}
               fontWeight={700}
-              fill={filled ? '#a1a1aa' : '#e4e4e7'}
+              fill={filled ? 'var(--ink-400)' : 'var(--ink-200)'}
               fontFamily="ui-monospace, monospace"
               pointerEvents="none"
             >

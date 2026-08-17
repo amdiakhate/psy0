@@ -117,16 +117,16 @@ function AirwaysScene({ scene }: { scene: string; stepIndex: number }) {
                 y={line * ROW}
                 width={(s.end - s.start + 1) * CELL}
                 height={ROW}
-                fill={data.faulty ? '#f59e0b' : '#a1a1aa'}
+                fill={data.faulty ? '#f59e0b' : 'var(--ink-400)'}
                 opacity={data.faulty ? 0.9 : 0.45}
               />
             );
           })}
           {Array.from({ length: COLS + 1 }, (_, c) => (
-            <line key={`c${c}`} x1={c * CELL} y1={0} x2={c * CELL} y2={6 * ROW} stroke="#d4d4d8" strokeWidth={0.5} />
+            <line key={`c${c}`} x1={c * CELL} y1={0} x2={c * CELL} y2={6 * ROW} stroke="var(--ink-300)" strokeWidth={0.5} />
           ))}
           {Array.from({ length: 7 }, (_, r) => (
-            <line key={`r${r}`} x1={0} y1={r * ROW} x2={W} y2={r * ROW} stroke="#a1a1aa" strokeWidth={0.7} />
+            <line key={`r${r}`} x1={0} y1={r * ROW} x2={W} y2={r * ROW} stroke="var(--ink-400)" strokeWidth={0.7} />
           ))}
           {data.planes.map((p, i) => {
             const cx = p.col * CELL + CELL / 2;
@@ -154,10 +154,10 @@ function AirwaysScene({ scene }: { scene: string; stepIndex: number }) {
           {[...new Set(data.planes.filter((p) => p.color === 'blue').map((p) => p.line))].map((line) => (
             <g key={line}>
               <rect x={(COLS - 1) * CELL} y={line * ROW} width={CELL} height={ROW} fill="#7dd3fc" />
-              <circle cx={(COLS - 0.5) * CELL} cy={line * ROW + ROW / 2} r={6} fill="none" stroke="#fff" strokeWidth={1.5} />
+              <circle cx={(COLS - 0.5) * CELL} cy={line * ROW + ROW / 2} r={6} fill="none" stroke="var(--ink-0)" strokeWidth={1.5} />
               <path
                 d={`M${(COLS - 0.5) * CELL - 3.5},${line * ROW + ROW / 2 - 3.5} l7,7 M${(COLS - 0.5) * CELL + 3.5},${line * ROW + ROW / 2 - 3.5} l-7,7`}
-                stroke="#fff"
+                stroke="var(--ink-0)"
                 strokeWidth={1.5}
               />
             </g>
@@ -178,8 +178,8 @@ function AirwaysScene({ scene }: { scene: string; stepIndex: number }) {
 function BigCross() {
   return (
     <svg width="20" height="20" viewBox="0 0 34 34">
-      <circle cx="17" cy="17" r="15" fill="none" stroke="#fff" strokeWidth="2.5" />
-      <path d="M10,10 L24,24 M24,10 L10,24" stroke="#fff" strokeWidth="2.5" />
+      <circle cx="17" cy="17" r="15" fill="none" stroke="var(--ink-0)" strokeWidth="2.5" />
+      <path d="M10,10 L24,24 M24,10 L10,24" stroke="var(--ink-0)" strokeWidth="2.5" />
     </svg>
   );
 }

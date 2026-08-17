@@ -1,7 +1,113 @@
 @import "tailwindcss";
 
+/*
+ * Thème clair.
+ *
+ * L'interface a été écrite en sombre : ~1140 classes utilisent l'échelle `zinc`
+ * et les accents `sky` / `amber` / `red` / `green` / `indigo`. Plutôt que de les
+ * réécrire une à une — 61 fichiers, autant d'occasions de se tromper — le mode
+ * clair REDÉFINIT les variables de couleur de Tailwind en INVERSANT l'échelle :
+ * 50↔950, 100↔900, 200↔800, 300↔700, 400↔600, 500 inchangé.
+ *
+ * Conséquence : `bg-zinc-900` (fond sombre) devient un fond clair, `text-zinc-200`
+ * (texte clair) devient un texte foncé, `border-zinc-800` une bordure claire.
+ * Les hiérarchies visuelles et les contrastes sont préservés par construction.
+ *
+ * Les couleurs RÉGLEMENTAIRES des exercices sont écrites en hexadécimal en dur
+ * (bleu/violet d'Airways, marine/gris des Formes glissées, bleu/orange des
+ * Formes et couleurs) : elles échappent volontairement à ce mécanisme, car les
+ * inverser contredirait REGLES-OFFICIELLES.md.
+ */
+
 :root {
   color-scheme: dark;
+
+  /*
+   * Encres des SVG des exercices. Les couleurs y sont passées en attributs
+   * `fill`/`stroke`, qui n'héritent pas des classes Tailwind : sans ces
+   * variables, un trait blanc resterait blanc sur fond blanc.
+   * Même inversion que l'échelle zinc, pour rester cohérent.
+   * (Les SVG dessinés en trois.js sont exclus : three n'interprète pas var().)
+   */
+  --ink-0: #ffffff;
+  --ink-200: #e4e4e7;
+  --ink-300: #d4d4d8;
+  --ink-400: #a1a1aa;
+  --ink-500: #71717a;
+  --ink-600: #52525b;
+  --ink-700: #3f3f46;
+  --ink-800: #27272a;
+  --ink-900: #18181b;
+  --ink-950: #09090b;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  /* Encres inversées : ce qui était le trait le plus clair devient le plus foncé. */
+  --ink-0: #18181b;
+  --ink-200: #3f3f46;
+  --ink-300: #52525b;
+  --ink-400: #71717a;
+  --ink-500: #71717a;
+  --ink-600: #a1a1aa;
+  --ink-700: #d4d4d8;
+  --ink-800: #e4e4e7;
+  --ink-900: #f4f4f5;
+  --ink-950: #ffffff;
+
+  /*
+   * Gris : l'échelle est retournée bout à bout, N ↔ 1000−N.
+   * L'ordre doit rester strictement monotone, sinon `text-zinc-500` finit
+   * plus pâle que `text-zinc-400` et devient illisible sur fond clair.
+   */
+  --color-zinc-50: oklch(0.141 0.005 285.823);
+  --color-zinc-100: oklch(0.21 0.006 285.885);
+  --color-zinc-200: oklch(0.274 0.006 286.033);
+  --color-zinc-300: oklch(0.37 0.013 285.805);
+  --color-zinc-400: oklch(0.442 0.017 285.786);
+  --color-zinc-500: oklch(0.552 0.016 285.938);
+  --color-zinc-600: oklch(0.705 0.015 286.067);
+  --color-zinc-700: oklch(0.871 0.006 286.286);
+  --color-zinc-800: oklch(0.92 0.004 286.32);
+  --color-zinc-900: oklch(0.967 0.001 286.375);
+  --color-zinc-950: oklch(0.985 0 0);
+
+  /* Accents : mêmes teintes, luminosités inversées pour rester lisibles. */
+  --color-sky-50: oklch(0.293 0.066 243.157);
+  --color-sky-300: oklch(0.5 0.134 242.749);
+  --color-sky-400: oklch(0.443 0.11 240.79);
+  --color-sky-500: oklch(0.5 0.134 242.749);
+  --color-sky-600: oklch(0.588 0.158 241.966);
+  --color-sky-800: oklch(0.901 0.058 230.902);
+  --color-sky-900: oklch(0.951 0.026 236.824);
+  --color-sky-950: oklch(0.977 0.013 236.62);
+
+  --color-amber-200: oklch(0.414 0.112 45.904);
+  --color-amber-300: oklch(0.473 0.137 46.201);
+  --color-amber-400: oklch(0.555 0.163 48.998);
+  --color-amber-500: oklch(0.666 0.179 58.318);
+  --color-amber-600: oklch(0.769 0.188 70.08);
+  --color-amber-700: oklch(0.879 0.169 91.605);
+  --color-amber-800: oklch(0.924 0.12 95.746);
+  --color-amber-900: oklch(0.962 0.059 95.617);
+  --color-amber-950: oklch(0.987 0.022 95.277);
+
+  --color-red-300: oklch(0.444 0.177 26.899);
+  --color-red-400: oklch(0.505 0.213 27.518);
+  --color-red-500: oklch(0.577 0.245 27.325);
+  --color-red-800: oklch(0.885 0.062 18.334);
+  --color-red-900: oklch(0.936 0.032 17.717);
+  --color-red-950: oklch(0.971 0.013 17.38);
+
+  --color-green-400: oklch(0.527 0.154 150.069);
+  --color-green-500: oklch(0.596 0.145 163.225);
+
+  --color-indigo-200: oklch(0.457 0.24 277.023);
+  --color-indigo-700: oklch(0.87 0.065 274.039);
+  --color-indigo-950: oklch(0.962 0.018 272.314);
+
+  --color-emerald-400: oklch(0.508 0.118 165.612);
 }
 
 body {

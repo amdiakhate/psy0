@@ -19,7 +19,7 @@ export function FigSvg({ desc, size = 72 }: { desc: FigDesc; size?: number }) {
             [66, 66],
           ];
   const fill = desc.filled ? '#7dd3fc' : 'none';
-  const stroke = desc.filled ? '#7dd3fc' : '#e4e4e7';
+  const stroke = desc.filled ? '#7dd3fc' : 'var(--ink-200)';
 
   return (
     <svg viewBox="0 0 96 96" width={size} height={size} aria-hidden>
