@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generate, figKey } from './generator';
 import type { FigDesc, FigRule, LetterRule, RuleDesc } from './generator';
-import { validate } from './validator';
+import { ABSTENTION, isAbstention, validate } from './validator';
 import {
   ALL_LETTER_RULES,
   ALL_NUMERIC_RULES,
@@ -289,5 +289,22 @@ describe('logic-series — forceTag', () => {
         expect(item.tags).toContain(rule);
       }
     }
+  });
+});
+
+describe('abstention « Je ne sais pas… »', () => {
+  it('n’est jamais comptée comme une bonne réponse', () => {
+    // Pilotest propose un bouton d'abstention : elle vaut 0, pas +1.
+    for (let seed = 0; seed < 40; seed++) {
+      const item = generate(seed, 3);
+      expect(validate(item, ABSTENTION as never)).toBe(false);
+    }
+  });
+
+  it('se distingue d’un index de réponse valide', () => {
+    // Sans cette distinction, l'abstention serait traitée comme un clic sur
+    // l'option 0 — et vaudrait le point une fois sur quatre.
+    expect(isAbstention(ABSTENTION as never)).toBe(true);
+    for (let i = 0; i < 4; i++) expect(isAbstention(String(i) as never)).toBe(false);
   });
 });

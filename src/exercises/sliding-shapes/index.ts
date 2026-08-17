@@ -14,7 +14,7 @@ export const slidingShapes: ExerciseModule<SlidingQuestion, SlidingAnswer> = {
     'Glisse 3 à 4 formes sur la grille centrale pour reconstituer la figure à reproduire. Superposition : marine + marine = marine, marine + gris = gris, gris + gris = marine. L’ordre de dépose n’a aucune importance.',
   families: ['Spatiale', 'Intellectuelle'],
   levels: LEVELS.length,
-  defaultItemSeconds: 45,
+  defaultItemSeconds: 60, // Pilotest : 10 questions, 60 s maximum chacune
   timed: 'per-item',
   generate,
   validate,

@@ -1,23 +1,28 @@
-import { useState } from 'react';
 import type { ExerciseComponentProps } from '../../core/types';
 import type { Objects3dAnswer, Objects3dQuestion } from './generator';
-import { Choices } from '../../components/Choices';
 import { DesertView } from './DesertView';
 import { SceneMap } from './SceneMap';
-import { VIEWPOINT_COUNT } from './config';
 
+/**
+ * La réponse se donne UNIQUEMENT en cliquant le rond sur la vue aérienne,
+ * comme sur Pilotest : « cliquez sur le rond numéroté correspondant ».
+ *
+ * Une version antérieure doublait la carte d'un QCM « Point de vue 1…8 ».
+ * C'était plus facile que l'original : lire une liste de numéros dispense de
+ * situer soi-même la position dans le cercle, or c'est précisément le geste
+ * mental que l'exercice mesure.
+ */
 export function Objects3dExercise({
   item,
   onAnswer,
 }: ExerciseComponentProps<Objects3dQuestion, Objects3dAnswer>) {
   const q = item.question;
-  const [hover, setHover] = useState<number | null>(null);
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4">
       <p className="max-w-2xl text-center text-lg font-bold text-zinc-100">
-        Depuis quel <span className="text-sky-400">point de vue</span> cette scène est-elle
-        observée ?
+        Sur la vue aérienne, clique l'emplacement d'où la{' '}
+        <span className="text-sky-400">photo</span> a été prise.
       </p>
 
       <div className="flex flex-wrap items-center justify-center gap-5">
@@ -29,23 +34,11 @@ export function Objects3dExercise({
         </div>
 
         <div>
-          <SceneMap objects={q.objects} highlight={hover} onPick={onAnswer} />
+          <SceneMap objects={q.objects} highlight={null} onPick={onAnswer} />
           <p className="mt-1 text-center text-xs text-zinc-500">
-            le plan — chaque rond regarde vers le centre
+            la vue aérienne — chaque rond regarde vers le centre
           </p>
         </div>
-      </div>
-
-      <div className="w-full max-w-3xl" onMouseLeave={() => setHover(null)}>
-        <Choices
-          columns={4}
-          options={Array.from({ length: VIEWPOINT_COUNT }, (_, k) => (
-            <span key={k} onMouseEnter={() => setHover(k)} className="block">
-              Point de vue {k + 1}
-            </span>
-          ))}
-          onPick={onAnswer}
-        />
       </div>
     </div>
   );

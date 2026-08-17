@@ -14,7 +14,7 @@ export const english: ExerciseModule<EnglishQuestion, EnglishAnswer> = {
     'QCM d\'anglais type présélection : grammaire, vocabulaire courant, vocabulaire aviation et compréhension de phrases.',
   families: ['Anglais'],
   levels: LEVELS.length,
-  defaultItemSeconds: 10,
+  defaultItemSeconds: 15, // Pilotest : 30 QCM en 7 min 30 = 15 s par question
   timed: 'per-item',
   generate,
   validate,

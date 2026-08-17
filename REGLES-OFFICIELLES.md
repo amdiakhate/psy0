@@ -1,6 +1,13 @@
 # Règles officielles des 16 tests PSY0 cadets
 
-Source : pages de règles Pilotest (`pilotest.com/fr/tests/<slug>`), relevées le 16/08/2026.
+Source : pages de règles Pilotest (`pilotest.com/fr/tests/<slug>`), relevées le 16/08/2026,
+**complétées le 17/08/2026 par des captures de l'interface de jeu réelle**.
+
+> ⚠️ Le texte d'une règle ne décrit PAS l'interface. Les Billes ont été implémentées
+> en saisie libre avec des billes interchangeables alors que Pilotest propose un QCM 2-9
+> et des billes numérotées : rien de tout cela n'était dans le texte. **Pour toute
+> question d'interface — mode de réponse, éléments affichés, boutons — se fier à une
+> capture de l'exercice, jamais au seul énoncé.**
 **Toute implémentation ou modification d'un exercice doit être vérifiée contre ce fichier.**
 Statut au 17/08 : les 16 exercices sont conformes, vérifiés en jeu, et disposent chacun d'une leçon (mode apprentissage).
 
@@ -14,11 +21,11 @@ Statut au 17/08 : les 16 exercices sont conformes, vérifiés en jeu, et dispose
 | 6 | Psychomoteur | `psychomot0` | **Trois tâches simultanées de même importance** : ① suivre le **cercle** avec les flèches (maintenir la flèche du sens de déplacement ; un `>` vert apparaît quand c'est correct) ; ② quand la **forme dans le cercle** et celle de **l'encart pointillé** sont identiques → **Espace** ; ③ quand le **calcul entouré est FAUX** → touche **F**. | **5 minutes** | ✅ |
 | 7 | Empilements | `empilements` | **Trois empilements de cubes**. Deux sont identiques **à une rotation près** ; le troisième a **en plus subi une symétrie**. Désigner **celui qui a subi la symétrie**. | 20 questions, **10 s** chacune | ✅ |
 | 8 | Objets 3D | `objets3d` | Une **scène d'objets posés dans le désert**. Déterminer **depuis lequel des 8 points de vue** disposés en cercle la scène a été vue (chaque point de vue regarde vers le **centre**). | 20 questions, **10 s** | ✅ |
-| 9 | Billes | `billes` | Billes empilées dans **trois tubes en U** ; disposition de **départ** en haut, d'**arrivée** en bas. Compter le **nombre MINIMUM de déplacements**. Une bille se prend **sur le dessus** d'un tube et se pose **sur le dessus** d'un autre. Capacités **3, 2, 3** de gauche à droite. | 20 questions, **40 s** | ✅ |
+| 9 | Billes | `billes` | Billes **NUMÉROTÉES** (toutes distinctes, jamais interchangeables) empilées dans **trois tubes en U** ; **départ** en haut, **arrivée** en bas. Compter le **nombre MINIMUM de déplacements**. Une bille se prend **sur le dessus** d'un tube et se pose **sur le dessus** d'un autre. Capacités **3, 2, 3**. **Réponse par QCM : huit boutons de 2 à 9.** Aucune capacité n'est écrite sous les tubes. | 20 questions, **40 s** | ✅ |
 | 10 | Formes glissées - II | `formes_glissees2` | **Règles de superposition** : marine + marine = marine ; marine + gris = gris ; gris + gris = marine. **3 à 4 formes** en bas à glisser sur la grille centrale pour **reproduire la figure de gauche**. L'ordre de dépose n'a pas d'importance, seule compte la position. | — | ✅ |
 | 11 | Cubes 2D/3D | `cubes_psy0` | Un **patron de cube déplié** à gauche ; un **patron à faces manquantes** à droite. **Glisser-déposer** les faces proposées pour reconstituer le cube de gauche. Certaines faces peuvent devoir être **retournées** (clic). | 10 questions, **60 s** (4 questions au test AF 2020) | ✅ |
 | 12 | Grilles de calculs | `grille_calculs` | Une **grille de 9 calculs**, dont **0 à 4 sont faux**. **Cliquer les cases fausses**, puis **Valider**. | 10 grilles, **45 s** | ✅ |
-| 13 | Séries logiques | `series_psy0_af` | Séries de **4 ou 5 items** à compléter par **QCM à 4 choix**. Trouver la loi. **Mauvaise réponse = −1/3 point.** | 15 questions, **30 s** | ✅ |
+| 13 | Séries logiques | `series_psy0_af` | Séries de **4 ou 5 items** à compléter par **QCM à 4 choix**. Trouver la loi. **Mauvaise réponse = −1/3 point**, et un bouton **« Je ne sais pas… »** permet de s'abstenir pour 0 — sans lui, la stratégie d'abstention est inapplicable. | 15 questions, **30 s** | ✅ |
 | 14 | Boîtes à mots | `boxes` | **Boîtes vides de 4 à 6 cases**. Un mot apparaît brièvement au centre → le classer **par champ lexical**. **Au premier mot d'un thème, on choisit librement la boîte** ; ensuite il faut rester cohérent. | **5 séries**, minimum d'erreurs | ✅ |
 | 15 | Mots en étoile | `mots_en_etoile` | Liste de **9 mots de 7 lettres**. En **sélectionner 6** et les placer sur une **étoile** de sorte que les **cases communes à deux mots** portent une seule et même lettre. Plusieurs solutions possibles. | 10 questions, **50 s** | ✅ |
 | 16 | Anglais | `english` | **30 QCM**, réponse à l'automatisme plus qu'à la réflexion. Distingue bilingues et bons non-bilingues. | **7 min 30** pour 30 questions (15 s/question) | ✅ |

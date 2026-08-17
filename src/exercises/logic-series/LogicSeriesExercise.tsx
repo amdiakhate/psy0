@@ -56,8 +56,28 @@ export function PenaltyBanner() {
   return (
     <p className="rounded-lg border border-amber-900/60 bg-amber-950/20 px-4 py-2 text-center text-sm text-amber-300">
       Bonne réponse <span className="font-semibold">+1</span> · mauvaise réponse{' '}
-      <span className="font-semibold">−1/3</span> · ne réponds pas au hasard
+      <span className="font-semibold">−1/3</span> · abstention <span className="font-semibold">0</span>
     </p>
+  );
+}
+
+/**
+ * Abstention explicite, comme le « Je ne sais pas… » de Pilotest.
+ *
+ * Sans ce bouton, la stratégie enseignée par la leçon — savoir renoncer quand
+ * on ne trouve pas la loi — était impossible à appliquer : il fallait répondre
+ * au hasard, ce que le barème punit précisément.
+ */
+export const ABSTAIN = 'abstention';
+
+function AbstainButton({ onAnswer }: { onAnswer: (a: LogicAnswer) => void }) {
+  return (
+    <button
+      onClick={() => onAnswer(ABSTAIN as LogicAnswer)}
+      className="mx-auto mt-4 block rounded-full border border-zinc-700 px-6 py-2 text-sm italic text-zinc-400 hover:border-zinc-500 hover:text-zinc-300"
+    >
+      Je ne sais pas…
+    </button>
   );
 }
 
@@ -82,6 +102,7 @@ export function LogicSeriesExercise({ item, onAnswer }: ExerciseComponentProps<L
             onPick={(i) => onAnswer(String(i))}
             columns={4}
           />
+          <AbstainButton onAnswer={onAnswer} />
         </div>
       </div>
     );
@@ -111,6 +132,7 @@ export function LogicSeriesExercise({ item, onAnswer }: ExerciseComponentProps<L
           onPick={(i) => onAnswer(String(i))}
           columns={4}
         />
+        <AbstainButton onAnswer={onAnswer} />
       </div>
     </div>
   );
