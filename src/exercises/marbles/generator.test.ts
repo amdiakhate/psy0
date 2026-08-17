@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generate, validate } from './generator';
-import { LEVELS } from './config';
+import { ANSWER_CHOICES, LEVELS } from './config';
 import { CAPACITIES, countMarbles, minMoves, optimalPath, serialize, successors } from './model';
 import type { State } from './model';
 
@@ -106,11 +106,38 @@ describe('marbles generator', () => {
     }
   });
 
-  it('tagge le nombre de déplacements et les couleurs dupliquées', () => {
+  it('tagge le nombre de déplacements', () => {
     for (let seed = 0; seed < 60; seed++) {
       const item = generate(seed, 5);
       expect(item.tags).toContain(`moves-${item.question.answer}`);
-      expect(item.tags).toContain('duplicate-colors'); // niveau 5 : 8 billes, 3 couleurs
+    }
+  });
+
+  it('numérote les billes de façon UNIQUE : aucune n’est interchangeable', () => {
+    // Sur Pilotest chaque bille porte un numéro. Réutiliser un numéro rendrait
+    // deux billes permutables et ferait baisser le minimum de déplacements :
+    // l'exercice deviendrait plus facile que l'original.
+    for (let level = 1; level <= 5; level++) {
+      for (let seed = 0; seed < 40; seed++) {
+        const { question } = generate(seed, level);
+        for (const state of [question.start, question.goal]) {
+          const all = state.flat();
+          expect(new Set(all).size).toBe(all.length);
+          // Numérotation contiguë depuis 0, comme l'affichage le suppose.
+          expect([...all].sort((a, b) => a - b)).toEqual(all.map((_, i) => i));
+        }
+      }
+    }
+  });
+
+  it('garde toujours la réponse dans les choix du QCM (2 à 9)', () => {
+    // Le QCM ne propose que 2..9 : une réponse hors de cette plage serait
+    // impossible à donner, quel que soit le raisonnement du candidat.
+    for (let level = 1; level <= 5; level++) {
+      for (let seed = 0; seed < 60; seed++) {
+        const { question } = generate(seed, level);
+        expect(ANSWER_CHOICES).toContain(question.answer);
+      }
     }
   });
 });

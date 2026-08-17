@@ -29,27 +29,33 @@ export function TubesSvg({ state, size = 1, label }: { state: State; size?: numb
                 stroke="var(--ink-500)"
                 strokeWidth={2 * size}
               />
-              {/* Billes, du fond vers le haut */}
-              {state[t].map((color, i) => (
-                <circle
-                  key={i}
-                  cx={x + TUBE_W / 2}
-                  cy={y + tubeH - 8 * size - R - i * (2 * R + GAP)}
-                  r={R}
-                  fill={MARBLE_COLORS[color % MARBLE_COLORS.length]}
-                  stroke="var(--ink-950)"
-                  strokeWidth={1.5}
-                />
-              ))}
-              <text
-                x={x + TUBE_W / 2}
-                y={H - 1}
-                textAnchor="middle"
-                className="fill-zinc-600"
-                style={{ fontSize: 10 * size, fontFamily: 'monospace' }}
-              >
-                {cap}
-              </text>
+              {/* Billes, du fond vers le haut. Chaque bille porte son NUMÉRO :
+                  c'est lui qui l'identifie, la couleur n'est qu'un repère. */}
+              {state[t].map((marble, i) => {
+                const cy = y + tubeH - 8 * size - R - i * (2 * R + GAP);
+                return (
+                  <g key={i}>
+                    <circle
+                      cx={x + TUBE_W / 2}
+                      cy={cy}
+                      r={R}
+                      fill={MARBLE_COLORS[marble % MARBLE_COLORS.length]}
+                      stroke="var(--ink-950)"
+                      strokeWidth={1.5}
+                    />
+                    <text
+                      x={x + TUBE_W / 2}
+                      y={cy}
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      fill="#ffffff"
+                      style={{ fontSize: 15 * size, fontWeight: 700 }}
+                    >
+                      {marble}
+                    </text>
+                  </g>
+                );
+              })}
             </g>
           );
         })}

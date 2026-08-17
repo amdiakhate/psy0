@@ -12,7 +12,7 @@ export const tips: Tips = {
   traps: [
     'Oublier les billes bloquantes : on compte 3 billes mal placées, on répond 3, alors qu’une bille bien placée par-dessus impose 2 déplacements de plus. C’est l’erreur numéro un.',
     'Ignorer la capacité du tube du milieu (2 billes) : le plan « je vide tout dans le milieu » est presque toujours illégal.',
-    'Confondre couleurs identiques : quand deux billes ont la même couleur, elles sont INTERCHANGEABLES — inutile de ramener précisément « celle du tube de gauche ». Ne t’impose pas des contraintes que l’exercice ne pose pas.',
+    'Croire que deux billes se valent : chaque bille porte un NUMÉRO unique, aucune n’est interchangeable. La bille 2 doit finir exactement où la bille 2 est attendue — se contenter de « une bille de la bonne couleur » fait sous-estimer le compte.',
     'Se contenter du premier plan trouvé : la question demande le MINIMUM. Un plan qui marche n’est pas forcément le plus court — cherche s’il existe un raccourci d’un coup.',
   ],
   timing: [

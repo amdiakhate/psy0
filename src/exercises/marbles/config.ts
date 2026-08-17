@@ -6,17 +6,32 @@ export interface MarblesLevel {
   /** Fourchette du nombre minimal de déplacements attendu. */
   minMoves: number;
   maxMoves: number;
-  /** Couleurs distinctes (moins de couleurs = billes interchangeables = plus subtil). */
-  colors: number;
 }
 
+/**
+ * Sur Pilotest, chaque bille porte un NUMÉRO unique : elles sont toutes
+ * distinctes, jamais interchangeables. Une version antérieure réutilisait des
+ * couleurs en double aux niveaux élevés, ce qui rendait certaines billes
+ * permutables et faisait baisser le minimum de déplacements — un exercice plus
+ * facile que l'original, et surtout un raisonnement différent.
+ */
 export const LEVELS: MarblesLevel[] = [
-  { marbles: 4, minMoves: 2, maxMoves: 3, colors: 4 },
-  { marbles: 4, minMoves: 3, maxMoves: 5, colors: 4 },
-  { marbles: 5, minMoves: 4, maxMoves: 6, colors: 5 },
-  { marbles: 5, minMoves: 6, maxMoves: 8, colors: 3 },
-  { marbles: 6, minMoves: 6, maxMoves: 9, colors: 3 },
+  { marbles: 3, minMoves: 2, maxMoves: 3 },
+  { marbles: 4, minMoves: 3, maxMoves: 5 },
+  { marbles: 4, minMoves: 4, maxMoves: 6 },
+  { marbles: 5, minMoves: 5, maxMoves: 7 },
+  { marbles: 5, minMoves: 6, maxMoves: 9 },
 ];
 
-/** Palette des billes (couleurs franches, lisibles sur fond sombre). */
-export const MARBLE_COLORS = ['#ef4444', '#3b82f6', '#22c55e', '#eab308', '#a855f7', '#ec4899'];
+/**
+ * Une couleur par bille, indexée par son numéro. La couleur double le numéro
+ * comme repère visuel — c'est le numéro qui identifie la bille.
+ */
+export const MARBLE_COLORS = ['#3b82f6', '#eab308', '#a855f7', '#ef4444', '#22c55e', '#ec4899'];
+
+/**
+ * Réponses proposées par le QCM. Pilotest ne fait pas saisir le nombre : il
+ * propose huit boutons, de 2 à 9. Les niveaux doivent donc rester dans cette
+ * fourchette, sinon la bonne réponse serait absente des choix.
+ */
+export const ANSWER_CHOICES = [2, 3, 4, 5, 6, 7, 8, 9] as const;
