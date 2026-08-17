@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { ExerciseComponentProps } from '../../core/types';
 import type { CubesAnswer, CubesQuestion, Piece } from './generator';
 import { NetSvg, SYMBOL_PATHS } from './CubeSvg';
 import { POS } from './cube-model';
 import { useKeys } from '../../hooks/useKeys';
+import { useDragDrop } from '../../hooks/useDragDrop';
 
 const CELLS: Array<{ pos: number; col: number; row: number }> = [
   { pos: POS.U, col: 1, row: 0 },
@@ -45,11 +46,36 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
   const available = q.pieces.filter((p) => !usedPieceIds.has(p.id));
   const complete = q.holes.every((h) => placed[h]);
 
+  /** Pose une pièce DONNÉE dans un trou : nécessaire au glisser-déposer. */
+  const placePiece = useCallback(
+    (pieceId: number, hole: number) => {
+      setPlaced((prev) => {
+        // Une pièce déjà posée ailleurs est déplacée, pas dupliquée.
+        const next = Object.fromEntries(
+          Object.entries(prev).filter(([, v]) => v.pieceId !== pieceId),
+        ) as typeof prev;
+        next[hole] = { pieceId, flipped: flipped[pieceId] ?? false };
+        return next;
+      });
+      setSelected(null);
+    },
+    [flipped],
+  );
+
   const placeInHole = (hole: number) => {
     if (selected === null) return;
-    setPlaced((prev) => ({ ...prev, [hole]: { pieceId: selected, flipped: flipped[selected] ?? false } }));
-    setSelected(null);
+    placePiece(selected, hole);
   };
+
+  // Glisser-déposer des faces sur les trous du patron, comme sur Pilotest.
+  const onDrop = useCallback(
+    (pieceId: number, zone: string) => {
+      const hole = Number(zone);
+      if (Number.isInteger(hole)) placePiece(pieceId, hole);
+    },
+    [placePiece],
+  );
+  const { drag, startDrag, moved } = useDragDrop<number>(onDrop);
 
   const clearHole = (hole: number) =>
     setPlaced((prev) => {
@@ -93,6 +119,7 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
                 <g
                   key={pos}
                   transform={`translate(${col * S + 1} ${row * S + 1})`}
+                  data-drop={isHole ? String(pos) : undefined}
                   onClick={() => (isHole ? (put ? clearHole(pos) : placeInHole(pos)) : undefined)}
                   className={isHole ? 'cursor-pointer' : ''}
                 >
@@ -100,8 +127,14 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
                     width={S}
                     height={S}
                     fill={isHole ? (put ? '#1e3a5f' : '#0c0a09') : 'var(--ink-800)'}
-                    stroke={isHole && selected !== null && !put ? '#0ea5e9' : 'var(--ink-500)'}
-                    strokeWidth={isHole && selected !== null && !put ? 2.5 : 1}
+                    stroke={
+                      isHole && (drag?.over === String(pos) || (selected !== null && !put))
+                        ? '#0ea5e9'
+                        : 'var(--ink-500)'
+                    }
+                    strokeWidth={
+                      isHole && (drag?.over === String(pos) || (selected !== null && !put)) ? 2.5 : 1
+                    }
                     strokeDasharray={isHole && !put ? '4 3' : undefined}
                   />
                   <g transform={`scale(${S / 100})`}>
@@ -130,10 +163,21 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
         {available.map((piece, i) => (
           <button
             key={piece.id}
-            onClick={() => setSelected(piece.id)}
-            onDoubleClick={() => setFlipped((prev) => ({ ...prev, [piece.id]: !prev[piece.id] }))}
-            className={`flex flex-col items-center gap-1 rounded-lg border-2 p-1.5 ${
-              selected === piece.id ? 'border-sky-500 bg-sky-950/40' : 'border-zinc-700 hover:border-zinc-500'
+            onPointerDown={startDrag(piece.id)}
+            // Pilotest : « Pour retourner une des faces du bas […], cliquez dessus. »
+            // Le clic retourne donc, il ne sélectionne pas ; c'est le glissement
+            // qui pose la face. Un micro-mouvement ne doit pas passer pour un clic.
+            onClick={() => {
+              if (moved) return;
+              setFlipped((prev) => ({ ...prev, [piece.id]: !prev[piece.id] }));
+              setSelected(piece.id);
+            }}
+            className={`flex touch-none cursor-grab select-none flex-col items-center gap-1 rounded-lg border-2 p-1.5 active:cursor-grabbing ${
+              drag?.payload === piece.id
+                ? 'border-sky-400 bg-sky-900/40 opacity-60'
+                : selected === piece.id
+                  ? 'border-sky-500 bg-sky-950/40'
+                  : 'border-zinc-700 hover:border-zinc-500'
             }`}
           >
             <PieceSvg piece={piece} flipped={flipped[piece.id] ?? false} />
@@ -156,8 +200,9 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
           Valider · Entrée ⏎
         </button>
         <p className="text-xs text-zinc-500">
-          Touches 1-{available.length} pour choisir · <kbd className="rounded bg-zinc-800 px-1">R</kbd> ou
-          double-clic pour retourner · clic sur un trou pour poser
+          <span className="text-zinc-400">Glisse</span> une face sur un trou du patron ·{' '}
+          <span className="text-zinc-400">clique</span> une face pour la retourner · au clavier :
+          touches 1-{available.length} puis <kbd className="rounded bg-zinc-800 px-1">R</kbd>
         </p>
       </div>
     </div>

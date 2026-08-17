@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import type { ExerciseComponentProps } from '../../core/types';
 import type { SlidingAnswer, SlidingQuestion } from './generator';
 import { GREY, MARINE } from './config';
 import { buildGrid, fits, gridsEqual } from './model';
 import type { Cell, Grid, Placement, Shape } from './model';
 import { useKeys } from '../../hooks/useKeys';
+import { useDragDrop } from '../../hooks/useDragDrop';
 
 const CELL = 26;
 
@@ -87,13 +88,37 @@ export function SlidingShapesExercise({
 
   const selectedShape = q.shapes.find((s) => s.id === selected) ?? null;
 
+  /** Pose une forme DONNÉE : c'est ce dont le glisser-déposer a besoin. */
+  const placeShape = useCallback(
+    (shapeId: number, row: number, col: number) => {
+      const shape = q.shapes.find((s) => s.id === shapeId);
+      if (!shape || answered.current) return;
+      if (!fits(q.size, shape, row, col)) return;
+      setPlaced((prev) => ({ ...prev, [shape.id]: { row, col } }));
+      setSelected((cur) => {
+        if (cur !== shape.id) return cur;
+        const next = q.shapes.find((s) => s.id !== shape.id && placed[s.id] === undefined);
+        return next ? next.id : null;
+      });
+    },
+    [q.shapes, q.size, placed],
+  );
+
   const place = (row: number, col: number) => {
-    if (!selectedShape || answered.current) return;
-    if (!fits(q.size, selectedShape, row, col)) return;
-    setPlaced((prev) => ({ ...prev, [selectedShape.id]: { row, col } }));
-    const next = q.shapes.find((s) => s.id !== selectedShape.id && placed[s.id] === undefined);
-    setSelected(next ? next.id : null);
+    if (!selectedShape) return;
+    placeShape(selectedShape.id, row, col);
   };
+
+  // Glisser-déposer : la case lâchée devient le coin haut-gauche de la forme,
+  // comme sur Pilotest où l'on fait glisser la pièce sur la grille centrale.
+  const onDrop = useCallback(
+    (shapeId: number, zone: string) => {
+      const [row, col] = zone.split('-').map(Number);
+      if (Number.isInteger(row) && Number.isInteger(col)) placeShape(shapeId, row, col);
+    },
+    [placeShape],
+  );
+  const { drag, startDrag, moved } = useDragDrop<number>(onDrop);
 
   const remove = (id: number) => {
     setPlaced((prev) => {
@@ -161,6 +186,7 @@ export function SlidingShapesExercise({
                 <button
                   key={`${r}-${c}`}
                   type="button"
+                  data-drop={`${r}-${c}`}
                   onClick={() => {
                     setCursor({ row: r, col: c });
                     place(r, c);
@@ -168,8 +194,8 @@ export function SlidingShapesExercise({
                   onMouseEnter={() => setCursor({ row: r, col: c })}
                   style={{ width: CELL, height: CELL, background: cellStyle(v) }}
                   className={`rounded-[3px] ${ghost[r][c] ? 'outline outline-2 outline-sky-400' : ''} ${
-                    cursor.row === r && cursor.col === c ? 'ring-1 ring-sky-200' : ''
-                  }`}
+                    drag?.over === `${r}-${c}` ? 'ring-2 ring-sky-300' : ''
+                  } ${cursor.row === r && cursor.col === c && !drag ? 'ring-1 ring-sky-200' : ''}`}
                   aria-label={`ligne ${r + 1} colonne ${c + 1}`}
                 />
               )),
@@ -195,28 +221,46 @@ export function SlidingShapesExercise({
             <button
               key={shape.id}
               type="button"
-              onClick={() => (pos ? remove(shape.id) : setSelected(shape.id))}
-              className={`flex flex-col items-center gap-1.5 rounded-lg border-2 px-3 py-2 transition ${
-                isSelected
-                  ? 'border-sky-500 bg-sky-950/40'
-                  : pos
-                    ? 'border-zinc-800 bg-zinc-900/40 opacity-50'
-                    : 'border-zinc-700 bg-zinc-900'
+              onPointerDown={startDrag(shape.id)}
+              // Un glissement ne doit pas déclencher le clic de sélection.
+              onClick={() => {
+                if (moved) return;
+                if (pos) remove(shape.id);
+                else setSelected(shape.id);
+              }}
+              className={`flex touch-none cursor-grab select-none flex-col items-center gap-1.5 rounded-lg border-2 px-3 py-2 transition active:cursor-grabbing ${
+                drag?.payload === shape.id
+                  ? 'border-sky-400 bg-sky-900/40 opacity-60'
+                  : isSelected
+                    ? 'border-sky-500 bg-sky-950/40'
+                    : pos
+                      ? 'border-zinc-800 bg-zinc-900/40 opacity-50'
+                      : 'border-zinc-700 bg-zinc-900'
               }`}
             >
               <span className="font-mono text-xs text-zinc-400">{i + 1}</span>
               <ShapeBoard shape={shape} />
               <span className="text-[11px] text-zinc-500">
-                {pos ? `posée (${pos.row + 1},${pos.col + 1}) · retirer` : 'à poser'}
+                {pos ? `posée (${pos.row + 1},${pos.col + 1}) · retirer` : 'à glisser'}
               </span>
             </button>
           );
         })}
       </div>
 
+      {/* Aperçu collé au pointeur : sans lui, on glisse à l'aveugle. */}
+      {drag && (
+        <div
+          className="pointer-events-none fixed z-50 opacity-80"
+          style={{ left: drag.x + 12, top: drag.y + 12 }}
+        >
+          <ShapeBoard shape={q.shapes.find((s) => s.id === drag.payload)!} />
+        </div>
+      )}
+
       <p className="text-xs text-zinc-500">
-        Touches 1-{q.shapes.length} pour choisir une forme (ou la retirer) · flèches pour déplacer
-        le curseur · Entrée ou clic pour poser son coin haut-gauche · l'ordre de dépose n'a aucune
+        Glisse une forme sur la grille (ou touches 1-{q.shapes.length} puis flèches et Entrée) ·
+        la case lâchée devient son coin haut-gauche · l'ordre de dépose n'a aucune
         importance
       </p>
     </div>
