@@ -1,0 +1,52 @@
+# Déploiement Coolify : application + Postgres.
+#
+# Coolify injecte les variables déclarées dans son interface ; celles écrites
+# ici en `${VAR}` doivent y être renseignées. Aucun secret n'est versionné.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://psy0:${POSTGRES_PASSWORD}@db:5432/psy0
+      ACCESS_CODE_HASH: ${ACCESS_CODE_HASH}
+      SESSION_SECRET: ${SESSION_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '3000'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/api/health').then(r=>r.json()).then(j=>process.exit(j.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: psy0
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: psy0
+    volumes:
+      # Volume nommé : c'est lui qui garantit que la progression survit à un
+      # redéploiement. Le supprimer efface tout l'historique d'entraînement.
+      - psy0-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U psy0 -d psy0']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  psy0-db:

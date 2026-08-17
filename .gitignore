@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Sortie de compilation du serveur
+server-dist
+
+# Secrets locaux
+.env
+.env.*
+!.env.example

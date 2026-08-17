@@ -18,6 +18,7 @@ import { onDailyCompleted } from '../coach/daily';
 import { parisMoment } from '../coach/daily-logic';
 import { saveSuspended } from '../coach/suspended';
 import { getPrefs } from '../core/prefs';
+import { markDirty } from '../sync/sync';
 import { exportDayLog } from '../core/logs';
 import { SessionLogScreen } from './SessionLogScreen';
 
@@ -84,6 +85,9 @@ export function SessionRunner({
     saveSession(rec);
     flushNow();
     if (plan.meta?.daily) onDailyCompleted(plan);
+    // La séance est finie : le prochain passage du bandeau poussera vers le
+    // serveur. Rien n'est envoyé pendant la séance elle-même.
+    markDirty();
     setRecord(rec);
     // Sessions du matin : log obligatoire avant le débriefing.
     const played = rec.blocks.some((b) => b.items > 0);
@@ -131,6 +135,7 @@ export function SessionRunner({
     };
     saveSession(rec);
     flushNow();
+    markDirty();
     setRecord(rec);
     setPhase('debrief');
   }, [plan, blockIndex, sessionId, sessionStart]);

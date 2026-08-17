@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { daysUntil, MILESTONE_60MIN, MILESTONE_SIMULATIONS, TEST_DATE, currentPhase, isCadredPhase } from '../core/config';
 import { SessionProvider, useSession } from './SessionContext';
 import { SessionRunner } from './SessionRunner';
+import { SyncBar } from '../sync/SyncBar';
 
 interface NavItem {
   to: string;
@@ -88,6 +89,7 @@ function Shell() {
       <div className="min-w-0 flex-1">
         <MobileNav />
         <main className="mx-auto max-w-5xl p-4 md:p-8">
+          <SyncBar />
           <Outlet />
         </main>
       </div>
