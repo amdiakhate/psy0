@@ -19,6 +19,7 @@ const NAV: NavItem[] = [
   { to: '/guided', label: 'Session guidée' },
   { to: '/simulation', label: 'Simulation PSY0' },
   { to: '/sprint', label: 'Psychomoteur quotidien' },
+  { to: '/mental', label: 'Calcul mental' },
   { to: '/learn', label: 'Apprendre' },
   { to: '/tips', label: 'Astuces' },
   { to: '/settings', label: 'Réglages' },
