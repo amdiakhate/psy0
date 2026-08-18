@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { MIRROR_MAT, findLessonTrihedron, handOf, mapTrihedron, tripleSign } from './signature';
+import {
+  MIRROR_MAT,
+  findLessonTrihedron,
+  findTrihedron,
+  handOf,
+  mapTrihedron,
+  tracedSign,
+  tripleSign,
+} from './signature';
 import type { Trihedron } from './signature';
-import { ROTATIONS, alignToCanonical, canonical, isChiral, mirror, normalize, rotate } from './model';
+import type { Shape } from './model';
+import { ROTATIONS, alignToCanonical, canonical, isChiral, mirror, normalize, rotate, serialize } from './model';
 import { makeShape } from './grow';
 import { mulberry32 } from '../../core/rng';
 import { SHAPES } from './data';
@@ -126,6 +135,70 @@ describe('remise en orientation canonique', () => {
       const cells = makeShape(mulberry32(seed + 99), 9).cells;
       const once = alignToCanonical(cells);
       expect(alignToCanonical(once)).toEqual(once);
+    }
+  });
+});
+
+describe('le repère tracé sur une figure réelle', () => {
+  /**
+   * Ce que la correction DESSINE. Si ces propriétés tombent, les flèches
+   * affichées à l'élève désignent la mauvaise figure — une explication fausse
+   * est pire que pas d'explication du tout.
+   */
+  const shapes = () => {
+    const out: Shape[] = [];
+    for (let size = 8; size <= 11; size++) {
+      for (let seed = 0; seed < 40; seed++) {
+        out.push(makeShape(mulberry32(seed * 101 + size), size).cells);
+      }
+    }
+    return out;
+  };
+
+  it('se laisse tracer sur la grande majorité des figures', () => {
+    const all = shapes();
+    const ok = all.filter((c) => tracedSign(c) !== null).length;
+    // Le repère refuse de se prononcer quand il serait arbitraire ; c'est
+    // volontaire. La correction se replie alors sur la remise en orientation.
+    expect(ok / all.length).toBeGreaterThan(0.75);
+  });
+
+  it('NE BASCULE JAMAIS quand on tourne la figure', () => {
+    for (const cells of shapes()) {
+      const base = tracedSign(cells);
+      if (base === null) continue;
+      for (const r of ROTATIONS) {
+        expect(tracedSign(rotate(cells, r)), serialize(cells)).toBe(base);
+      }
+    }
+  });
+
+  it('s’inverse pour le symétrique, sous toutes ses vues', () => {
+    for (const cells of shapes()) {
+      const base = tracedSign(cells);
+      if (base === null) continue;
+      for (const r of ROTATIONS) {
+        expect(tracedSign(rotate(mirror(cells), r)), serialize(cells)).toBe(-base as -1 | 1);
+      }
+    }
+  });
+
+  it('désigne des cellules qui existent, et un bras réellement aligné', () => {
+    for (const cells of shapes()) {
+      const t = findTrihedron(cells);
+      if (t === null) continue;
+      const all = [...t.armIndices, t.anchorIndex, t.farIndex, t.firstIndex, t.firstBaseIndex, t.secondIndex, t.secondBaseIndex];
+      for (const i of all) expect(cells[i]).toBeDefined();
+      expect(t.armIndices[0]).toBe(t.anchorIndex);
+      expect(t.armIndices[t.armIndices.length - 1]).toBe(t.farIndex);
+      // Les cellules du bras sont bien alignées et consécutives.
+      const axis = [0, 1, 2].filter((a) => cells[t.armIndices[1]][a] !== cells[t.anchorIndex][a]);
+      expect(axis).toHaveLength(1);
+      for (let k = 1; k < t.armIndices.length; k++) {
+        const p = cells[t.armIndices[k - 1]];
+        const c = cells[t.armIndices[k]];
+        expect(Math.abs(p[axis[0]] - c[axis[0]])).toBe(1);
+      }
     }
   });
 });
