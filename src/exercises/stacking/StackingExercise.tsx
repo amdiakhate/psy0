@@ -39,7 +39,7 @@ export function StackingExercise({
             onClick={() => onAnswer(i)}
             className="group flex flex-col items-center gap-2 rounded-xl focus:outline-none"
           >
-            <div className="rounded-lg border-2 border-zinc-700 bg-zinc-200 p-2 transition-colors group-hover:border-sky-500 group-focus-visible:border-sky-400">
+            <div className="rounded-lg border-2 border-zinc-700 p-2 transition-colors group-hover:border-sky-500 group-focus-visible:border-sky-400" style={{ background: '#e7e5e4' }}>
               <PolycubeSvg shape={shape} tilt={q.tilts[i]} world={world} px={210} />
             </div>
             <span className="rounded border border-zinc-600 bg-zinc-800 px-3 py-0.5 font-mono text-sm text-sky-400 transition-colors group-hover:border-sky-500 group-hover:text-sky-300">

@@ -14,7 +14,7 @@ export const SYMBOL_PATHS = [
   'M24 12 H76 V30 H44 V44 H76 V88 H24 V70 H56 V56 H24 Z', // S
 ];
 
-function Glyph({ sym, rot, color = 'var(--ink-200)' }: { sym: number; rot: number; color?: string }) {
+export function Glyph({ sym, rot, color = 'var(--ink-200)' }: { sym: number; rot: number; color?: string }) {
   // rot = quarts de tour anti-horaires dans le repère (u droite, v haut) de la
   // face ⇒ rotate(-90·rot) en SVG (y vers le bas). Convention IDENTIQUE patron/cube.
   return (

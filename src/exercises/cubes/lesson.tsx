@@ -1,4 +1,5 @@
 import type { Lesson } from '../../core/types';
+import { FoldPlayer } from './FoldingNet';
 import { NetSvg } from './CubeSvg';
 import type { Cube } from './cube-model';
 import { ALL_ROTATIONS, applyRotation, POS } from './cube-model';
@@ -79,6 +80,16 @@ function PartialNet({ highlight }: { highlight?: number[] }) {
 }
 
 function CubesScene({ scene }: { scene: string; stepIndex: number }) {
+  if (scene === 'fold' || scene === 'fold-pairs') {
+    return (
+      <div className="text-center">
+        <p className="mb-2 text-xs uppercase tracking-widest text-zinc-500">
+          {scene === 'fold' ? 'Le patron se plie — regarde-le en entier' : 'Les trois paires d’opposées, en couleurs'}
+        </p>
+        <FoldPlayer cube={REFERENCE} pairColors={scene === 'fold-pairs'} />
+      </div>
+    );
+  }
   if (scene === 'reference') {
     return (
       <div className="text-center">
@@ -124,9 +135,27 @@ function CubesScene({ scene }: { scene: string; stepIndex: number }) {
 export const lesson: Lesson = {
   title: 'Compléter un patron sans le plier',
   intro:
-    'Le patron de droite est le même cube que celui de gauche, mais déplié dans une autre orientation. On ne recopie donc RIEN case par case : on raisonne sur les paires de faces opposées, qui elles ne changent jamais.',
+    "D'abord, voir le pliage en vrai — une fois, en le pilotant soi-même. Ensuite, ne plus jamais plier : le patron à compléter est le même cube que la référence, déplié dans une autre orientation, et on ne recopie RIEN case par case. On raisonne sur les paires de faces opposées, qui elles ne changent jamais.",
   Scene: CubesScene,
   steps: [
+    {
+      scene: 'fold',
+      title: 'Le pliage, vu une fois pour de vrai',
+      observe:
+        "Le patron se plie sous tes yeux : la croix se referme, les parois plongent, la 4e case de la barre vient fermer l'arrière. Mets pause où tu veux, et rejoue le pliage au curseur, dans les deux sens.",
+      why: "Toute l'épreuve consiste à IMAGINER ce mouvement. Le voir en entier une fois — et surtout le piloter soi-même au curseur — installe le modèle mental sur lequel toutes les règles suivantes s'appuient. Après, on ne pliera plus jamais : on raisonnera.",
+      action:
+        'Arrête le pliage vers 50 % et repère où part chaque case. Refais-le deux ou trois fois, puis passe à la suite.',
+    },
+    {
+      scene: 'fold-pairs',
+      title: 'Ce que le pliage démontre : les opposées',
+      observe:
+        "Les paires sont coloriées : les deux bleues, les deux vertes, les deux jaunes. Dans le patron À PLAT, chaque paire est séparée par exactement une case. Plie : chaque paire finit FACE À FACE, sans jamais se toucher.",
+      why: "C'est LA règle de l'exercice, et tu viens de la voir se démontrer : deux cases séparées d'une case dans une ligne ou une colonne du patron sont opposées sur le cube. Les opposées sont invariantes — quelle que soit la façon de déplier, elles restent dos à dos. Tout le reste de la méthode n'exploite que ça.",
+      pitfall:
+        "Deux cases VOISINES du patron ne sont jamais opposées : elles partagent une arête. Le piège classique est de confondre « à côté » et « en face ».",
+    },
     {
       scene: 'both',
       title: 'Deux patrons du même cube',

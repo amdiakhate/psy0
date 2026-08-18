@@ -1,5 +1,7 @@
 import type { Lesson } from '../../core/types';
 import { TubesSvg } from './TubesSvg';
+import { MoveAnimation } from './MoveAnimation';
+import type { Move } from './MoveAnimation';
 import type { State } from './model';
 
 /**
@@ -21,7 +23,14 @@ const SCENES: Record<string, State> = {
   step2: [[0], [1], [2]],
 };
 
+/** La solution optimale, jouée coup par coup. Les états sont déduits, pas écrits. */
+const SOLUTION: Move[] = [
+  { from: 0, to: 2, note: 'Coup 1 — la bille 2 est SUR LE DESSUS : elle part la première, vers le tube de droite.' },
+  { from: 0, to: 1, note: 'Coup 2 — la bille 1 est maintenant accessible : elle va au milieu. Terminé en 2 coups.' },
+];
+
 function MarblesScene({ scene }: { scene: string; stepIndex: number }) {
+  if (scene === 'play') return <MoveAnimation start={START} moves={SOLUTION} />;
   if (scene === 'both') {
     return (
       <div className="flex flex-col items-center gap-2">
@@ -43,6 +52,15 @@ export const lesson: Lesson = {
     'On ne « résout » pas le puzzle : on COMPTE. Cas d’école décortiqué — tube gauche plein (billes 0, 1, 2 du fond vers le haut), et il faut une bille par tube à l’arrivée.',
   Scene: MarblesScene,
   steps: [
+    {
+      scene: 'play',
+      title: 'Un déplacement, c’est quoi exactement',
+      observe:
+        "La solution se joue sous tes yeux : une bille se prend SUR LE DESSUS d'un tube, survole, et se pose SUR LE DESSUS d'un autre. Jamais au milieu d'une pile, jamais deux à la fois.",
+      why: "Toute la difficulté de l'exercice tient dans cette seule règle. Une bille bien placée mais COIFFÉE par une autre n'est pas accessible : il faudra d'abord dégager celle du dessus. C'est de là que viennent les coups « perdus » que le comptage doit prévoir.",
+      action:
+        'Mets pause en plein vol et demande-toi : quelles billes étaient accessibles à cet instant ? Ce sont uniquement les sommets de pile.',
+    },
     {
       scene: 'both',
       title: 'Lire les deux dispositions',

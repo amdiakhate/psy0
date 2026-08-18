@@ -3,7 +3,10 @@ import { PolycubeSvg, commonWorldSize } from './PolycubeSvg';
 import type { Rgb } from './PolycubeSvg';
 import { SHAPES } from './data';
 import { generate } from './generator';
-import { ROTATIONS, cellCenterOf, mirror, normalize, projectPoint, rotate } from './model';
+import { IDENTITY, ROTATIONS, cellCenterOf, mirror, normalize, projectPoint, rotate, tiltMatrix } from './model';
+import type { Mat3 } from './model';
+import { linear } from '../../anim/timeline';
+import { useTimeline } from '../../hooks/useTimeline';
 import { findLessonTrihedron, handOf, tripleSign } from './signature';
 import type { Shape } from './model';
 
@@ -114,12 +117,12 @@ function Arrow({
  * Les trois flèches du trièdre, dessinées SUR la figure : ① le long du bras
  * vers le bout porteur, ② vers la saillie, ③ du support vers le cube du dessus.
  */
-function TrihedronArrows({ cells }: { cells: Shape }) {
+function TrihedronArrows({ cells, tilt = IDENTITY }: { cells: Shape; tilt?: Mat3 }) {
   const t = findLessonTrihedron(cells);
   if (!t) return null;
   const lift: [number, number, number] = [0, 0.62, 0]; // au-dessus des faces, pas dedans
   const raise = (c: readonly [number, number, number]): [number, number] =>
-    projectPoint([c[0] + lift[0], c[1] + lift[1], c[2] + lift[2]]);
+    projectPoint([c[0] + lift[0], c[1] + lift[1], c[2] + lift[2]], tilt);
   const origin = cellCenterOf(t.origin);
   const support = cellCenterOf(cells[t.supportIndex]);
   const overhang = cellCenterOf(cells[t.overhangIndex]);
@@ -128,8 +131,59 @@ function TrihedronArrows({ cells }: { cells: Shape }) {
     <g>
       <Arrow from={raise(origin)} to={raise(support)} color={ARROW_COLORS[0]} label="1" extend={0.55} />
       <Arrow from={raise(origin)} to={raise(overhang)} color={ARROW_COLORS[1]} label="2" extend={0.55} />
-      <Arrow from={projectPoint(support)} to={projectPoint(top)} color={ARROW_COLORS[2]} label="3" extend={0.55} />
+      <Arrow from={projectPoint(support, tilt)} to={projectPoint(top, tilt)} color={ARROW_COLORS[2]} label="3" extend={0.55} />
     </g>
+  );
+}
+
+/**
+ * LA démonstration que l'ancienne méthode ne pouvait pas faire : les deux
+ * figures TOURNENT, en continu, flèches accrochées. La main droite reste main
+ * droite sous tous les angles ; le miroir reste main gauche. Aucune rotation ne
+ * les échange — c'est ça, la chiralité, et on la regarde tourner.
+ */
+function SpinningHands() {
+  const { value, playing, toggle, scrub } = useTimeline([{ to: 1, ms: 9000, ease: linear }]);
+  const tilt = tiltMatrix(value * 360, 14, 0);
+  const pair: Array<{ cells: Shape; label: string; ok: boolean }> = [
+    { cells: STACK_1, label: `main ${HANDS[0]}`, ok: true },
+    { cells: STACK_2, label: `main ${HANDS[1]} — le miroir`, ok: false },
+  ];
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-wrap items-start justify-center gap-6">
+        {pair.map(({ cells, label, ok }) => (
+          <div key={label} className="flex flex-col items-center gap-1.5">
+            <div className="rounded-lg border-2 border-zinc-700 p-1.5" style={{ background: '#e7e5e4' }}>
+              <PolycubeSvg shape={cells} tilt={tilt} world={WORLD + 1.9} px={250} cellPalette={rolePalette(cells)}>
+                <TrihedronArrows cells={cells} tilt={tilt} />
+              </PolycubeSvg>
+            </div>
+            <span className={`text-xs font-semibold ${ok ? 'text-green-400' : 'text-red-400'}`}>{label}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex w-full max-w-sm items-center gap-3">
+        <button
+          onClick={toggle}
+          className="rounded-lg border border-zinc-600 px-3 py-1 font-mono text-sm text-zinc-300 hover:border-sky-500"
+          aria-label={playing ? 'Pause' : 'Lecture'}
+        >
+          {playing ? '⏸' : '▶'}
+        </button>
+        <input
+          type="range"
+          min={0}
+          max={1}
+          step={0.002}
+          value={value}
+          onChange={(e) => scrub(Number(e.target.value))}
+          className="flex-1 accent-sky-500"
+          aria-label="Angle de rotation"
+        />
+        <span className="w-12 text-right font-mono text-xs text-zinc-500">{Math.round(value * 360)}°</span>
+      </div>
+    </div>
   );
 }
 
@@ -183,9 +237,10 @@ function Row({
       {STACKS.map((shape, i) => (
         <div key={i} className="flex flex-col items-center gap-1.5">
           <div
-            className={`rounded-lg border-2 bg-zinc-200 p-1.5 ${
+            className={`rounded-lg border-2 p-1.5 ${
               accent.includes(i) ? 'border-sky-500' : 'border-zinc-700'
             }`}
+            style={{ background: '#e7e5e4' }}
           >
             {/* Les flèches débordent des figures : le cadre s'élargit pour ne pas rogner les pastilles. */}
             <PolycubeSvg
@@ -238,9 +293,10 @@ function RealItem() {
         {REAL.stacks.map((shape, i) => (
           <div key={i} className="flex flex-col items-center gap-1.5">
             <div
-              className={`rounded-lg border-2 bg-zinc-200 p-1.5 ${
+              className={`rounded-lg border-2 p-1.5 ${
                 i === REAL.answerIndex ? 'border-red-500' : 'border-zinc-700'
               }`}
+              style={{ background: '#e7e5e4' }}
             >
               <PolycubeSvg shape={shape} tilt={REAL.tilts[i]} world={REAL_WORLD} px={165} />
             </div>
@@ -261,7 +317,7 @@ function Anatomy({ arrows = false }: { arrows?: boolean }) {
   return (
     <div className="flex flex-col items-center gap-2">
       <p className="text-xs uppercase tracking-widest text-zinc-500">Empilement 1, en grand</p>
-      <div className="rounded-lg border-2 border-zinc-700 bg-zinc-200 p-2">
+      <div className="rounded-lg border-2 border-zinc-700 p-2" style={{ background: '#e7e5e4' }}>
         <PolycubeSvg
           shape={STACK_1}
           world={arrows ? WORLD + 2.1 : WORLD}
@@ -284,6 +340,7 @@ function StackingScene({ scene }: { scene: string; stepIndex: number }) {
   if (scene === 'real') return <RealItem />;
   if (scene === 'anatomy') return <Anatomy />;
   if (scene === 'trihedron') return <Anatomy arrows />;
+  if (scene === 'spin') return <SpinningHands />;
   if (scene === 'twins') return <Row accent={[0, 1]} colors />;
   if (scene === 'hands') return <Row arrows frames colors />;
   if (scene === 'answer') return <Row accent={[ANSWER]} captions={HANDS} arrows frames colors />;
@@ -326,8 +383,17 @@ export const lesson: Lesson = {
         'Le geste : pouce sur ①, index sur ②, majeur sur ③. Si ta main DROITE fait le geste sans se tordre, la figure est « main droite ». Sinon, « main gauche ».',
     },
     {
+      scene: 'spin',
+      title: 'La preuve en mouvement : tourne-les',
+      observe:
+        "Les deux figures tournent ensemble, flèches accrochées. À gauche l'originale, à droite son miroir. Sous TOUS les angles, la gauche garde sa main, la droite garde la sienne — à certains moments elles semblent identiques, et pourtant le verdict ne bascule jamais.",
+      why: "C'est la propriété qui rend la méthode fiable là où l'œil ne l'est pas : la ressemblance entre deux vues varie avec l'angle, la MAIN ne varie jamais. Tu peux mettre pause à l'instant où les deux te semblent pareilles — et vérifier au geste des trois doigts qu'elles ne le sont pas.",
+      action:
+        'Mets pause deux ou trois fois, n’importe où, et refais le geste : pouce sur ①, index sur ②, majeur sur ③. Le verdict doit sortir en une seconde.',
+    },
+    {
       scene: 'twins',
-      title: 'Étape 3 — le faux jumeau',
+      title: 'Étape 4 — le faux jumeau',
       observe:
         "Les empilements 1 et 2 sont dessinés presque dans la même orientation : même bras, même saillie, même inclinaison. Seul le bout qui porte le cube du dessus change.",
       why: "Deux figures qui se ressemblent BEAUCOUP sont à contrôler en priorité, jamais à apparier d'office. Ici la ressemblance ne vient pas d'une rotation nulle : elle vient de ce que le miroir a été dessiné dans la même orientation que l'original.",
@@ -336,7 +402,7 @@ export const lesson: Lesson = {
     },
     {
       scene: 'hands',
-      title: 'Étape 4 — le repère extrait : compare des flèches, pas des images',
+      title: 'Étape 5 — le repère extrait : compare des flèches, pas des images',
       observe:
         "Sous chaque figure, ses trois flèches ramenées à un même point : son repère. Les repères de 1 et 3 sont le même trio, tourné. Celui de 2 est le trio INVERSÉ — signe − au lieu de +.",
       why: "Comparer trois images demande de les tenir toutes en tête pendant qu'on les tourne — on perd le fil à la deuxième. Trois verdicts (main droite / main gauche) tiennent en mémoire sans effort, et se comparent d'un coup d'œil.",

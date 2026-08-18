@@ -1,4 +1,5 @@
 import type { Lesson } from '../../core/types';
+import { WindowAnimation } from './WindowAnimation';
 
 /**
  * Leçon « M2 Back » : le dispositif réel (1 s d'affichage puis Oui/Non pendant
@@ -46,6 +47,7 @@ function Sequence({ upTo, focus }: { upTo: number; focus?: number }) {
 }
 
 function Scene({ scene }: { scene: string; stepIndex: number }) {
+  if (scene === 'slide') return <WindowAnimation />;
   if (scene === 'device') {
     return (
       <div className="flex flex-wrap items-center justify-center gap-4">
@@ -89,6 +91,15 @@ export const lesson: Lesson = {
     'Le dispositif officiel : un chiffre paraît 1 seconde, s’efface, puis « Oui » et « Non » restent 3 secondes. Oui si le chiffre est identique à celui de DEUX coups avant. 42 chiffres par série, et une non-réponse compte comme une faute.',
   Scene,
   steps: [
+    {
+      scene: 'slide',
+      title: 'La fenêtre glissante, en mouvement',
+      observe:
+        "La série défile au rythme réel de l'épreuve. Le cadre bleu couvre les DEUX chiffres à garder en tête ; à chaque nouveau chiffre, il glisse d'un cran — le plus ancien tombe au moment exact où le nouveau entre.",
+      why: "Le M2 Back ne demande pas de retenir une suite : il demande de tenir deux chiffres et de les faire DÉFILER. Écrite, l'idée reste abstraite ; en mouvement, on voit que la mémoire ne s'allonge jamais — elle se décale. C'est le geste à automatiser, et c'est pour ça que la série de 42 est tenable.",
+      action:
+        'Mets pause et fais défiler toi-même : à chaque cran, annonce à voix haute le couple en tête AVANT de regarder le chiffre qui arrive.',
+    },
     {
       scene: 'device',
       title: 'Le dispositif',

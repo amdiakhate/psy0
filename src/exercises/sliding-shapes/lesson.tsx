@@ -3,6 +3,7 @@ import type { Lesson } from '../../core/types';
 import { GREY, MARINE } from './config';
 import { generate } from './generator';
 import { buildGrid, greyCount } from './model';
+import { DropAnimation } from './DropAnimation';
 import type { Cell, Grid, Placement } from './model';
 
 /**
@@ -138,6 +139,16 @@ function ShapesRow({ highlight }: { highlight?: number[] }) {
 }
 
 function SlidingScene({ scene }: { scene: string; stepIndex: number }) {
+  if (scene === 'drop') {
+    return (
+      <div className="flex flex-wrap items-start justify-center gap-6">
+        <DropAnimation size={Q.size} shapes={SHAPES} solution={SOLUTION} />
+        <Labelled label="Figure à reproduire">
+          <Board grid={Q.target} mark={OVERLAP_CELL} />
+        </Labelled>
+      </div>
+    );
+  }
   if (scene === 'rules') {
     return (
       <div className="flex flex-wrap items-center justify-center gap-6">
@@ -219,6 +230,15 @@ export const lesson: Lesson = {
   intro: `Trois formes à glisser sur une grille 6×6 pour reproduire la figure de gauche. Toute la difficulté tient dans une seule ligne de la règle : deux cases grises superposées redonnent du MARINE. Cas décortiqué : ${GREY_TOTAL} cases grises posées par les trois formes, ${GREY_TARGET} seulement dans la cible.`,
   Scene: SlidingScene,
   steps: [
+    {
+      scene: 'drop',
+      title: 'Regarde une case basculer',
+      observe:
+        "Les trois formes se posent l'une après l'autre. Surveille la case entourée de rouge : elle est grise après la première forme, puis la seconde repasse dessus — et elle redevient MARINE.",
+      why: "La règle de superposition est un XOR, et c'est ce cas-là qui la résume : gris + gris = marine. L'intuition attend du gris renforcé ; le jeu éteint la case. Le voir arriver une fois vaut mieux que retenir trois lignes de table — et c'est le piège n°1 de l'épreuve.",
+      action:
+        'Mets pause juste avant l’atterrissage de la deuxième forme et prédis à voix haute quelles cases vont s’éteindre. Puis relâche et vérifie.',
+    },
     {
       scene: 'rules',
       title: 'Étape 1 — traduire la règle en une seule opération',
