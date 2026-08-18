@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { Cube } from './cube-model';
-import { NetSvg, SYMBOL_PATHS } from './CubeSvg';
+import { NetSvg, SYMBOLS } from './CubeSvg';
 
 /**
  * Démo 3D : le patron à gauche, le cube plié à droite — MANIPULABLE à la souris.
@@ -39,7 +39,17 @@ function faceTexture(sym: number, rot: number): THREE.CanvasTexture {
   ctx.translate(-size / 2, -size / 2);
   ctx.scale(size / 100, size / 100);
   ctx.fillStyle = '#18181b';
-  ctx.fill(new Path2D(SYMBOL_PATHS[sym]));
+  const def = SYMBOLS[sym] ?? SYMBOLS[0];
+  if (def.kind === 'shape') {
+    ctx.fill(new Path2D(def.path));
+  } else {
+    // Les lettres sont du texte, pas un tracé : on les dessine à la main sur la
+    // texture, centrées dans la boîte 100×100 comme les formes.
+    ctx.font = '800 64px Helvetica, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(def.char, 50, 53);
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;

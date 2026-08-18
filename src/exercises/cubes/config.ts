@@ -1,23 +1,28 @@
+export type SymbolFamily = 'letters' | 'shapes';
+
 export interface CubesLevel {
-  /** Nombre de faces manquantes à replacer (donc de pièces proposées). */
+  /** Nombre de faces manquantes à replacer. Il y a EXACTEMENT autant de pièces. */
   holes: number;
-  /** Des faces peuvent devoir être RETOURNÉES (miroir) avant d'être posées. */
-  flippable: boolean;
-  /** Pièces leurres en plus des pièces utiles. */
-  decoys: number;
+  /** Famille de symboles. Les formes sont invariantes par quart de tour : leur orientation ne compte pas. */
+  family: SymbolFamily;
 }
 
 /**
  * Règle officielle : « Un patron de cube déplié est donné sur la gauche. Un autre
  * patron dont certaines faces manquent est donné à droite. Vous devez glisser-déposer
- * les formes données en dessous de façon à reconstituer le cube de gauche. Notez que
- * pour certaines questions, les faces peuvent être retournées. »
+ * les formes données en dessous de façon à reconstituer le cube de gauche. »
  * 10 questions, 60 s chacune.
+ *
+ * L'écran de jeu précise l'interaction, et c'est lui qui fait foi : « Cliquez sur
+ * une pièce pour la faire TOURNER D'UN QUART DE TOUR ». Les pièces sont donc
+ * proposées à l'endroit et c'est au candidat de produire l'orientation — il n'y a
+ * pas de retournement en miroir, et il n'y a pas de pièce leurre : le nombre de
+ * pièces égale le nombre de trous, ce qui autorise le raisonnement par élimination.
  */
 export const LEVELS: CubesLevel[] = [
-  { holes: 2, flippable: false, decoys: 1 },
-  { holes: 3, flippable: false, decoys: 1 },
-  { holes: 3, flippable: true, decoys: 2 },
-  { holes: 4, flippable: true, decoys: 2 },
-  { holes: 4, flippable: true, decoys: 3 },
+  { holes: 2, family: 'shapes' },
+  { holes: 3, family: 'shapes' },
+  { holes: 3, family: 'letters' },
+  { holes: 4, family: 'letters' },
+  { holes: 4, family: 'letters' },
 ];

@@ -2,43 +2,51 @@ import { mulberry32, randInt, shuffle } from '../../core/rng';
 import type { Rng } from '../../core/rng';
 import type { Item } from '../../core/types';
 import { LEVELS } from './config';
+import type { SymbolFamily } from './config';
+import { LETTER_SYMS, SHAPE_SYMS } from './CubeSvg';
 import { ALL_ROTATIONS, applyRotation, POS, sameCube, serializeCube } from './cube-model';
 import type { Cube, FaceState } from './cube-model';
 
 /**
  * Cubes 2D/3D (règle officielle) : un patron COMPLET est donné à gauche ; un
  * second patron, dans une AUTRE orientation du même cube, a des faces manquantes.
- * Il faut replacer les bonnes faces (parfois RETOURNÉES) pour que le patron de
- * droite représente bien le même cube que celui de gauche.
+ * Il faut y replacer les bonnes faces pour que le patron de droite représente le
+ * même cube que celui de gauche.
+ *
+ * Les pièces sont proposées À L'ENDROIT et se tournent par clics d'un quart de
+ * tour — c'est ce qu'affiche l'écran de jeu. Le candidat doit donc PRODUIRE
+ * l'orientation, il ne la reçoit pas. Aucun retournement en miroir n'existe, et
+ * il y a exactement autant de pièces que de trous.
  */
 
-/** Une pièce proposée : un symbole avec son orientation, éventuellement à retourner. */
+/** Une pièce proposée : un symbole, toujours présenté à l'endroit. */
 export interface Piece {
   id: number;
   sym: number;
-  rot: number;
-  /** true si la pièce est présentée en miroir : il faudra la retourner (clic) pour l'utiliser. */
-  mirrored: boolean;
 }
 
 export interface CubesQuestion {
+  /** Famille de symboles employée par cette question. */
+  family: SymbolFamily;
   /** Le patron de référence, complet. */
   reference: Cube;
   /** Le patron à compléter : mêmes 6 positions, `null` pour les trous. */
   target: (FaceState | null)[];
   /** Positions (0-5) des trous, dans l'ordre d'affichage. */
   holes: number[];
-  /** Pièces proposées (utiles + leurres), mélangées. */
+  /** Pièces proposées, mélangées. Autant que de trous — aucun leurre. */
   pieces: Piece[];
   /** Pour chaque trou, l'id de la pièce qui convient. */
   solution: Record<number, number>;
+  /** Pour chaque trou, le nombre de quarts de tour attendu. */
+  expectedRot: Record<number, number>;
 }
 
-/** Une réponse = pour chaque trou, la pièce posée et son état retourné ou non. */
-export type CubesAnswer = Record<number, { pieceId: number; flipped: boolean }>;
+/** Une réponse = pour chaque trou, la pièce posée et le nombre de quarts de tour appliqués. */
+export type CubesAnswer = Record<number, { pieceId: number; rot: number }>;
 
-function randomCube(rng: Rng): Cube {
-  const syms = shuffle(rng, [0, 1, 2, 3, 4, 5]);
+function randomCube(rng: Rng, family: SymbolFamily): Cube {
+  const syms = shuffle(rng, family === 'letters' ? LETTER_SYMS : SHAPE_SYMS);
   return syms.map((sym) => ({ sym, rot: randInt(rng, 0, 3) }));
 }
 
@@ -46,11 +54,11 @@ export function generate(seed: number, level: number, forceTag?: string): Item<C
   const rng = mulberry32(seed);
   const cfg = LEVELS[Math.min(Math.max(level, 1), LEVELS.length) - 1];
 
-  let flippable = cfg.flippable;
-  if (forceTag === 'flip') flippable = true;
-  if (forceTag === 'no-flip') flippable = false;
+  let family = cfg.family;
+  if (forceTag === 'letters') family = 'letters';
+  if (forceTag === 'shapes') family = 'shapes';
 
-  const reference = randomCube(rng);
+  const reference = randomCube(rng, family);
   // Le patron à compléter est le MÊME cube dans une autre orientation : c'est ce
   // qui force à raisonner sur le pliage plutôt qu'à recopier case par case.
   let oriented = applyRotation(reference, ALL_ROTATIONS[randInt(rng, 1, 23)]);
@@ -66,63 +74,35 @@ export function generate(seed: number, level: number, forceTag?: string): Item<C
     .sort((a, b) => a - b);
   const target: (FaceState | null)[] = oriented.map((f, i) => (holes.includes(i) ? null : { ...f }));
 
-  // Une pièce utile par trou : le symbole ET son orientation exacte.
+  // Une pièce par trou, et rien de plus : Pilotest ne propose aucun leurre, ce
+  // qui rend le raisonnement par élimination légitime — toutes les pièces
+  // doivent servir. Elles sont présentées À L'ENDROIT ; c'est au candidat de
+  // les tourner d'un quart de tour jusqu'à la bonne orientation.
   const pieces: Piece[] = [];
   const solution: Record<number, number> = {};
+  const expectedRot: Record<number, number> = {};
   let nextId = 0;
   for (const hole of holes) {
-    const face = oriented[hole];
-    const mirrored = flippable && rng() < 0.5;
-    const piece: Piece = { id: nextId++, sym: face.sym, rot: face.rot, mirrored };
+    const piece: Piece = { id: nextId++, sym: oriented[hole].sym };
     pieces.push(piece);
     solution[hole] = piece.id;
-  }
-
-  // Leurres : même symbole mais mauvaise orientation, ou symbole d'une face déjà
-  // posée. Deux pièces de même (symbole, orientation) seraient interchangeables —
-  // la solution ne serait plus unique — donc on dédoublonne sur cette clé.
-  const taken = new Set(pieces.map((p) => `${p.sym}.${p.rot}`));
-  const visible = oriented.filter((_, idx) => !holes.includes(idx));
-  for (let i = 0; i < cfg.decoys; i++) {
-    let candidate: { sym: number; rot: number } | null = null;
-    for (let attempt = 0; attempt < 30 && candidate === null; attempt++) {
-      const useOrientationTrap = rng() < 0.6;
-      const c = useOrientationTrap
-        ? (() => {
-            const base = pieces[randInt(rng, 0, pieces.length - 1)];
-            return { sym: base.sym, rot: (base.rot + randInt(rng, 1, 3)) % 4 };
-          })()
-        : (() => {
-            const f = visible[randInt(rng, 0, visible.length - 1)];
-            return { sym: f.sym, rot: f.rot };
-          })();
-      if (!taken.has(`${c.sym}.${c.rot}`)) candidate = c;
-    }
-    if (candidate === null) continue;
-    taken.add(`${candidate.sym}.${candidate.rot}`);
-    pieces.push({
-      id: nextId++,
-      sym: candidate.sym,
-      rot: candidate.rot,
-      mirrored: flippable && rng() < 0.5,
-    });
+    expectedRot[hole] = oriented[hole].rot;
   }
 
   return {
-    question: { reference, target, holes, pieces: shuffle(rng, pieces), solution },
+    question: { family, reference, target, holes, pieces: shuffle(rng, pieces), solution, expectedRot },
     seed,
     level,
-    tags: [
-      `holes-${cfg.holes}`,
-      flippable ? 'flip' : 'no-flip',
-      'symbol-orientation',
-    ],
+    tags: [`holes-${cfg.holes}`, family, 'symbol-orientation'],
   };
 }
 
 /**
- * Valide : chaque trou doit recevoir une pièce dont le symbole ET l'orientation
- * correspondent à la face attendue, la pièce miroir devant avoir été retournée.
+ * Valide : chaque trou reçoit une pièce, tournée d'un certain nombre de quarts
+ * de tour, et le patron ainsi complété doit représenter le même cube que la
+ * référence. La comparaison passe par `sameCube`, qui normalise la rotation
+ * selon la symétrie du symbole — l'orientation d'un carré ou d'un cercle ne
+ * compte donc pas, celle d'une lettre si.
  */
 export function validate(item: Item<CubesQuestion>, answer: CubesAnswer): boolean {
   const { holes, pieces, target, reference } = item.question;
@@ -136,13 +116,10 @@ export function validate(item: Item<CubesQuestion>, answer: CubesAnswer): boolea
     used.add(placed.pieceId);
     const piece = pieces.find((p) => p.id === placed.pieceId);
     if (!piece) return false;
-    // Une pièce présentée en miroir n'est utilisable QUE retournée, et inversement.
-    if (piece.mirrored !== placed.flipped) return false;
-    filled[hole] = { sym: piece.sym, rot: piece.rot };
+    filled[hole] = { sym: piece.sym, rot: ((placed.rot % 4) + 4) % 4 };
   }
 
   if (filled.some((f) => f === null)) return false;
-  // Le patron complété doit représenter le même cube que la référence.
   return sameCube(filled as Cube, reference);
 }
 
@@ -151,7 +128,10 @@ export function solutionAnswer(q: CubesQuestion): CubesAnswer {
   const out: CubesAnswer = {};
   for (const hole of q.holes) {
     const piece = q.pieces.find((p) => p.id === q.solution[hole])!;
-    out[hole] = { pieceId: piece.id, flipped: piece.mirrored };
+    // L'orientation attendue est celle de la face du patron orienté ; elle a été
+    // effacée de `target` (c'est un trou), on la relit donc dans la référence
+    // via la face que la pièce doit reproduire.
+    out[hole] = { pieceId: piece.id, rot: q.expectedRot[hole] };
   }
   return out;
 }

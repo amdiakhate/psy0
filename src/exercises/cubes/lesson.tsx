@@ -1,5 +1,6 @@
 import type { Lesson } from '../../core/types';
 import { FoldPlayer } from './FoldingNet';
+import { Glyph } from './CubeSvg';
 import { NetSvg } from './CubeSvg';
 import type { Cube } from './cube-model';
 import { ALL_ROTATIONS, applyRotation, POS } from './cube-model';
@@ -55,21 +56,7 @@ function PartialNet({ highlight }: { highlight?: number[] }) {
             />
             {face && (
               <g transform={`scale(${S / 100})`}>
-                <g transform={`rotate(${-90 * face.rot} 50 50)`}>
-                  <path
-                    d={
-                      [
-                        'M50 12 L78 48 L60 48 L60 88 L40 88 L40 48 L22 48 Z',
-                        'M30 12 H50 V70 H80 V88 H30 Z',
-                        'M40 12 H48 V88 H40 Z M48 16 L84 30 L48 44 Z',
-                        'M20 12 H80 V30 H60 V88 H40 V30 H20 Z',
-                        'M32 12 H68 Q84 12 84 34 Q84 56 68 56 H48 V88 H32 Z',
-                        'M24 12 H76 V30 H44 V44 H76 V88 H24 V70 H56 V56 H24 Z',
-                      ][face.sym]
-                    }
-                    fill="var(--ink-200)"
-                  />
-                </g>
+                <Glyph sym={face.sym} rot={face.rot} />
               </g>
             )}
           </g>
@@ -206,15 +193,27 @@ export const lesson: Lesson = {
     },
     {
       scene: 'hole',
-      title: 'Étape 4 — le retournement',
+      title: 'Étape 4 — produire l’orientation',
       observe:
-        'Certaines pièces sont proposées EN MIROIR : il faut les retourner (touche R) avant de les poser. L’énoncé officiel le dit : « les faces peuvent être retournées ».',
-      why: 'Un symbole chiral (L, drapeau, P, S) ne peut pas se superposer à son miroir par simple rotation. Si une pièce ne colle qu’en miroir, c’est qu’on te l’a donnée retournée.',
-      action: 'Teste : la pièce colle-t-elle telle quelle, ou seulement après retournement ? Une seule des deux réponses est bonne.',
+        'Les pièces du bas sont proposées À L’ENDROIT, toutes dans le même sens. Un clic les fait tourner d’un quart de tour — avant de les poser, ou une fois posées.',
+      why: 'Tu ne reçois donc jamais la bonne orientation : tu la fabriques. Savoir QUEL symbole va dans le trou ne vaut rien tant que tu ne sais pas dans quel SENS — et c’est là que se joue la moitié des points de l’exercice.',
+      action:
+        'Décide le sens AVANT de cliquer, en lisant l’arête commune avec une face voisine déjà en place. Cliquer au hasard jusqu’à ce que « ça ressemble » coûte les quatre essais et ne prouve rien.',
+      pitfall:
+        'Il n’y a AUCUN retournement en miroir dans cet exercice : quatre orientations, pas huit. Si une pièce ne colle dans aucun des quatre sens, ce n’est pas elle qu’il fallait mettre là.',
+    },
+    {
+      scene: 'hole',
+      title: 'Étape 5 — les symboles sans orientation',
+      observe:
+        'Certaines questions emploient des formes — carré, octogone, cercle, trèfle, étoile — au lieu de lettres. Tournées d’un quart de tour, elles sont identiques à elles-mêmes.',
+      why: 'Sur ces questions, l’orientation ne compte tout simplement pas : seule l’identité du symbole décide. Reconnaître la famille dès le premier coup d’œil te dit combien de travail la question demande vraiment — et t’évite de chercher une orientation qui n’existe pas.',
+      pitfall:
+        'La croix fait exception : son bras du bas est plus long, elle garde donc une orientation. Ne conclus pas « c’est une forme, donc je pose n’importe comment ».',
     },
     {
       scene: 'both',
-      title: 'Étape 5 — le contrôle final',
+      title: 'Étape 6 — le contrôle final',
       observe:
         'Patron complété. Avant de valider, reprends les 3 paires d’opposées de la référence et vérifie qu’elles sont identiques dans ton patron.',
       why: 'Ce contrôle attrape toutes les erreurs de placement en 10 secondes, sans refaire le raisonnement. Une paire qui diffère = une pièce mal placée.',

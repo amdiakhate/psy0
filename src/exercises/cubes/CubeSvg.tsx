@@ -5,21 +5,63 @@ import { POS } from './cube-model';
  * Symboles orientés et chiraux (flèche, L, drapeau, T, P, S) dessinés dans une
  * boîte 100×100, pointe en haut. La chiralité rend les pièges miroir visibles.
  */
-export const SYMBOL_PATHS = [
-  'M50 12 L78 48 L60 48 L60 88 L40 88 L40 48 L22 48 Z', // flèche ↑
-  'M30 12 H50 V70 H80 V88 H30 Z', // L
-  'M40 12 H48 V88 H40 Z M48 16 L84 30 L48 44 Z', // drapeau
-  'M20 12 H80 V30 H60 V88 H40 V30 H20 Z', // T
-  'M32 12 H68 Q84 12 84 34 Q84 56 68 56 H48 V88 H32 Z', // P
-  'M24 12 H76 V30 H44 V44 H76 V88 H24 V70 H56 V56 H24 Z', // S
+/**
+ * Les symboles de Pilotest, en deux familles.
+ *
+ * LETTRES — leurs quatre orientations se distinguent toutes, donc l'orientation
+ * décide de la réponse. C'est la famille difficile.
+ *
+ * FORMES — carré, octogone, cercle, trèfle, étoile : toutes invariantes par
+ * quart de tour, leur orientation ne compte donc pas. Seule la croix latine, au
+ * bras inférieur plus long, en garde une. Ce contraste est voulu : il existe
+ * des questions où la seule difficulté est de savoir QUEL symbole va où.
+ *
+ * L'ordre de cette liste est celui de `SYMBOL_QUARTER_SYMMETRY` dans
+ * `cube-model.ts` — un test verrouille leur alignement.
+ */
+export type SymbolDef =
+  | { kind: 'letter'; char: string }
+  | { kind: 'shape'; path: string };
+
+export const SYMBOLS: SymbolDef[] = [
+  { kind: 'letter', char: 'L' },
+  { kind: 'letter', char: 'F' },
+  { kind: 'letter', char: 'G' },
+  { kind: 'letter', char: 'J' },
+  { kind: 'letter', char: 'Q' },
+  { kind: 'letter', char: 'E' },
+  { kind: 'shape', path: 'M28 28 H72 V72 H28 Z' },
+  { kind: 'shape', path: 'M37 22 H63 L78 37 V63 L63 78 H37 L22 63 V37 Z' },
+  { kind: 'shape', path: 'M23 50 a27 27 0 1 0 54 0 a27 27 0 1 0 -54 0 Z' },
+  { kind: 'shape', path: 'M36 29 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0 Z M57 50 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0 Z M36 71 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0 Z M15 50 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0 Z' },
+  { kind: 'shape', path: 'M50.0 18.0 L55.0 38.0 L72.6 27.4 L62.0 45.0 L82.0 50.0 L62.0 55.0 L72.6 72.6 L55.0 62.0 L50.0 82.0 L45.0 62.0 L27.4 72.6 L38.0 55.0 L18.0 50.0 L38.0 45.0 L27.4 27.4 L45.0 38.0 Z' },
+  { kind: 'shape', path: 'M44 18 H56 V38 H76 V50 H56 V82 H44 V50 H24 V38 H44 Z' },
 ];
+
+/** Index des symboles de chaque famille — une question n'en mélange jamais deux. */
+export const LETTER_SYMS = [0, 1, 2, 3, 4, 5];
+export const SHAPE_SYMS = [6, 7, 8, 9, 10, 11];
 
 export function Glyph({ sym, rot, color = 'var(--ink-200)' }: { sym: number; rot: number; color?: string }) {
   // rot = quarts de tour anti-horaires dans le repère (u droite, v haut) de la
   // face ⇒ rotate(-90·rot) en SVG (y vers le bas). Convention IDENTIQUE patron/cube.
+  const def = SYMBOLS[sym] ?? SYMBOLS[0];
   return (
     <g transform={`rotate(${-90 * rot} 50 50)`}>
-      <path d={SYMBOL_PATHS[sym]} fill={color} />
+      {def.kind === 'letter' ? (
+        <text
+          x={50}
+          y={53}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill={color}
+          style={{ fontSize: 64, fontWeight: 800, fontFamily: 'Helvetica, Arial, sans-serif' }}
+        >
+          {def.char}
+        </text>
+      ) : (
+        <path d={def.path} fill={color} fillRule="evenodd" />
+      )}
     </g>
   );
 }

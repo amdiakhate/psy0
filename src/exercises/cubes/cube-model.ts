@@ -76,8 +76,31 @@ export function applyRotation(cube: Cube, r: Rotation): Cube {
   return out;
 }
 
+/**
+ * Ordre de symétrie de chaque symbole sous les quarts de tour.
+ *
+ * 1 = les quatre orientations se distinguent (les lettres) ;
+ * 4 = tourner d'un quart de tour ne change RIEN à l'image (carré, octogone,
+ * cercle, trèfle, étoile à huit branches).
+ *
+ * Sans cette table, un carré posé à 0° et le même à 90° seraient comptés comme
+ * deux faces différentes alors qu'ils sont indiscernables à l'œil. Deux cubes
+ * qui SE RESSEMBLENT sont le même cube : c'est au modèle de le savoir, pas à
+ * chaque appelant.
+ */
+export const SYMBOL_QUARTER_SYMMETRY: number[] = [
+  1, 1, 1, 1, 1, 1, // lettres L F G J Q E
+  4, 4, 4, 4, 4, 1, // formes carré octogone cercle trèfle étoile · croix latine
+];
+
+/** Rotation ramenée à sa classe d'équivalence visuelle. */
+export function normalizeRot(sym: number, rot: number): number {
+  const order = SYMBOL_QUARTER_SYMMETRY[sym] ?? 1;
+  return ((rot % (4 / order)) + 4 / order) % (4 / order);
+}
+
 export function serializeCube(cube: Cube): string {
-  return cube.map((f) => `${f.sym}.${f.rot}`).join('|');
+  return cube.map((f) => `${f.sym}.${normalizeRot(f.sym, f.rot)}`).join('|');
 }
 
 /** Toutes les orientations possibles d'un cube (l'orbite sous les 24 rotations). */
@@ -92,7 +115,7 @@ export function sameCube(a: Cube, b: Cube): boolean {
 
 /** Le triplet visible en vue isométrique : (F, U, R). */
 export function visibleTriple(cube: Cube): string {
-  const f = (p: number) => `${cube[p].sym}.${cube[p].rot}`;
+  const f = (p: number) => `${cube[p].sym}.${normalizeRot(cube[p].sym, cube[p].rot)}`;
   return `${f(POS.F)}/${f(POS.U)}/${f(POS.R)}`;
 }
 

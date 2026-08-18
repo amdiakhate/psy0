@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import type { ExerciseComponentProps } from '../../core/types';
 import type { CubesAnswer, CubesQuestion, Piece } from './generator';
-import { NetSvg, SYMBOL_PATHS } from './CubeSvg';
+import { Glyph, NetSvg } from './CubeSvg';
 import { POS } from './cube-model';
 import { useKeys } from '../../hooks/useKeys';
 import { useDragDrop } from '../../hooks/useDragDrop';
@@ -17,15 +17,12 @@ const CELLS: Array<{ pos: number; col: number; row: number }> = [
 
 const S = 58;
 
-/** Une pièce : symbole orienté, éventuellement présenté en miroir. */
-function PieceSvg({ piece, flipped, size = 46 }: { piece: Piece; flipped: boolean; size?: number }) {
-  const mirrored = piece.mirrored !== flipped; // état visuel courant
+/** Une pièce : proposée à l'endroit, tournée par quarts de tour au clic. */
+function PieceSvg({ piece, rot, size = 46 }: { piece: Piece; rot: number; size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 100 100">
       <rect width="100" height="100" fill="var(--ink-800)" stroke="var(--ink-500)" />
-      <g transform={`${mirrored ? 'translate(100,0) scale(-1,1) ' : ''}rotate(${-90 * piece.rot} 50 50)`}>
-        <path d={SYMBOL_PATHS[piece.sym]} fill="var(--ink-200)" />
-      </g>
+      <Glyph sym={piece.sym} rot={rot} />
     </svg>
   );
 }
@@ -33,14 +30,30 @@ function PieceSvg({ piece, flipped, size = 46 }: { piece: Piece; flipped: boolea
 export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQuestion, CubesAnswer>) {
   const q = item.question;
   const [placed, setPlaced] = useState<CubesAnswer>({});
-  const [flipped, setFlipped] = useState<Record<number, boolean>>({});
+  // Orientation courante de chaque pièce, en quarts de tour. Toutes démarrent à
+  // l'endroit : produire l'orientation EST l'exercice.
+  const [rots, setRots] = useState<Record<number, number>>({});
   const [selected, setSelected] = useState<number | null>(null);
 
   useEffect(() => {
     setPlaced({});
-    setFlipped({});
+    setRots({});
     setSelected(null);
   }, [item.seed]);
+
+  const rotOf = (pieceId: number) => rots[pieceId] ?? 0;
+  const turn = useCallback((pieceId: number) => {
+    setRots((prev) => {
+      const next = { ...prev, [pieceId]: ((prev[pieceId] ?? 0) + 1) % 4 };
+      // Une pièce déjà posée garde sa place et tourne dedans, comme sur Pilotest
+      // (« ou une fois positionnée sur le patron »).
+      setPlaced((p) => {
+        const hole = Object.keys(p).find((h) => p[Number(h)].pieceId === pieceId);
+        return hole === undefined ? p : { ...p, [Number(hole)]: { pieceId, rot: next[pieceId] } };
+      });
+      return next;
+    });
+  }, []);
 
   const usedPieceIds = new Set(Object.values(placed).map((p) => p.pieceId));
   const available = q.pieces.filter((p) => !usedPieceIds.has(p.id));
@@ -54,12 +67,12 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
         const next = Object.fromEntries(
           Object.entries(prev).filter(([, v]) => v.pieceId !== pieceId),
         ) as typeof prev;
-        next[hole] = { pieceId, flipped: flipped[pieceId] ?? false };
+        next[hole] = { pieceId, rot: rots[pieceId] ?? 0 };
         return next;
       });
       setSelected(null);
     },
-    [flipped],
+    [rots],
   );
 
   const placeInHole = (hole: number) => {
@@ -87,10 +100,8 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
   useKeys((e) => {
     const n = Number(e.key);
     if (n >= 1 && n <= available.length) setSelected(available[n - 1].id);
-    // R : retourner la pièce sélectionnée
-    if ((e.key === 'r' || e.key === 'R') && selected !== null) {
-      setFlipped((prev) => ({ ...prev, [selected]: !prev[selected] }));
-    }
+    // R : quart de tour sur la pièce sélectionnée (équivalent clavier du clic).
+    if ((e.key === 'r' || e.key === 'R') && selected !== null) turn(selected);
     if (e.key === 'Enter' && complete) onAnswer(placed);
   });
 
@@ -120,7 +131,19 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
                   key={pos}
                   transform={`translate(${col * S + 1} ${row * S + 1})`}
                   data-drop={isHole ? String(pos) : undefined}
-                  onClick={() => (isHole ? (put ? clearHole(pos) : placeInHole(pos)) : undefined)}
+                  onClick={() => {
+                    if (!isHole) return;
+                    // Une pièce posée tourne au clic ; c'est un clic droit — ou
+                    // la touche R — qui la retire, sinon on ne pourrait plus
+                    // l'orienter une fois en place.
+                    if (put) turn(put.pieceId);
+                    else placeInHole(pos);
+                  }}
+                  onContextMenu={(e) => {
+                    if (!isHole || !put) return;
+                    e.preventDefault();
+                    clearHole(pos);
+                  }}
                   className={isHole ? 'cursor-pointer' : ''}
                 >
                   <rect
@@ -138,18 +161,8 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
                     strokeDasharray={isHole && !put ? '4 3' : undefined}
                   />
                   <g transform={`scale(${S / 100})`}>
-                    {face && (
-                      <g transform={`rotate(${-90 * face.rot} 50 50)`}>
-                        <path d={SYMBOL_PATHS[face.sym]} fill="var(--ink-200)" />
-                      </g>
-                    )}
-                    {piece && (
-                      <g
-                        transform={`${piece.mirrored !== put!.flipped ? 'translate(100,0) scale(-1,1) ' : ''}rotate(${-90 * piece.rot} 50 50)`}
-                      >
-                        <path d={SYMBOL_PATHS[piece.sym]} fill="#7dd3fc" />
-                      </g>
-                    )}
+                    {face && <Glyph sym={face.sym} rot={face.rot} />}
+                    {piece && <Glyph sym={piece.sym} rot={put!.rot} color="#7dd3fc" />}
                   </g>
                 </g>
               );
@@ -168,8 +181,12 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
             // Le clic retourne donc, il ne sélectionne pas ; c'est le glissement
             // qui pose la face. Un micro-mouvement ne doit pas passer pour un clic.
             onClick={() => {
+              // Pilotest : « Cliquez sur une pièce pour la faire tourner d'un
+              // quart de tour. » Le clic tourne donc, il ne sélectionne pas ;
+              // c'est le glissement qui pose. Un micro-mouvement pendant un
+              // glisser ne doit pas passer pour un clic.
               if (moved) return;
-              setFlipped((prev) => ({ ...prev, [piece.id]: !prev[piece.id] }));
+              turn(piece.id);
               setSelected(piece.id);
             }}
             className={`flex touch-none cursor-grab select-none flex-col items-center gap-1 rounded-lg border-2 p-1.5 active:cursor-grabbing ${
@@ -180,10 +197,10 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
                   : 'border-zinc-700 hover:border-zinc-500'
             }`}
           >
-            <PieceSvg piece={piece} flipped={flipped[piece.id] ?? false} />
+            <PieceSvg piece={piece} rot={rotOf(piece.id)} />
             <span className="text-[10px] text-zinc-500">
               {i + 1}
-              {flipped[piece.id] ? ' ⇄' : ''}
+              {rotOf(piece.id) > 0 ? ` ↻${rotOf(piece.id)}` : ''}
             </span>
           </button>
         ))}
@@ -200,9 +217,10 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
           Valider · Entrée ⏎
         </button>
         <p className="text-xs text-zinc-500">
-          <span className="text-zinc-400">Glisse</span> une face sur un trou du patron ·{' '}
-          <span className="text-zinc-400">clique</span> une face pour la retourner · au clavier :
-          touches 1-{available.length} puis <kbd className="rounded bg-zinc-800 px-1">R</kbd>
+          <span className="text-zinc-400">Glisse</span> une face sur un trou ·{' '}
+          <span className="text-zinc-400">clique</span> une face pour la tourner d'un quart de tour
+          (posée ou non) · clic droit pour la retirer · au clavier : touches 1-{available.length}
+          puis <kbd className="rounded bg-zinc-800 px-1">R</kbd>
         </p>
       </div>
     </div>
