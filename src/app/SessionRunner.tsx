@@ -445,7 +445,8 @@ function BlockRunner({
         level: e.level,
         seed: e.seed,
         tags: e.tags,
-        rtMs: e.rtMs,
+        // performance.now() rend des décimales : la colonne rt_ms est entière.
+        rtMs: Math.round(e.rtMs),
         correct: e.correct,
         given: e.given,
         expected: e.expected,

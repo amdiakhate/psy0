@@ -11,6 +11,7 @@ import {
   verifyAccessCode,
   verifyToken,
 } from './auth.ts';
+import { toInt, toIso, usable } from './coerce.ts';
 
 /**
  * API de synchronisation PSY0 Trainer + service du front statique.
@@ -147,10 +148,15 @@ interface IncomingEvent {
 
 app.post('/api/events', async (c) => {
   const body = await c.req.json<{ events?: IncomingEvent[] }>().catch(() => ({}) as Record<string, never>);
-  const events = Array.isArray(body.events) ? body.events : null;
-  if (!events) return c.json({ error: 'Corps invalide : « events » doit être un tableau.' }, 400);
-  if (events.length === 0) return c.json({ inserted: 0, received: 0 });
-  if (events.length > 5000) return c.json({ error: 'Lot trop grand (5000 maximum).' }, 413);
+  const received = Array.isArray(body.events) ? body.events : null;
+  if (!received) return c.json({ error: 'Corps invalide : « events » doit être un tableau.' }, 400);
+  if (received.length === 0) return c.json({ inserted: 0, received: 0 });
+  if (received.length > 5000) return c.json({ error: 'Lot trop grand (5000 maximum).' }, 413);
+
+  // Un event inexploitable est ÉCARTÉ, pas propagé : perdre une ligne vaut
+  // mieux que perdre le lot, donc toute une séance d'entraînement.
+  const events = received.filter(usable);
+  if (events.length === 0) return c.json({ inserted: 0, received: received.length, skipped: received.length });
 
   // Insertion en masse, idempotente : l'index unique (session_id, pos_in_session)
   // absorbe les renvois. Sans ça, chaque synchronisation dupliquerait l'historique.
@@ -158,19 +164,19 @@ app.post('/api/events', async (c) => {
   const tuples = events.map((e, i) => {
     const b = i * 13;
     values.push(
-      new Date(e.ts).toISOString(),
+      toIso(e.ts),
       e.sessionId,
-      e.mode,
-      e.exercise,
-      e.level,
-      e.seed,
-      e.tags ?? [],
-      e.rtMs,
-      e.correct,
+      String(e.mode ?? ''),
+      String(e.exercise ?? ''),
+      toInt(e.level, 1),
+      toInt(e.seed),
+      Array.isArray(e.tags) ? e.tags.map(String) : [],
+      toInt(e.rtMs),
+      Boolean(e.correct),
       e.given ?? null,
       e.expected ?? null,
-      e.posInSession,
-      e.minuteInSession,
+      toInt(e.posInSession),
+      toInt(e.minuteInSession),
     );
     return `($${b + 1},$${b + 2},$${b + 3},$${b + 4},$${b + 5},$${b + 6},$${b + 7},$${b + 8},$${b + 9},$${b + 10},$${b + 11},$${b + 12},$${b + 13})`;
   });
@@ -182,7 +188,7 @@ app.post('/api/events', async (c) => {
      ON CONFLICT (session_id, pos_in_session) DO NOTHING`,
     values,
   );
-  return c.json({ inserted: rowCount ?? 0, received: events.length });
+  return c.json({ inserted: rowCount ?? 0, received: received.length, skipped: received.length - events.length });
 });
 
 /** Vue serveur de l'historique — utile pour vérifier une sauvegarde sans ouvrir l'app. */
