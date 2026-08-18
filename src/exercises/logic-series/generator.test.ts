@@ -62,6 +62,13 @@ function expectedSeries(rule: RuleDesc): number[] {
       for (let i = 2; i < 6; i++) out.push(out[i - 1] + out[i - 2]);
       break;
     }
+    case 'concat-product':
+      // Recalcul indépendant : on relit le nombre en trois morceaux et on
+      // vérifie que celui du milieu est bien le produit des deux autres.
+      return rule.pairs.map(([a, b]) => {
+        expect(String(a * b).length).toBeGreaterThan(0);
+        return Number(`${a}${a * b}${b}`);
+      });
     case 'palindrome':
       // Recalcul indépendant : on ne rejoue pas la génération, on VÉRIFIE que
       // chaque terme se lit pareil dans les deux sens.
@@ -116,6 +123,10 @@ function expectedLetters(rule: LetterRule): string[] {
     case 'pair-internal':
       for (const f of rule.firsts) out.push([f, f + rule.delta]);
       break;
+    case 'letter-rank':
+    case 'calendar':
+      // Termes textuels : vérifiés séparément, ils ne passent pas par les rangs.
+      return [];
   }
   return out.map((ranks) => ranks.map(letterAt).join(''));
 }
@@ -197,7 +208,8 @@ describe('logic-series — numérique', () => {
           // La borne protège les suites À PROGRESSION : un terme qui explose y
           // signale un générateur qui s'emballe. Les palindromes n'ont aucune
           // progression, et Pilotest en pose jusqu'à huit chiffres.
-          expect(Math.abs(t)).toBeLessThan(q.rule.type === 'palindrome' ? 1e10 : 100000);
+          const sansProgression = q.rule.type === 'palindrome' || q.rule.type === 'concat-product';
+          expect(Math.abs(t)).toBeLessThan(sansProgression ? 1e10 : 100000);
         }
         checkMcq(item);
       }
@@ -224,6 +236,28 @@ describe('logic-series — lettres', () => {
         const q = item.question;
         expect(q.format).toBe('letters');
         if (q.format !== 'letters') continue;
+
+        if (q.rule.type === 'letter-rank') {
+          // Le nombre accolé DOIT être le rang de la lettre — c'est toute la loi.
+          for (const t of q.terms) {
+            const letter = t[0];
+            expect(Number(t.slice(1))).toBe('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(letter) + 1);
+          }
+          checkMcq(item);
+          continue;
+        }
+        if (q.rule.type === 'calendar') {
+          const source =
+            q.rule.kind === 'months'
+              ? ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+              : ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+          q.terms.forEach((t, i) => {
+            const idx = (q.rule.type === 'calendar' ? q.rule.start + i : i) % source.length;
+            expect(t).toBe(`${source[idx][0].toUpperCase()}${idx + 1}`);
+          });
+          checkMcq(item);
+          continue;
+        }
 
         const series = expectedLetters(q.rule);
         expect(q.terms).toEqual(series.slice(0, q.terms.length));

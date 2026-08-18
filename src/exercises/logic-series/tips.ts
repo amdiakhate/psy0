@@ -2,6 +2,8 @@ import type { Tips } from '../../core/types';
 
 export const tips: Tips = {
   method: [
+    'La question n’est pas « quelle est la loi ? » mais « OÙ est-elle ? ». Cinq endroits possibles, balayés dans cet ordre : entre les termes (écarts) → une position sur deux → DANS le terme → par colonne → une connaissance (mois, jours). Cinq secondes de balayage, et tu ne restes plus bloqué à chercher au seul endroit que tu connais.',
+    'Le cinquième cas ne se calcule pas : F2 - M3 - A4 - M5, ce sont Février, Mars, Avril, Mai. Si les initiales évoquent quelque chose de familier, arrête tout calcul — c’est de la culture, pas de l’arithmétique.',
     'AVANT tout : demande-toi OÙ vit la loi. Entre les termes (une progression) ou DANS le terme (une relation interne) ? La seconde ne vient jamais à l’esprit, et c’est elle qui rend certaines séries « impossibles » — RK-BU-OH-ZS n’a aucun pas entre ses termes, mais chaque groupe cache un −7.',
     'Deux signes d’alerte disent « la loi est dans le terme » : les termes n’ont pas tous la même longueur (54845, 43722734, 6556 → cherche les palindromes), ou les premières lettres partent dans tous les sens sans le moindre pas régulier.',
     'Groupes de deux lettres : ce sont DEUX séries simples posées côte à côte. Couvre une colonne avec le doigt, résous l’autre, puis inverse. Ensemble elles paraissent impénétrables, séparées ce sont deux exercices de débutant.',

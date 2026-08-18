@@ -111,6 +111,18 @@ function LogicScene({ scene }: { scene: string; stepIndex: number }) {
           notes={['26·20', '7·11', '14·2', '21·19', '+7 · −9']}
         />
       );
+    case 'where':
+      return (
+        <div className="max-w-2xl space-y-2 text-sm text-zinc-200">
+          <p className="text-xs uppercase tracking-widest text-zinc-500">Où une loi peut se cacher</p>
+          <p><span className="font-semibold text-sky-300">1. Entre les termes</span> — un pas, un rapport, une somme des deux précédents. C’est le cas courant : passe aux écarts.</p>
+          <p><span className="font-semibold text-sky-300">2. Une position sur deux</span> — deux suites entrelacées. Les écarts globaux paraissent incohérents.</p>
+          <p><span className="font-semibold text-amber-300">3. Dans le terme</span> — la relation est interne. Signes : termes de longueurs différentes, ou premières lettres sans progression.</p>
+          <p className="pl-4 text-zinc-400">RK-BU-OH → 2ᵉ = 1ʳᵉ − 7 · 54845 → palindrome · U21 → nombre = rang · 67212 → 6/72/12 car 6×12=72</p>
+          <p><span className="font-semibold text-green-300">4. Par colonne</span> — groupes de deux, une loi par colonne. ZT-GK-NB : +7 et −9.</p>
+          <p><span className="font-semibold text-red-300">5. Hors des maths</span> — une connaissance. F2-M3-A4-M5 : les mois. Aucun calcul n’y mène.</p>
+        </div>
+      );
     case 'palindrome':
       return (
         <Row
@@ -199,6 +211,17 @@ export const lesson: Lesson = {
       action: '21 + 5 = 26 → Z. (L’exemple officiel Pilotest est identique, avec un pas de 7 : N → U.)',
       pitfall:
         'L’alphabet boucle : 27 n’existe pas, c’est A. Une série qui « dépasse » Z n’est pas cassée, elle repart au début.',
+    },
+    {
+      scene: 'where',
+      title: 'Les cinq endroits où une loi peut se cacher',
+      observe:
+        'Avant toute chose, la question n’est pas « quelle est la loi ? » mais « OÙ est-elle ? ». Il n’y a que cinq réponses possibles, et les passer en revue coûte cinq secondes.',
+      why: 'Une série paraît impossible quand on cherche au seul endroit qu’on connaît. Les cas 3, 4 et 5 ne viennent jamais à l’esprit — pourtant ils sont fréquents, et ce sont les plus faciles une fois qu’on regarde au bon endroit. Le sentiment de blocage n’est presque jamais un manque de logique : c’est une recherche au mauvais endroit.',
+      action:
+        'Ordre de balayage : écarts → une position sur deux → dans le terme → par colonne → connaissance. Dès qu’un test répond, tu t’arrêtes.',
+      pitfall:
+        'Le cas 5 ne se calcule pas : « F2 - M3 - A4 - M5 » ce sont Février, Mars, Avril, Mai. Si les initiales évoquent quelque chose de familier — mois, jours, planètes, chiffres en toutes lettres — arrête tout calcul, c’est de la culture, pas de l’arithmétique.',
     },
     {
       scene: 'pair-columns',

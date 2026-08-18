@@ -27,7 +27,8 @@ export type RuleDesc =
   | { type: 'cubes'; n0: number; c: number }
   | { type: 'fibo'; t1: number; t2: number }
   | { type: 'mul-add'; start: number; k: number; m: number }
-  | { type: 'palindrome'; terms: number[] };
+  | { type: 'palindrome'; terms: number[] }
+  | { type: 'concat-product'; pairs: Array<[number, number]> };
 
 /** Les 6 termes de la suite, construits DEPUIS la règle. */
 export function seriesFromRule(rule: RuleDesc): number[] {
@@ -71,6 +72,10 @@ export function seriesFromRule(rule: RuleDesc): number[] {
     case 'palindrome':
       // Aucune progression : chaque terme est un palindrome, un point c'est tout.
       return rule.terms;
+    case 'concat-product':
+      // a, puis a×b, puis b, collés bout à bout. Là encore aucune progression :
+      // la loi se lit à l'intérieur du nombre.
+      return rule.pairs.map(([a, b]) => Number(`${a}${a * b}${b}`));
     case 'mul-add': {
       const out = [rule.start];
       for (let i = 0; i < 5; i++) {
@@ -151,6 +156,14 @@ function makeRule(rng: Rng, type: NumericRuleType): RuleDesc {
       });
       return { type, terms };
     }
+    case 'concat-product': {
+      const pairs = Array.from({ length: 6 }, () => {
+        const a = randInt(rng, 2, 9);
+        const b = randInt(rng, 3, 20);
+        return [a, b] as [number, number];
+      });
+      return { type, pairs };
+    }
     case 'mul-add':
       return { type, start: randInt(rng, 2, 6), k: randInt(rng, 2, 3), m: randInt(rng, 3, 12) };
   }
@@ -187,6 +200,33 @@ function palindromeDistractors(rng: Rng, shown: number[], answer: number): numbe
     if (seen.has(candidate) || isPal(candidate)) continue;
     seen.add(candidate);
     out.push(candidate);
+  }
+  return out;
+}
+
+/**
+ * Distracteurs d'une série « a / a×b / b » : des nombres bâtis SUR LE MÊME
+ * MOULE mais dont le produit est faux. Le leurre doit être structurellement
+ * crédible — sinon il suffirait de compter les chiffres.
+ */
+function concatProductDistractors(rng: Rng, shown: number[], answer: number): number[] {
+  const out: number[] = [];
+  const seen = new Set([answer, ...shown]);
+  for (let guard = 0; guard < 300 && out.length < 3; guard++) {
+    const a = randInt(rng, 2, 9);
+    const b = randInt(rng, 3, 20);
+    // Le produit affiché est FAUX : c'est exactement ce que le candidat doit voir.
+    const faux = a * b + pick(rng, [-3, -2, -1, 1, 2, 3, 10, -10]);
+    if (faux <= 0) continue;
+    const candidate = Number(`${a}${faux}${b}`);
+    if (seen.has(candidate)) continue;
+    seen.add(candidate);
+    out.push(candidate);
+  }
+  for (let k = 1; out.length < 3; k++) {
+    if (seen.has(answer + k)) continue;
+    seen.add(answer + k);
+    out.push(answer + k);
   }
   return out;
 }
@@ -235,7 +275,9 @@ export type LetterRule =
   | { type: 'letter-alternate'; start: number; a: number; b: number }
   | { type: 'letter-interleaved'; startA: number; dA: number; startB: number; dB: number }
   | { type: 'pair-columns'; startA: number; dA: number; startB: number; dB: number }
-  | { type: 'pair-internal'; firsts: number[]; delta: number };
+  | { type: 'pair-internal'; firsts: number[]; delta: number }
+  | { type: 'letter-rank'; letters: number[] }
+  | { type: 'calendar'; kind: 'months' | 'days'; start: number };
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -273,6 +315,11 @@ export function lettersFromRule(rule: LetterRule): number[][] {
       // et les premières ne progressent pas. Chercher un pas entre les termes
       // ne mène nulle part — c'est tout l'intérêt de cette famille.
       return rule.firsts.map((f) => [f, f + rule.delta]);
+    case 'letter-rank':
+    case 'calendar':
+      // Ces deux familles produisent directement du TEXTE (« U21 », « M3 ») :
+      // elles ne passent pas par des rangs alphabétiques.
+      return [];
   }
 }
 
@@ -284,7 +331,7 @@ export function termToText(ranks: number[]): string {
 function makeLetterRule(rng: Rng, type: LetterRuleType): LetterRule {
   switch (type) {
     case 'letter-step': {
-      const step = pick(rng, [2, 3, 4, 5, 6, 7, 8, -2, -3, -4, -5]);
+      const step = pick(rng, [2, 3, 4, 5, 6, 7, 8, -2, -3, -4, -5, -6, -7, -8]);
       return { type, start: randInt(rng, 0, 25), step };
     }
     case 'letter-alternate': {
@@ -309,9 +356,18 @@ function makeLetterRule(rng: Rng, type: LetterRuleType): LetterRule {
       // Les deux pas peuvent être ÉGAUX — « TU - QR - NO - KL », les deux
       // lettres reculent de 3 ensemble. C'est le cas facile de la famille, et
       // Pilotest le pose : l'interdire aurait retiré une variante réelle.
-      const dA = pick(rng, [2, 3, 4, 5, 6, 7, 8, -3, -4, -5]);
+      const dA = pick(rng, [2, 3, 4, 5, 6, 7, 8, -3, -4, -5, -7, -9]);
       const dB = pick(rng, [-3, -5, -7, -9, 3, 5, 9, 11, dA, dA]);
       return { type, startA: randInt(rng, 0, 25), dA, startB: randInt(rng, 0, 25), dB };
+    }
+    case 'letter-rank': {
+      // Lettres tirées au hasard : la seule loi est que le nombre accolé EST le
+      // rang de la lettre. Aucun pas ne relie les termes.
+      return { type, letters: Array.from({ length: 6 }, () => randInt(rng, 0, 25)) };
+    }
+    case 'calendar': {
+      const kind = pick(rng, ['months', 'days'] as const);
+      return { type, kind, start: randInt(rng, 0, kind === 'months' ? 5 : 0) };
     }
     case 'pair-internal': {
       const delta = pick(rng, [-5, -7, -9, -11, 4, 6, 8, 10]);
@@ -490,15 +546,73 @@ function generateNumeric(rng: Rng, level: number, forcedRule?: NumericRuleType):
   const distractors =
     rule.type === 'palindrome'
       ? palindromeDistractors(rng, terms, answer)
-      : numericDistractors(rng, terms, answer);
+      : rule.type === 'concat-product'
+        ? concatProductDistractors(rng, terms, answer)
+        : numericDistractors(rng, terms, answer);
   const options = shuffle(rng, [answer, ...distractors]);
   return { format: 'numeric', terms, options, correctIndex: options.indexOf(answer), rule };
+}
+
+const MONTHS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+
+/**
+ * Les familles dont les termes sont du TEXTE — « U21 », « M3 » — et non des
+ * rangs alphabétiques. Elles court-circuitent `lettersFromRule`, qui ne sait
+ * produire que des lettres.
+ */
+function textTerms(rule: LetterRule): string[] {
+  if (rule.type === 'letter-rank') {
+    return rule.letters.map((l) => `${toLetter(l)}${(((l % 26) + 26) % 26) + 1}`);
+  }
+  if (rule.type === 'calendar') {
+    const source = rule.kind === 'months' ? MONTHS : DAYS;
+    return Array.from({ length: 6 }, (_, i) => {
+      const idx = (rule.start + i) % source.length;
+      return `${source[idx][0].toUpperCase()}${idx + 1}`;
+    });
+  }
+  return [];
+}
+
+/** Leurres textuels : la même forme, mais la relation interne est fausse. */
+function textDistractors(rng: Rng, answer: string): string[] {
+  const out: string[] = [];
+  const seen = new Set([answer]);
+  for (let guard = 0; guard < 300 && out.length < 3; guard++) {
+    const letter = toLetter(randInt(rng, 0, 25));
+    const trueRank = ALPHABET.indexOf(letter) + 1;
+    // Le nombre est DÉCALÉ du vrai rang : le leurre a la bonne allure et la
+    // mauvaise relation, ce qui est exactement l'erreur à repérer.
+    const shown = trueRank + pick(rng, [-4, -3, -2, -1, 1, 2, 3, 4]);
+    if (shown < 1 || shown > 26) continue;
+    const candidate = `${letter}${shown}`;
+    if (seen.has(candidate)) continue;
+    seen.add(candidate);
+    out.push(candidate);
+  }
+  for (let k = 1; out.length < 3; k++) {
+    const candidate = `${toLetter(k)}${k + 3}`;
+    if (seen.has(candidate)) continue;
+    seen.add(candidate);
+    out.push(candidate);
+  }
+  return out;
 }
 
 function generateLetters(rng: Rng, level: number, forcedRule?: LetterRuleType): LogicQuestion {
   const pool = LETTER_RULES[Math.min(level, LETTER_RULES.length) - 1];
   const type = forcedRule ?? pick(rng, pool);
   const rule = makeLetterRule(rng, type);
+
+  if (rule.type === 'letter-rank' || rule.type === 'calendar') {
+    const all = textTerms(rule);
+    const shownCount = pick(rng, SERIES_LENGTHS);
+    const terms = all.slice(0, shownCount);
+    const answer = all[shownCount];
+    const options = shuffle(rng, [answer, ...textDistractors(rng, answer)]);
+    return { format: 'letters', terms, options, correctIndex: options.indexOf(answer), rule };
+  }
   const all = lettersFromRule(rule);
   const shownCount = pick(rng, SERIES_LENGTHS);
   const terms = all.slice(0, shownCount).map(termToText);

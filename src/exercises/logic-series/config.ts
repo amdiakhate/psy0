@@ -10,7 +10,9 @@ export type NumericRuleType =
   | 'fibo'
   | 'mul-add'
   /** Chaque terme est un PALINDROME. Aucune loi entre les termes — elle est dans le terme. */
-  | 'palindrome';
+  | 'palindrome'
+  /** « 67212 = 6/72/12 car 6×12 = 72 » : le terme est a, a×b et b collés. Loi interne. */
+  | 'concat-product';
 
 export const ALL_NUMERIC_RULES: NumericRuleType[] = [
   'arith',
@@ -24,6 +26,7 @@ export const ALL_NUMERIC_RULES: NumericRuleType[] = [
   'fibo',
   'mul-add',
   'palindrome',
+  'concat-product',
 ];
 
 /** Pool de règles numériques par niveau. */
@@ -32,7 +35,7 @@ export const NUMERIC_RULES: NumericRuleType[][] = [
   ['geo', 'arith-neg'],
   ['second-order', 'alternate'],
   ['two-rules', 'second-order', 'alternate', 'palindrome'],
-  ['squares', 'cubes', 'fibo', 'mul-add', 'two-rules', 'palindrome'],
+  ['squares', 'cubes', 'fibo', 'mul-add', 'palindrome', 'concat-product'],
 ];
 
 export type LetterRuleType =
@@ -46,7 +49,11 @@ export type LetterRuleType =
    * de la première, et les premières ne suivent aucune progression.
    * « RK - BU - OH - ZS - FY » — chercher un pas entre les termes n'y mène nulle part.
    */
-  | 'pair-internal';
+  | 'pair-internal'
+  /** « U21 - C3 - S19 - A1 » : une lettre suivie de SON rang. Loi interne, lettres arbitraires. */
+  | 'letter-rank'
+  /** « F2 - M3 - A4 - M5 » : initiale du mois et son numéro. La loi est une connaissance, pas un calcul. */
+  | 'calendar';
 
 export const ALL_LETTER_RULES: LetterRuleType[] = [
   'letter-step',
@@ -54,6 +61,8 @@ export const ALL_LETTER_RULES: LetterRuleType[] = [
   'letter-interleaved',
   'pair-columns',
   'pair-internal',
+  'letter-rank',
+  'calendar',
 ];
 
 /**
@@ -63,9 +72,9 @@ export const ALL_LETTER_RULES: LetterRuleType[] = [
 export const LETTER_RULES: LetterRuleType[][] = [
   ['letter-step'],
   ['letter-step', 'pair-columns'],
-  ['letter-step', 'letter-alternate', 'pair-columns'],
-  ['letter-alternate', 'letter-interleaved', 'pair-columns', 'pair-internal'],
-  ['letter-alternate', 'letter-interleaved', 'pair-columns', 'pair-internal'],
+  ['letter-step', 'letter-alternate', 'pair-columns', 'calendar'],
+  ['letter-alternate', 'letter-interleaved', 'pair-columns', 'pair-internal', 'calendar'],
+  ['letter-alternate', 'letter-interleaved', 'pair-columns', 'pair-internal', 'letter-rank', 'calendar'],
 ];
 
 /** Nombre d'attributs qui varient dans la série figurale, par niveau. */
