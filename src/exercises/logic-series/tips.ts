@@ -3,6 +3,10 @@ import type { Tips } from '../../core/types';
 export const tips: Tips = {
   method: [
     'La question n’est pas « quelle est la loi ? » mais « OÙ est-elle ? ». Cinq endroits possibles, balayés dans cet ordre : entre les termes (écarts) → une position sur deux → DANS le terme → par colonne → une connaissance (mois, jours). Cinq secondes de balayage, et tu ne restes plus bloqué à chercher au seul endroit que tu connais.',
+    'TABLE DE RECONNAISSANCE, à appliquer sur ce que tu VOIS avant de calculer quoi que ce soit. Nombres de longueurs inégales → palindrome. Nombre anormalement long → découpe a / a×b / b. Lettre collée à un nombre → le nombre est le rang de la lettre. Deux lettres collées → une loi par colonne, ou la seconde déduite de la première. Des mots → longueur, initiale, finale. Un énoncé en prose → les lettres du prénom.',
+    'Rangs à savoir SANS COMPTER : A=1, E=5, J=10, O=15, T=20, Z=26. Les autres se déduisent du jalon le plus proche — R c’est O+3 donc 18. Compter sur ses doigts depuis A coûte cinq secondes par lettre, sur trente pour toute la série.',
+    'L’alphabet BOUCLE, et c’est là que se perdent la plupart des points sur les lettres : au-delà de Z on retranche 26, en dessous de A on ajoute 26. U(21) + 7 = 28 → 28 − 26 = 2 → B. Un pas qui « dépasse » n’est jamais un pas impossible.',
+    '« Contralphabétique » veut simplement dire à reculons. Ne cherche pas une subtilité : c’est un pas négatif, et rien d’autre.',
     'Le cinquième cas ne se calcule pas : F2 - M3 - A4 - M5, ce sont Février, Mars, Avril, Mai. Si les initiales évoquent quelque chose de familier, arrête tout calcul — c’est de la culture, pas de l’arithmétique.',
     'AVANT tout : demande-toi OÙ vit la loi. Entre les termes (une progression) ou DANS le terme (une relation interne) ? La seconde ne vient jamais à l’esprit, et c’est elle qui rend certaines séries « impossibles » — RK-BU-OH-ZS n’a aucun pas entre ses termes, mais chaque groupe cache un −7.',
     'Deux signes d’alerte disent « la loi est dans le terme » : les termes n’ont pas tous la même longueur (54845, 43722734, 6556 → cherche les palindromes), ou les premières lettres partent dans tous les sens sans le moindre pas régulier.',
@@ -16,6 +20,8 @@ export const tips: Tips = {
     'Contrôle final : ne cherche pas l’option « qui ressemble », calcule ta réponse PUIS cherche-la dans la liste. Si elle n’y est pas, ta règle est fausse — et c’est une information précieuse, pas une raison de prendre la plus proche.',
   ],
   traps: [
+    'Croire que la relation est la même qu’à la question précédente. Sur les énigmes de prénoms notamment, elle change : tantôt les rangs collés, tantôt leur somme. Vérifie-la sur les TROIS exemples donnés avant de répondre — une seule concordance peut être un hasard.',
+    'Chercher un rapport de SENS entre des mots. Il n’y en a jamais : la propriété est formelle. « soulier » n’est pas faux parce qu’il n’a rien à voir avec « lit », il est faux parce qu’il n’a pas trois lettres.',
     'Répondre au hasard quand le temps presse. Avec −1/3, trois mauvaises réponses annulent une bonne. Passer coûte 0 : sur une série que tu ne comprends pas, l’abstention est le choix mathématiquement correct. Ne réponds que si tu as éliminé au moins deux options pour une VRAIE raison.',
     'Conclure sur les deux premiers termes : plusieurs règles coïncident souvent sur un début de suite (1, 2, 4… peut être ×2 comme +1, +2, +3). Ta règle doit expliquer tous les termes affichés.',
     'Rater l’entrelacement en s’acharnant sur les différences globales : si les écarts n’ont aucun motif après 10 s, le test « une position sur deux » est presque toujours la réponse — en nombres COMME en lettres.',

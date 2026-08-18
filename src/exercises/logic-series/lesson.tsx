@@ -125,6 +125,19 @@ function LogicScene({ scene }: { scene: string; stepIndex: number }) {
           </div>
         </div>
       );
+    case 'internal-faces':
+      return (
+        <div className="max-w-2xl space-y-2 font-mono text-sm text-zinc-200">
+          <p className="font-sans text-xs uppercase tracking-widest text-zinc-500">
+            Les quatre visages de la loi interne
+          </p>
+          <p><span className="text-amber-300">RK - BU - OH</span> → 2ᵉ lettre = 1ʳᵉ − 7 <span className="text-zinc-500">· deux lettres collées</span></p>
+          <p><span className="text-amber-300">U21 - C3 - S19</span> → le nombre EST le rang de la lettre <span className="text-zinc-500">· lettre + nombre</span></p>
+          <p><span className="text-amber-300">54845 - 6556</span> → se lit pareil dans les deux sens <span className="text-zinc-500">· longueurs inégales</span></p>
+          <p><span className="text-amber-300">67212</span> → 6 / 72 / 12 car 6×12 = 72 <span className="text-zinc-500">· long, sans progression</span></p>
+          <p className="pt-2 font-sans text-zinc-400">Un seul réflexe pour les quatre : arrête de comparer les termes, découpe-en UN.</p>
+        </div>
+      );
     case 'words':
       return (
         <Row terms={['lit', 'cou', 'été', 'gaz', '??']} notes={['3', '3', '3', '3', '3']} highlight={[0, 1, 2, 3, 4]} />
@@ -220,6 +233,18 @@ export const lesson: Lesson = {
         'Les distracteurs sont fabriqués à partir de tes erreurs probables : 44 (recopier le dernier terme) et 35 (appliquer −9 au lieu de +6). Si ton résultat tombe pile sur l’un d’eux, recompte.',
     },
     {
+      scene: 'interleaved',
+      title: 'Quand les écarts ne disent rien : une position sur deux',
+      observe:
+        '21, 18, 29, 23 — les écarts (−3, +11, −6) n’ont aucun motif. En lisant une position sur deux : 21, 29 (suite A, +8) et 18, 23 (suite B, +5).',
+      why:
+        'Deux suites entrelacées produisent des écarts globaux incohérents : c’est leur signature. Ce test coûte 3 secondes et débloque la moitié des séries qui « résistent » — en nombres comme en lettres.',
+      action:
+        'La case manquante est en 5e position, donc dans la suite A : 21, 29, puis 37. Réponse : 37.',
+      pitfall:
+        'Sur une série de 4 items, chaque sous-suite n’a que deux termes : un seul écart. Sois prudent — c’est le cas où une deuxième lecture est indispensable.',
+    },
+    {
       scene: 'letters-rank',
       title: 'Lettres — des nombres déguisés',
       observe:
@@ -242,17 +267,6 @@ export const lesson: Lesson = {
         'Le cas 5 ne se calcule pas : « F2 - M3 - A4 - M5 » ce sont Février, Mars, Avril, Mai. Si les initiales évoquent quelque chose de familier — mois, jours, planètes, chiffres en toutes lettres — arrête tout calcul, c’est de la culture, pas de l’arithmétique.',
     },
     {
-      scene: 'pair-columns',
-      title: 'Groupes de deux lettres — une loi par colonne',
-      observe:
-        'ZT - GK - NB - US - ?? Chaque terme porte DEUX lettres. Lues en colonnes : Z G N U d’un côté, T K B S de l’autre. Première colonne : 26, 7, 14, 21 — donc +7 à chaque fois, en repassant par A après Z. Deuxième colonne : 20, 11, 2, 19 — donc −9, en repassant par Z après A.',
-      why: 'Un groupe de deux lettres n’est pas un objet plus compliqué : ce sont DEUX séries simples posées côte à côte. Traitées ensemble elles paraissent impénétrables, traitées séparément ce sont deux tests de niveau débutant. C’est le même principe que les figures — un attribut à la fois.',
-      action:
-        'Ne lis jamais un groupe comme un bloc. Couvre la seconde colonne avec le doigt, résous la première, puis l’inverse. La réponse ici est BJ : 21 + 7 = 28 → B, et 19 − 9 = 10 → J.',
-      pitfall:
-        'L’alphabet BOUCLE, et c’est là que tout se joue : après Z on revient à A, après A on revient à Z. U + 7 ne « dépasse » pas, il donne B. Un pas qui semble impossible est presque toujours un passage par la boucle.',
-    },
-    {
       scene: 'pair-internal',
       title: 'Le cas qui paraît impossible : la loi est DANS le terme',
       observe:
@@ -262,6 +276,28 @@ export const lesson: Lesson = {
         'Sur tout terme composé, pose-toi les DEUX questions, dans cet ordre : « les colonnes progressent-elles ? » puis « les lettres d’un même groupe sont-elles liées entre elles ? ». Ici seule la seconde répond. Réponse : YR — Y − 7 = R.',
       pitfall:
         'Le signe qui doit alerter : les premières lettres partent dans tous les sens, sans le moindre pas régulier. Ce n’est pas une série ratée ni un piège — c’est l’indice que la loi est ailleurs. Cherche-la dans le terme, pas entre les termes.',
+    },
+    {
+      scene: 'internal-faces',
+      title: 'Reconnaître une loi interne en trois secondes',
+      observe:
+        'Quatre habits, une seule idée. Deux lettres collées → la seconde se déduit de la première. Une lettre suivie d’un nombre → le nombre est son rang (U = 21). Des nombres de longueurs inégales → palindromes. Un nombre long sans progression → découpe-le en trois : a, a×b, b.',
+      why: 'Ces quatre familles se confondent tant qu’on cherche une progression, et deviennent immédiates dès qu’on regarde à l’intérieur. Ce qui les rassemble n’est pas leur mécanique mais le GESTE : cesser de comparer les termes entre eux, et en décortiquer un seul.',
+      action:
+        'Le déclencheur est visuel, pas mathématique : lettre collée à un nombre → teste le rang. Nombres de longueurs différentes → teste le palindrome. Nombre anormalement long → tente le découpage a / a×b / b.',
+      pitfall:
+        'Les rangs qu’il faut savoir sans compter : A=1, E=5, J=10, O=15, T=20, Z=26. Sans ces repères, chaque conversion coûte cinq secondes de comptage sur les doigts — et tu n’en as que trente pour toute la série.',
+    },
+    {
+      scene: 'pair-columns',
+      title: 'Groupes de deux lettres — une loi par colonne',
+      observe:
+        'ZT - GK - NB - US - ?? Chaque terme porte DEUX lettres. Lues en colonnes : Z G N U d’un côté, T K B S de l’autre. Première colonne : 26, 7, 14, 21 — donc +7 à chaque fois, en repassant par A après Z. Deuxième colonne : 20, 11, 2, 19 — donc −9, en repassant par Z après A.',
+      why: 'Un groupe de deux lettres n’est pas un objet plus compliqué : ce sont DEUX séries simples posées côte à côte. Traitées ensemble elles paraissent impénétrables, traitées séparément ce sont deux tests de niveau débutant. C’est le même principe que les figures — un attribut à la fois.',
+      action:
+        'Ne lis jamais un groupe comme un bloc. Couvre la seconde colonne avec le doigt, résous la première, puis l’inverse. La réponse ici est BJ : 21 + 7 = 28 → B, et 19 − 9 = 10 → J.',
+      pitfall:
+        'L’alphabet BOUCLE, et c’est là que tout se joue : après Z on revient à A, après A on revient à Z. U + 7 ne « dépasse » pas, il donne B. Un pas qui semble impossible est presque toujours un passage par la boucle.',
     },
     {
       scene: 'riddle',
@@ -295,18 +331,6 @@ export const lesson: Lesson = {
         'La bonne réponse est le SEUL palindrome des quatre options ; les autres sont des nombres qui y ressemblent. Lis chaque option de droite à gauche, c’est tout — deux secondes par option.',
       pitfall:
         'Ne cherche pas non plus une loi sur les LONGUEURS (5, 8, 8, 4…). Elle n’existe pas : la longueur varie justement pour t’empêcher de raisonner entre les termes.',
-    },
-    {
-      scene: 'interleaved',
-      title: 'Quand les écarts ne disent rien : une position sur deux',
-      observe:
-        '21, 18, 29, 23 — les écarts (−3, +11, −6) n’ont aucun motif. En lisant une position sur deux : 21, 29 (suite A, +8) et 18, 23 (suite B, +5).',
-      why:
-        'Deux suites entrelacées produisent des écarts globaux incohérents : c’est leur signature. Ce test coûte 3 secondes et débloque la moitié des séries qui « résistent » — en nombres comme en lettres.',
-      action:
-        'La case manquante est en 5e position, donc dans la suite A : 21, 29, puis 37. Réponse : 37.',
-      pitfall:
-        'Sur une série de 4 items, chaque sous-suite n’a que deux termes : un seul écart. Sois prudent — c’est le cas où une deuxième lecture est indispensable.',
     },
     {
       scene: 'figural',
