@@ -22,8 +22,19 @@ function Shape({ name, size = 60, color = 'var(--ink-200)' }: { name: ShapeName;
   );
 }
 
-// Aucune flèche n'est affichée : le sens se LIT sur le mouvement du cercle.
-// L'indiquer à l'écran donnerait la réponse et supprimerait la poursuite.
+// Aucune flèche n'est affichée EN PERMANENCE : le sens se lit sur le mouvement.
+// Le chevron n'apparaît qu'en confirmation d'une flèche correctement maintenue,
+// et alors il montre le sens réel — sinon il validerait le geste en pointant
+// ailleurs que là où va le cercle.
+const CHEVRON_GLYPH: Record<Direction, string> = { up: '\u2227', down: '\u2228', left: '\u003c', right: '\u003e' };
+
+/** Placement autour du cercle, du côté du déplacement. */
+const CHEVRON_POS: Record<Direction, string> = {
+  up: '-top-10 left-1/2 -translate-x-1/2',
+  down: '-bottom-10 left-1/2 -translate-x-1/2',
+  left: '-left-10 top-1/2 -translate-y-1/2',
+  right: '-right-10 top-1/2 -translate-y-1/2',
+};
 
 /**
  * Psychomoteur : trois tâches simultanées de même importance.
@@ -308,17 +319,23 @@ export function PsychomotorExercise({
             transform: 'translate(-50%, -50%)',
           }}
         >
-          <div className="flex items-center gap-2">
+          <div className="relative flex h-20 w-20 items-center justify-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-sky-500">
               <Shape name={ui.inCircle} size={40} color="#0ea5e9" />
             </div>
-            {/* Chevron PLEIN à droite du cercle : la bonne flèche est maintenue. */}
+            {/*
+              Le chevron est SOLIDAIRE du sens de déplacement : il se place du
+              côté vers lequel le cercle va, et pointe dans cette direction.
+              Fixe à droite, il contredisait le mouvement dès que le cercle
+              partait à gauche ou vers le haut — et confirmait un geste correct
+              en montrant la mauvaise direction.
+            */}
             <span
-              className={`flex h-11 w-8 items-center justify-center rounded text-2xl font-bold text-white transition-opacity ${
-                ui.correct ? 'bg-green-600 opacity-100' : 'opacity-0'
-              }`}
+              className={`absolute flex h-9 w-7 items-center justify-center rounded font-bold text-white transition-opacity ${
+                CHEVRON_POS[ui.direction]
+              } ${ui.correct ? 'bg-green-600 opacity-100' : 'opacity-0'}`}
             >
-              &gt;
+              {CHEVRON_GLYPH[ui.direction]}
             </span>
           </div>
         </div>

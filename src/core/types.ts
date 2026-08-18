@@ -191,6 +191,11 @@ export interface SessionPlanMeta {
   halfwayIndex?: number;
   /** Ce plan est la seconde moitié d'une séance coupée, reprise depuis l'accueil. */
   resumed?: boolean;
+  /**
+   * Séance lancée VOLONTAIREMENT au-delà du repère quotidien de Psychomoteur.
+   * Le cap borne ce que le coach programme ; il n'interdit pas d'en refaire.
+   */
+  ignoreDailyCap?: boolean;
 }
 
 export interface SessionPlan {

@@ -303,6 +303,9 @@ function nextGroupAfter(current: number, used: number[]): number | null {
 
 /** Applique le cap quotidien du Psychomoteur à n'importe quel plan. */
 export function guardPsycho(plan: SessionPlan): { plan: SessionPlan | null; note?: string } {
+  // Séance réclamée explicitement : on la laisse passer entière. Le repère
+  // quotidien encadre ce que le coach PROGRAMME, il ne verrouille pas l'app.
+  if (plan.meta?.ignoreDailyCap) return { plan };
   const remaining = psychoRemainingTodaySec();
   const { blocks, trimmed } = clampPsychomotor(plan.blocks, remaining);
   if (blocks.length === 0) {

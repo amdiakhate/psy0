@@ -66,6 +66,7 @@ export default function Sprint() {
             start({
               mode: 'sprint',
               blocks: [{ exercise: 'psychomotor', level: 'adaptive', durationSec: SESSION_SEC, role: 'psychomotor' }],
+              meta: { ignoreDailyCap: true },
               briefing: [
                 'Psychomoteur — 5 minutes, la durée officielle de l’épreuve.',
                 'Les trois tâches comptent autant : ne sacrifie pas la poursuite pour le calcul.',
