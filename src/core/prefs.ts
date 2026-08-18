@@ -14,6 +14,12 @@ export interface Prefs {
    * l'écran disparaît de l'accueil et les priorités sont verrouillées.
    */
   phase1ReviewAt: number | null;
+  /**
+   * Après une erreur, marquer une pause et MONTRER pourquoi c'était ça, quand
+   * l'exercice sait l'expliquer visuellement. Désactivé en simulation : au test
+   * personne ne t'explique rien, et s'y habituer fausserait la répétition.
+   */
+  explainOnError: boolean;
   /** Bascules de mise au point, à retirer avant le test. */
   dev: { fastHalfway: boolean };
 }
@@ -22,6 +28,7 @@ const DEFAULT_PREFS: Prefs = {
   priorities: null,
   pilotestClass: {},
   phase1ReviewAt: null,
+  explainOnError: true,
   dev: { fastHalfway: false },
 };
 

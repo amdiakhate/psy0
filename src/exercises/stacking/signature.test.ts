@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MIRROR_MAT, findLessonTrihedron, handOf, mapTrihedron, tripleSign } from './signature';
 import type { Trihedron } from './signature';
-import { ROTATIONS, canonical, isChiral, mirror, normalize, rotate } from './model';
+import { ROTATIONS, alignToCanonical, canonical, isChiral, mirror, normalize, rotate } from './model';
 import { makeShape } from './grow';
 import { mulberry32 } from '../../core/rng';
 import { SHAPES } from './data';
@@ -89,6 +89,43 @@ describe('la méthode enseignée dit la VÉRITÉ', () => {
         // que le sens détermine la main, sans exception.
         expect(tripleSign(t!) * handOf(vue)).toBe(reference);
       }
+    }
+  });
+});
+
+describe('remise en orientation canonique', () => {
+  it('rend le MÊME dessin pour deux vues du même objet — c’est la preuve visuelle', () => {
+    // Ce que voit l'élève dans la correction : une fois les figures ramenées à
+    // la même orientation, la paire se superpose exactement. Si ce test tombe,
+    // la « démonstration » affichée ne démontre plus rien.
+    for (let size = 5; size <= 10; size++) {
+      for (let seed = 0; seed < 10; seed++) {
+        const shape = makeShape(mulberry32(seed * 31 + size), size);
+        const reference = alignToCanonical(shape.cells);
+        for (const r of ROTATIONS) {
+          expect(alignToCanonical(rotate(shape.cells, r)), shape.name).toEqual(reference);
+        }
+      }
+    }
+  });
+
+  it('rend un dessin DIFFÉRENT pour le symétrique, sous toutes ses vues', () => {
+    for (let size = 5; size <= 10; size++) {
+      for (let seed = 0; seed < 10; seed++) {
+        const shape = makeShape(mulberry32(seed * 17 + size), size);
+        const reference = alignToCanonical(shape.cells);
+        for (const r of ROTATIONS) {
+          expect(alignToCanonical(rotate(mirror(shape.cells), r)), shape.name).not.toEqual(reference);
+        }
+      }
+    }
+  });
+
+  it('est stable : réaligner une figure déjà alignée ne la bouge plus', () => {
+    for (let seed = 0; seed < 30; seed++) {
+      const cells = makeShape(mulberry32(seed + 99), 9).cells;
+      const once = alignToCanonical(cells);
+      expect(alignToCanonical(once)).toEqual(once);
     }
   });
 });

@@ -4,6 +4,7 @@ import type { StackingAnswer, StackingQuestion } from './generator';
 import { validate } from './validator';
 import { tips } from './tips';
 import { lesson } from './lesson';
+import { StackingExplain } from './Explain';
 import { StackingExercise } from './StackingExercise';
 import { Stacking3DTip } from './Stacking3DTip';
 import { LEVELS } from './config';
@@ -49,6 +50,7 @@ export const stacking: ExerciseModule<StackingQuestion, StackingAnswer> = {
     ],
   },
   lesson,
+  Explain: StackingExplain,
   Component: StackingExercise,
   TipsIllustration: Stacking3DTip,
 };

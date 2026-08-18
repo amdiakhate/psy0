@@ -100,6 +100,24 @@ export function canonical(cells: Shape): string {
   return ROTATIONS.map((r) => serialize(cells.map((c) => applyMat(r, c)))).sort()[0];
 }
 
+/**
+ * La figure REMISE dans son orientation canonique.
+ *
+ * Deux figures qui ne diffèrent que d'une rotation donnent ici EXACTEMENT le
+ * même résultat ; leur miroir en donne un autre. C'est ce qui permet de
+ * démontrer une réponse sans rien demander à l'œil : une fois les trois
+ * empilements ramenés à la même orientation, la paire devient superposable au
+ * pixel près, et le symétrique ne l'est pas.
+ */
+export function alignToCanonical(cells: Shape): Shape {
+  const target = canonical(cells);
+  for (const r of ROTATIONS) {
+    const turned = normalize(cells.map((c) => applyMat(r, c)));
+    if (serialize(turned) === target) return turned;
+  }
+  return normalize(cells); // inatteignable : la canonique EST l'une des 24.
+}
+
 /** Symétrie plane (miroir sur l'axe X). */
 export function mirror(cells: Shape): Shape {
   return normalize(cells.map(([x, y, z]) => [-x, y, z] as Cell));

@@ -150,6 +150,16 @@ export interface ExerciseComponentProps<Q = unknown, A = unknown> {
   onFinished?: () => void;
 }
 
+/**
+ * Correction visuelle d'un item raté : le schéma qui montre POURQUOI c'était
+ * cette réponse-là. Reçoit l'item et ce qui a été répondu — l'erreur commise
+ * fait partie de l'explication.
+ */
+export interface ExplainProps<Q = unknown, A = unknown> {
+  item: Item<Q>;
+  answer: A;
+}
+
 export interface ExerciseModule<Q = unknown, A = unknown> {
   id: ExerciseId;
   name: string;
@@ -170,6 +180,12 @@ export interface ExerciseModule<Q = unknown, A = unknown> {
   TipsIllustration?: React.FC;
   /** Mode apprentissage : leçon pas-à-pas avec arrêts sur image. */
   lesson?: Lesson;
+  /**
+   * Correction visuelle après une erreur. Facultative : tous les exercices
+   * n'ont pas de quoi se DÉMONTRER en image — sur un QCM d'anglais, la réponse
+   * attendue suffit.
+   */
+  Explain?: React.FC<ExplainProps<Q, A>>;
 }
 
 /** Un event par item répondu — la source unique du moteur d'analyse. */

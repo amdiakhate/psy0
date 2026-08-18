@@ -47,6 +47,7 @@ export default function Settings() {
         <PilotestSection />
         <DayLogSection />
         <FreeTrainingSection />
+        <ExplainSection />
         <AdvancedSection />
         <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
           <h3 className="font-semibold">Sauvegarde</h3>
@@ -154,6 +155,46 @@ function FreeTrainingSection() {
       >
         Ouvrir quand même
       </Link>
+    </section>
+  );
+}
+
+/** Correction visuelle après une erreur : montrer POURQUOI, pas seulement QUOI. */
+function ExplainSection() {
+  const [prefs, setPrefs] = useState(getPrefs);
+  const withExplain = EXERCISES.filter((e) => e.Explain);
+
+  const toggle = () => {
+    const fresh = getPrefs();
+    const next = { ...fresh, explainOnError: !fresh.explainOnError };
+    setPrefs(next);
+    savePrefs(next);
+  };
+
+  return (
+    <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+      <h3 className="font-semibold text-zinc-300">Correction</h3>
+      <label className="mt-3 flex items-start gap-3 text-sm">
+        <input
+          type="checkbox"
+          checked={prefs.explainOnError}
+          onChange={toggle}
+          className="mt-0.5 h-4 w-4 accent-sky-600"
+        />
+        <span>
+          <span className="font-medium text-zinc-200">Expliquer mes erreurs en image</span>
+          <span className="block text-zinc-500">
+            Après une erreur, la séance s'arrête et affiche le schéma qui montre pourquoi c'était
+            cette réponse-là. Le temps de lecture n'est pas décompté du chrono du bloc, et
+            l'explication ne s'affiche jamais en simulation — au test, personne ne t'explique rien.
+          </span>
+        </span>
+      </label>
+      <p className="mt-3 text-sm text-zinc-500">
+        {withExplain.length === 0
+          ? 'Aucun exercice ne sait encore se démontrer en image.'
+          : `Disponible sur : ${withExplain.map((e) => e.name).join(', ')}.`}
+      </p>
     </section>
   );
 }

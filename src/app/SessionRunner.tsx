@@ -5,6 +5,7 @@ import type {
   Item,
   SessionPlan,
   SessionRecord,
+  ExplainProps,
 } from '../core/types';
 import { appendEvent, flushNow } from '../core/eventlog';
 import { adaptiveStep, initAdaptive, newSessionId, saveLevel, saveSession, getSavedLevel } from '../core/session';
@@ -385,6 +386,14 @@ function BlockRunner({
     module_.generate(newSeed(), Math.min(startLevel, module_.levels), block.tagFilter),
   );
   const [feedback, setFeedback] = useState<{ n: number; ok: boolean; expected: string } | null>(null);
+  // Item raté mis de côté pour la correction visuelle. Tant qu'il est là, la
+  // séance est en pause : on ne génère PAS l'item suivant, sinon l'explication
+  // porterait sur une figure qui n'est plus à l'écran.
+  const [review, setReview] = useState<{ item: Item; answer: unknown } | null>(null);
+  // Temps passé dans les corrections, retranché du chrono du bloc : lire une
+  // explication ne doit pas manger le temps d'entraînement que le coach a prévu.
+  const explainedMs = useRef(0);
+  const reviewStart = useRef(0);
   const stats = useRef<BlockStats>({ items: 0, correct: 0, rtSum: 0 });
   const blockStart = useRef(Date.now());
   const itemShownAt = useRef(Date.now());
@@ -396,7 +405,7 @@ function BlockRunner({
   // il faut le temps de lire la réponse attendue, alors qu'un « juste » n'a
   // rien à faire lire — il doit seulement se voir.
   useEffect(() => {
-    if (feedback === null) return;
+    if (feedback === null || review !== null) return;
     const t = window.setTimeout(() => setFeedback(null), feedback.ok ? 700 : 1600);
     return () => window.clearTimeout(t);
   }, [feedback]);
@@ -484,20 +493,49 @@ function BlockRunner({
       });
       setFeedback({ n: stats.current.items, ok: correct, expected: module_.expectedToString(item) });
 
-      const elapsed = (Date.now() - blockStart.current) / 1000;
+      // Le pas adaptatif se calcule AVANT toute sortie anticipée : une erreur
+      // qui ouvre une correction doit peser sur le niveau comme les autres.
+      const next = adaptiveStep(adaptiveRef.current, correct, rtMs);
+      setAdaptive(next);
+
+      // Correction visuelle : seulement sur une erreur, seulement si l'exercice
+      // sait se démontrer en image, et jamais en simulation — au test personne
+      // ne t'explique rien, s'y habituer fausserait la répétition.
+      if (!correct && module_.Explain && getPrefs().explainOnError && plan.mode !== 'simulation') {
+        reviewStart.current = Date.now();
+        setReview({ item, answer });
+        return;
+      }
+
+      const elapsed = (Date.now() - blockStart.current - explainedMs.current) / 1000;
       const doneByCount = block.itemCount !== undefined && stats.current.items >= block.itemCount;
       const doneByTime = block.durationSec !== undefined && elapsed >= block.durationSec;
       if (doneByCount || doneByTime) {
         endBlockRef.current();
         return;
       }
-      const next = adaptiveStep(adaptiveRef.current, correct, rtMs);
-      setAdaptive(next);
       setItem(module_.generate(newSeed(), next.level, block.tagFilter));
       itemShownAt.current = Date.now();
     },
-    [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter],
+    [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, plan.mode],
   );
+
+  /** Reprise après une correction : c'est ici que l'item suivant est enfin tiré. */
+  const closeReview = useCallback(() => {
+    explainedMs.current += Date.now() - reviewStart.current;
+    setReview(null);
+    setFeedback(null);
+    const elapsed = (Date.now() - blockStart.current - explainedMs.current) / 1000;
+    const doneByCount = block.itemCount !== undefined && stats.current.items >= block.itemCount;
+    const doneByTime = block.durationSec !== undefined && elapsed >= block.durationSec;
+    if (doneByCount || doneByTime) {
+      endBlockRef.current();
+      return;
+    }
+    const next = adaptiveRef.current;
+    setItem(module_.generate(newSeed(), next.level, block.tagFilter));
+    itemShownAt.current = Date.now();
+  }, [module_, block.itemCount, block.durationSec, block.tagFilter]);
 
   // Exercices continus : compteurs par séquence pour adapter le niveau ENTRE les
   // séquences (l'adaptation par item serait bien trop rapide sur des fenêtres d'1 s).
@@ -615,13 +653,64 @@ function BlockRunner({
             </div>
           </div>
         )}
-        <Component
-          item={item}
-          onAnswer={handleAnswer}
-          durationSec={module_.timed === 'continuous' ? block.durationSec : undefined}
-          onContinuousEvent={module_.timed === 'continuous' ? onContinuousEvent : undefined}
-          onFinished={module_.timed === 'continuous' ? onContinuousFinished : undefined}
-        />
+        {review !== null && module_.Explain ? (
+          <Review Explain={module_.Explain} item={review.item} answer={review.answer} onNext={closeReview} />
+        ) : (
+          <Component
+            item={item}
+            onAnswer={handleAnswer}
+            durationSec={module_.timed === 'continuous' ? block.durationSec : undefined}
+            onContinuousEvent={module_.timed === 'continuous' ? onContinuousEvent : undefined}
+            onFinished={module_.timed === 'continuous' ? onContinuousFinished : undefined}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Écran de correction : le schéma qui montre POURQUOI, puis on reprend.
+ *
+ * Il occupe toute la place de l'exercice plutôt que de s'afficher à côté : une
+ * explication qu'on lit du coin de l'œil pendant que la question suivante
+ * s'affiche n'est pas lue du tout.
+ */
+function Review({
+  Explain,
+  item,
+  answer,
+  onNext,
+}: {
+  Explain: React.FC<ExplainProps>;
+  item: Item;
+  answer: unknown;
+  onNext: () => void;
+}) {
+  useKeys((e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onNext();
+    }
+  });
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex-1 overflow-auto">
+        <Explain item={item} answer={answer} />
+      </div>
+      <div className="mt-4 flex shrink-0 items-center gap-3">
+        <button
+          onClick={onNext}
+          autoFocus
+          className="rounded-lg bg-sky-600 px-6 py-2.5 font-semibold hover:bg-sky-500"
+        >
+          Continuer
+        </button>
+        <span className="text-xs text-zinc-500">
+          Espace ou Entrée · le temps de lecture n’est pas décompté de la séance · désactivable dans
+          Réglages
+        </span>
       </div>
     </div>
   );

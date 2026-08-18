@@ -12,6 +12,7 @@ const prefs = (over: Partial<Prefs> = {}): Prefs => ({
   priorities: ['cubes', 'marbles', 'english'],
   pilotestClass: {},
   phase1ReviewAt: null,
+  explainOnError: true,
   dev: { fastHalfway: false },
   ...over,
 });
