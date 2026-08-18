@@ -62,6 +62,14 @@ function expectedSeries(rule: RuleDesc): number[] {
       for (let i = 2; i < 6; i++) out.push(out[i - 1] + out[i - 2]);
       break;
     }
+    case 'palindrome':
+      // Recalcul indépendant : on ne rejoue pas la génération, on VÉRIFIE que
+      // chaque terme se lit pareil dans les deux sens.
+      for (const t of rule.terms) {
+        const digits = String(t);
+        expect(digits).toBe([...digits].reverse().join(''));
+      }
+      return rule.terms;
     case 'mul-add': {
       let t = rule.start;
       out.push(t);
@@ -81,28 +89,35 @@ function letterAt(rank: number): string {
 }
 
 /** Réimplémentation indépendante : les 6 lettres attendues pour chaque règle alphabétique. */
+/** Recalcul INDÉPENDANT du générateur : un terme est un ou deux rangs. */
 function expectedLetters(rule: LetterRule): string[] {
-  const out: number[] = [];
+  const out: number[][] = [];
   switch (rule.type) {
     case 'letter-step':
-      for (let i = 0; i < 6; i++) out.push(rule.start + i * rule.step);
+      for (let i = 0; i < 6; i++) out.push([rule.start + i * rule.step]);
       break;
     case 'letter-alternate': {
       let t = rule.start;
-      out.push(t);
+      out.push([t]);
       for (let i = 0; i < 5; i++) {
         t += i % 2 === 0 ? rule.a : rule.b;
-        out.push(t);
+        out.push([t]);
       }
       break;
     }
     case 'letter-interleaved':
       for (let i = 0; i < 6; i++) {
-        out.push(i % 2 === 0 ? rule.startA + (i / 2) * rule.dA : rule.startB + ((i - 1) / 2) * rule.dB);
+        out.push([i % 2 === 0 ? rule.startA + (i / 2) * rule.dA : rule.startB + ((i - 1) / 2) * rule.dB]);
       }
       break;
+    case 'pair-columns':
+      for (let i = 0; i < 6; i++) out.push([rule.startA + i * rule.dA, rule.startB + i * rule.dB]);
+      break;
+    case 'pair-internal':
+      for (const f of rule.firsts) out.push([f, f + rule.delta]);
+      break;
   }
-  return out.map(letterAt);
+  return out.map((ranks) => ranks.map(letterAt).join(''));
 }
 
 /** Réimplémentation indépendante de la figure de rang `index`. */
@@ -170,10 +185,19 @@ describe('logic-series — numérique', () => {
 
         const series = expectedSeries(q.rule);
         expect(q.terms).toEqual(series.slice(0, q.terms.length));
+        if (q.rule.type === 'palindrome') {
+          // La bonne réponse est le SEUL palindrome des quatre options : c'est
+          // ce qui rend la question décidable sans progression.
+          const pal = q.options.filter((o) => String(o) === [...String(o)].reverse().join(''));
+          expect(pal).toEqual([q.options[q.correctIndex]]);
+        }
         expect(q.options[q.correctIndex]).toBe(series[q.terms.length]);
         for (const t of [...q.terms, ...q.options]) {
           expect(Number.isInteger(t)).toBe(true);
-          expect(Math.abs(t)).toBeLessThan(100000);
+          // La borne protège les suites À PROGRESSION : un terme qui explose y
+          // signale un générateur qui s'emballe. Les palindromes n'ont aucune
+          // progression, et Pilotest en pose jusqu'à huit chiffres.
+          expect(Math.abs(t)).toBeLessThan(q.rule.type === 'palindrome' ? 1e10 : 100000);
         }
         checkMcq(item);
       }
@@ -204,7 +228,11 @@ describe('logic-series — lettres', () => {
         const series = expectedLetters(q.rule);
         expect(q.terms).toEqual(series.slice(0, q.terms.length));
         expect(q.options[q.correctIndex]).toBe(series[q.terms.length]);
-        for (const l of [...q.terms, ...q.options]) expect(l).toMatch(/^[A-Z]$/);
+        for (const l of [...q.terms, ...q.options]) expect(l).toMatch(/^[A-Z]{1,2}$/);
+        // Tous les termes d'une série ont la même forme : jamais une lettre isolée
+        // au milieu de groupes de deux.
+        const width = new Set([...q.terms, ...q.options].map((t) => t.length));
+        expect(width.size).toBe(1);
         checkMcq(item);
       }
     }

@@ -2,6 +2,9 @@ import type { Tips } from '../../core/types';
 
 export const tips: Tips = {
   method: [
+    'AVANT tout : demande-toi OÙ vit la loi. Entre les termes (une progression) ou DANS le terme (une relation interne) ? La seconde ne vient jamais à l’esprit, et c’est elle qui rend certaines séries « impossibles » — RK-BU-OH-ZS n’a aucun pas entre ses termes, mais chaque groupe cache un −7.',
+    'Deux signes d’alerte disent « la loi est dans le terme » : les termes n’ont pas tous la même longueur (54845, 43722734, 6556 → cherche les palindromes), ou les premières lettres partent dans tous les sens sans le moindre pas régulier.',
+    'Groupes de deux lettres : ce sont DEUX séries simples posées côte à côte. Couvre une colonne avec le doigt, résous l’autre, puis inverse. Ensemble elles paraissent impénétrables, séparées ce sont deux exercices de débutant.',
     'AVANT TOUT, le barème : +1 pour une bonne réponse, −1/3 pour une mauvaise, 0 si tu ne réponds pas. Répondre au hasard entre 4 options rapporte en moyenne (1/4 × 1) − (3/4 × 1/3) = 0. C’est nul, littéralement : le hasard ne fait pas monter ton score, il ne fait que le rendre bruyant. On ne répond que si on a une raison.',
     'Identifie d’abord le FORMAT : nombres, lettres, ou figures. Les trois se traitent différemment, et perdre 5 s à hésiter coûte plus cher que d’appliquer directement la bonne grille de lecture.',
     'NOMBRES — hiérarchie de tests, dans cet ordre : 1) différences constantes (+k) ; 2) différences qui évoluent régulièrement (+3, +4, +5…) ; 3) quotients (×k) ; 4) alternance de deux pas (+6, −9, +6, −9) ; 5) deux suites ENTRELACÉES (une position sur deux) ; 6) carrés, cubes, type Fibonacci (chaque terme = somme des deux précédents). Descends la liste sans sauter d’étape.',

@@ -104,6 +104,29 @@ function LogicScene({ scene }: { scene: string; stepIndex: number }) {
       return <Row terms={['F', 'K', 'P', 'U']} />;
     case 'letters-rank':
       return <Row terms={['F', 'K', 'P', 'U']} notes={['6', '11', '16', '21']} />;
+    case 'pair-columns':
+      return (
+        <Row
+          terms={['ZT', 'GK', 'NB', 'US', '??']}
+          notes={['26·20', '7·11', '14·2', '21·19', '+7 · −9']}
+        />
+      );
+    case 'palindrome':
+      return (
+        <Row
+          terms={['54845', '43722734', '39511593', '6556', '??']}
+          notes={['↔', '↔', '↔', '↔', '↔']}
+          highlight={[0, 1, 2, 3, 4]}
+        />
+      );
+    case 'pair-internal':
+      return (
+        <Row
+          terms={['RK', 'BU', 'OH', 'ZS', 'FY', '??']}
+          notes={['−7', '−7', '−7', '−7', '−7', '−7']}
+          highlight={[0, 1, 2, 3, 4, 5]}
+        />
+      );
     case 'interleaved':
       return <Row terms={[21, 18, 29, 23]} highlight={[0, 2]} notes={['A', 'B', 'A', 'B']} />;
     case 'figural':
@@ -176,6 +199,39 @@ export const lesson: Lesson = {
       action: '21 + 5 = 26 → Z. (L’exemple officiel Pilotest est identique, avec un pas de 7 : N → U.)',
       pitfall:
         'L’alphabet boucle : 27 n’existe pas, c’est A. Une série qui « dépasse » Z n’est pas cassée, elle repart au début.',
+    },
+    {
+      scene: 'pair-columns',
+      title: 'Groupes de deux lettres — une loi par colonne',
+      observe:
+        'ZT - GK - NB - US - ?? Chaque terme porte DEUX lettres. Lues en colonnes : Z G N U d’un côté, T K B S de l’autre. Première colonne : 26, 7, 14, 21 — donc +7 à chaque fois, en repassant par A après Z. Deuxième colonne : 20, 11, 2, 19 — donc −9, en repassant par Z après A.',
+      why: 'Un groupe de deux lettres n’est pas un objet plus compliqué : ce sont DEUX séries simples posées côte à côte. Traitées ensemble elles paraissent impénétrables, traitées séparément ce sont deux tests de niveau débutant. C’est le même principe que les figures — un attribut à la fois.',
+      action:
+        'Ne lis jamais un groupe comme un bloc. Couvre la seconde colonne avec le doigt, résous la première, puis l’inverse. La réponse ici est BJ : 21 + 7 = 28 → B, et 19 − 9 = 10 → J.',
+      pitfall:
+        'L’alphabet BOUCLE, et c’est là que tout se joue : après Z on revient à A, après A on revient à Z. U + 7 ne « dépasse » pas, il donne B. Un pas qui semble impossible est presque toujours un passage par la boucle.',
+    },
+    {
+      scene: 'pair-internal',
+      title: 'Le cas qui paraît impossible : la loi est DANS le terme',
+      observe:
+        'RK - BU - OH - ZS - FY - ?? Les premières lettres — R, B, O, Z, F — ne suivent AUCUNE progression. Les écarts entre termes ne donnent rien, quelle que soit la façon de les prendre. Et pourtant : R→K c’est −7, B→U c’est −7 (en bouclant), O→H c’est −7, Z→S c’est −7, F→Y c’est −7.',
+      why: 'Une loi peut vivre à deux endroits, et l’un des deux ne vient jamais à l’esprit : ENTRE les termes, ou À L’INTÉRIEUR de chaque terme. Tant qu’on ne cherche qu’entre les termes, cette série est effectivement insoluble — d’où l’impression de devoir deviner. Elle est en réalité la plus facile de toutes une fois qu’on regarde au bon endroit.',
+      action:
+        'Sur tout terme composé, pose-toi les DEUX questions, dans cet ordre : « les colonnes progressent-elles ? » puis « les lettres d’un même groupe sont-elles liées entre elles ? ». Ici seule la seconde répond. Réponse : YR — Y − 7 = R.',
+      pitfall:
+        'Le signe qui doit alerter : les premières lettres partent dans tous les sens, sans le moindre pas régulier. Ce n’est pas une série ratée ni un piège — c’est l’indice que la loi est ailleurs. Cherche-la dans le terme, pas entre les termes.',
+    },
+    {
+      scene: 'palindrome',
+      title: 'Le même piège en chiffres : le palindrome',
+      observe:
+        '54845 - 43722734 - 39511593 - 6556 - ?? Les termes n’ont ni le même nombre de chiffres, ni le moindre écart régulier. Mais chacun se lit pareil dans les deux sens : 5-4-8-4-5, 6-5-5-6. Ce sont des palindromes.',
+      why: 'C’est exactement la leçon précédente, transposée aux nombres : la loi est DANS le terme. Et le signe d’alerte est le même — des termes de longueurs différentes ne peuvent pas former une progression. Quand les longueurs varient, arrête de chercher un écart et regarde le terme lui-même.',
+      action:
+        'La bonne réponse est le SEUL palindrome des quatre options ; les autres sont des nombres qui y ressemblent. Lis chaque option de droite à gauche, c’est tout — deux secondes par option.',
+      pitfall:
+        'Ne cherche pas non plus une loi sur les LONGUEURS (5, 8, 8, 4…). Elle n’existe pas : la longueur varie justement pour t’empêcher de raisonner entre les termes.',
     },
     {
       scene: 'interleaved',

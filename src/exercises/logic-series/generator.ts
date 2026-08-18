@@ -26,7 +26,8 @@ export type RuleDesc =
   | { type: 'squares'; n0: number; c: number }
   | { type: 'cubes'; n0: number; c: number }
   | { type: 'fibo'; t1: number; t2: number }
-  | { type: 'mul-add'; start: number; k: number; m: number };
+  | { type: 'mul-add'; start: number; k: number; m: number }
+  | { type: 'palindrome'; terms: number[] };
 
 /** Les 6 termes de la suite, construits DEPUIS la règle. */
 export function seriesFromRule(rule: RuleDesc): number[] {
@@ -67,6 +68,9 @@ export function seriesFromRule(rule: RuleDesc): number[] {
       for (let i = 0; i < 4; i++) out.push(out[out.length - 1] + out[out.length - 2]);
       return out;
     }
+    case 'palindrome':
+      // Aucune progression : chaque terme est un palindrome, un point c'est tout.
+      return rule.terms;
     case 'mul-add': {
       const out = [rule.start];
       for (let i = 0; i < 5; i++) {
@@ -131,9 +135,60 @@ function makeRule(rng: Rng, type: NumericRuleType): RuleDesc {
       const t1 = randInt(rng, 1, 9);
       return { type, t1, t2: t1 + randInt(rng, 1, 9) };
     }
+    case 'palindrome': {
+      // Longueurs VARIÉES d'un terme à l'autre : c'est ce qui interdit de
+      // chercher une progression et force à regarder le terme lui-même.
+      const terms = Array.from({ length: 6 }, () => {
+        const half = randInt(rng, 2, 4); // 4 à 9 chiffres, comme Pilotest
+        const digits = Array.from({ length: half }, (_, i) =>
+          i === 0 ? randInt(rng, 1, 9) : randInt(rng, 0, 9),
+        );
+        const odd = rng() < 0.5;
+        const full = odd
+          ? [...digits, randInt(rng, 0, 9), ...[...digits].reverse()]
+          : [...digits, ...[...digits].reverse()];
+        return Number(full.join(''));
+      });
+      return { type, terms };
+    }
     case 'mul-add':
       return { type, start: randInt(rng, 2, 6), k: randInt(rng, 2, 3), m: randInt(rng, 3, 12) };
   }
+}
+
+/**
+ * Distracteurs d'une série de palindromes : des nombres de longueur comparable
+ * qui n'en sont PAS. Les distracteurs habituels (dernier écart prolongé, pas
+ * inversé) n'ont ici aucun sens — il n'y a pas de pas — et produisaient des
+ * nombres absurdes qui désignaient la bonne réponse par élimination.
+ */
+function palindromeDistractors(rng: Rng, shown: number[], answer: number): number[] {
+  const isPal = (n: number) => {
+    const d = String(n);
+    return d === [...d].reverse().join('');
+  };
+  const out: number[] = [];
+  const seen = new Set([answer, ...shown]);
+  // Un palindrome dont on casse la symétrie : c'est le leurre le plus fort,
+  // il ressemble en tout point à la bonne réponse.
+  for (let guard = 0; guard < 200 && out.length < 3; guard++) {
+    const model = pick(rng, [answer, ...shown]);
+    const digits = String(model).split('');
+    const i = randInt(rng, 0, digits.length - 1);
+    digits[i] = String((Number(digits[i]) + randInt(rng, 1, 8)) % 10);
+    if (digits[0] === '0') continue;
+    const candidate = Number(digits.join(''));
+    if (seen.has(candidate) || isPal(candidate)) continue;
+    seen.add(candidate);
+    out.push(candidate);
+  }
+  for (let k = 1; out.length < 3; k++) {
+    const candidate = answer + k;
+    if (seen.has(candidate) || isPal(candidate)) continue;
+    seen.add(candidate);
+    out.push(candidate);
+  }
+  return out;
 }
 
 /**
@@ -178,7 +233,9 @@ function numericDistractors(rng: Rng, shown: number[], answer: number): number[]
 export type LetterRule =
   | { type: 'letter-step'; start: number; step: number }
   | { type: 'letter-alternate'; start: number; a: number; b: number }
-  | { type: 'letter-interleaved'; startA: number; dA: number; startB: number; dB: number };
+  | { type: 'letter-interleaved'; startA: number; dA: number; startB: number; dB: number }
+  | { type: 'pair-columns'; startA: number; dA: number; startB: number; dB: number }
+  | { type: 'pair-internal'; firsts: number[]; delta: number };
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
@@ -187,21 +244,41 @@ export function toLetter(index: number): string {
   return ALPHABET[((index % 26) + 26) % 26];
 }
 
-/** Les 6 rangs alphabétiques de la série, construits DEPUIS la règle. */
-export function lettersFromRule(rule: LetterRule): number[] {
+/**
+ * Les 6 termes de la série, construits DEPUIS la règle. Chaque terme est une
+ * liste de rangs : une seule lettre pour les séries simples, DEUX pour les
+ * séries en groupes — c'est le format que pose Pilotest.
+ */
+export function lettersFromRule(rule: LetterRule): number[][] {
   switch (rule.type) {
     case 'letter-step':
-      return Array.from({ length: 6 }, (_, i) => rule.start + i * rule.step);
+      return Array.from({ length: 6 }, (_, i) => [rule.start + i * rule.step]);
     case 'letter-alternate': {
       const out = [rule.start];
       for (let i = 0; i < 5; i++) out.push(out[out.length - 1] + (i % 2 === 0 ? rule.a : rule.b));
-      return out;
+      return out.map((v) => [v]);
     }
     case 'letter-interleaved':
-      return Array.from({ length: 6 }, (_, i) =>
+      return Array.from({ length: 6 }, (_, i) => [
         i % 2 === 0 ? rule.startA + (i / 2) * rule.dA : rule.startB + ((i - 1) / 2) * rule.dB,
-      );
+      ]);
+    case 'pair-columns':
+      // Deux lois indépendantes, une par colonne. Chaque colonne se lit seule.
+      return Array.from({ length: 6 }, (_, i) => [
+        rule.startA + i * rule.dA,
+        rule.startB + i * rule.dB,
+      ]);
+    case 'pair-internal':
+      // La loi vit DANS le terme : la seconde lettre se déduit de la première,
+      // et les premières ne progressent pas. Chercher un pas entre les termes
+      // ne mène nulle part — c'est tout l'intérêt de cette famille.
+      return rule.firsts.map((f) => [f, f + rule.delta]);
   }
+}
+
+/** Rangs d'un terme → le texte affiché, « ZT » ou « N ». */
+export function termToText(ranks: number[]): string {
+  return ranks.map(toLetter).join('');
 }
 
 function makeLetterRule(rng: Rng, type: LetterRuleType): LetterRule {
@@ -228,6 +305,28 @@ function makeLetterRule(rng: Rng, type: LetterRuleType): LetterRule {
         dB,
       };
     }
+    case 'pair-columns': {
+      // Les deux pas peuvent être ÉGAUX — « TU - QR - NO - KL », les deux
+      // lettres reculent de 3 ensemble. C'est le cas facile de la famille, et
+      // Pilotest le pose : l'interdire aurait retiré une variante réelle.
+      const dA = pick(rng, [2, 3, 4, 5, 6, 7, 8, -3, -4, -5]);
+      const dB = pick(rng, [-3, -5, -7, -9, 3, 5, 9, 11, dA, dA]);
+      return { type, startA: randInt(rng, 0, 25), dA, startB: randInt(rng, 0, 25), dB };
+    }
+    case 'pair-internal': {
+      const delta = pick(rng, [-5, -7, -9, -11, 4, 6, 8, 10]);
+      // Les premières lettres sont TIRÉES AU HASARD, et on s'assure qu'aucun pas
+      // constant ne s'installe par accident : la seule loi doit être interne.
+      let firsts: number[] = [];
+      for (let attempt = 0; attempt < 40; attempt++) {
+        firsts = Array.from({ length: 6 }, () => randInt(rng, 0, 25));
+        const steps = firsts.slice(1).map((v, i) => (((v - firsts[i]) % 26) + 26) % 26);
+        const constant = steps.every((v) => v === steps[0]);
+        const distinct = new Set(firsts).size >= 5;
+        if (!constant && distinct) break;
+      }
+      return { type, firsts, delta };
+    }
   }
 }
 
@@ -235,25 +334,43 @@ function makeLetterRule(rng: Rng, type: LetterRuleType): LetterRule {
  * Distracteurs alphabétiques : ±1 cran (l'erreur de comptage la plus fréquente),
  * le pas appliqué deux fois, et le pas appliqué à l'envers.
  */
-function letterDistractors(rng: Rng, shown: number[], answer: number): string[] {
-  const last = shown[shown.length - 1];
-  const step = answer - last;
-  const candidates = [answer + 1, answer - 1, answer + step, last - step, last, answer + 2];
+function letterDistractors(rng: Rng, shown: number[][], answer: number[]): string[] {
+  const seen = new Set([termToText(answer)]);
   const out: string[] = [];
-  const seen = new Set([toLetter(answer)]);
-  for (const c of shuffle(rng, candidates)) {
-    const letter = toLetter(c);
-    if (seen.has(letter)) continue;
-    seen.add(letter);
-    out.push(letter);
-    if (out.length === 3) return out;
+  const push = (ranks: number[]) => {
+    const text = termToText(ranks);
+    if (seen.has(text) || out.length === 3) return;
+    seen.add(text);
+    out.push(text);
+  };
+
+  if (answer.length === 1) {
+    const last = shown[shown.length - 1][0];
+    const step = answer[0] - last;
+    for (const c of shuffle(rng, [answer[0] + 1, answer[0] - 1, answer[0] + step, last - step, last, answer[0] + 2])) {
+      push([c]);
+    }
+    for (let k = 3; out.length < 3; k++) push([answer[0] + k]);
+    return out;
   }
-  for (let k = 3; out.length < 3; k++) {
-    const letter = toLetter(answer + k);
-    if (seen.has(letter)) continue;
-    seen.add(letter);
-    out.push(letter);
-  }
+
+  // Groupes de deux : les erreurs réelles sont le décalage d'un cran sur UNE
+  // des deux lettres, l'inversion des deux, et le pas appliqué à l'envers.
+  // Un leurre qui satisferait la loi serait une seconde bonne réponse : on ne
+  // touche donc jamais aux deux lettres du même écart.
+  const [a, b] = answer;
+  const candidates: number[][] = [
+    [a + 1, b],
+    [a, b + 1],
+    [a - 1, b],
+    [a, b - 1],
+    [b, a],
+    [a + 2, b],
+    [a, b - 2],
+    [a - 2, b + 1],
+  ];
+  for (const c of shuffle(rng, candidates)) push(c);
+  for (let k = 3; out.length < 3; k++) push([a + k, b + 1]);
   return out;
 }
 
@@ -370,7 +487,11 @@ function generateNumeric(rng: Rng, level: number, forcedRule?: NumericRuleType):
   const shownCount = pick(rng, SERIES_LENGTHS);
   const terms = all.slice(0, shownCount);
   const answer = all[shownCount];
-  const options = shuffle(rng, [answer, ...numericDistractors(rng, terms, answer)]);
+  const distractors =
+    rule.type === 'palindrome'
+      ? palindromeDistractors(rng, terms, answer)
+      : numericDistractors(rng, terms, answer);
+  const options = shuffle(rng, [answer, ...distractors]);
   return { format: 'numeric', terms, options, correctIndex: options.indexOf(answer), rule };
 }
 
@@ -380,8 +501,8 @@ function generateLetters(rng: Rng, level: number, forcedRule?: LetterRuleType): 
   const rule = makeLetterRule(rng, type);
   const all = lettersFromRule(rule);
   const shownCount = pick(rng, SERIES_LENGTHS);
-  const terms = all.slice(0, shownCount).map(toLetter);
-  const answer = toLetter(all[shownCount]);
+  const terms = all.slice(0, shownCount).map(termToText);
+  const answer = termToText(all[shownCount]);
   const options = shuffle(rng, [
     answer,
     ...letterDistractors(rng, all.slice(0, shownCount), all[shownCount]),

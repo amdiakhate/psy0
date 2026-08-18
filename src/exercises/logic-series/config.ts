@@ -8,7 +8,9 @@ export type NumericRuleType =
   | 'squares'
   | 'cubes'
   | 'fibo'
-  | 'mul-add';
+  | 'mul-add'
+  /** Chaque terme est un PALINDROME. Aucune loi entre les termes — elle est dans le terme. */
+  | 'palindrome';
 
 export const ALL_NUMERIC_RULES: NumericRuleType[] = [
   'arith',
@@ -21,6 +23,7 @@ export const ALL_NUMERIC_RULES: NumericRuleType[] = [
   'cubes',
   'fibo',
   'mul-add',
+  'palindrome',
 ];
 
 /** Pool de règles numériques par niveau. */
@@ -28,16 +31,29 @@ export const NUMERIC_RULES: NumericRuleType[][] = [
   ['arith'],
   ['geo', 'arith-neg'],
   ['second-order', 'alternate'],
-  ['two-rules', 'second-order', 'alternate'],
-  ['squares', 'cubes', 'fibo', 'mul-add', 'two-rules'],
+  ['two-rules', 'second-order', 'alternate', 'palindrome'],
+  ['squares', 'cubes', 'fibo', 'mul-add', 'two-rules', 'palindrome'],
 ];
 
-export type LetterRuleType = 'letter-step' | 'letter-alternate' | 'letter-interleaved';
+export type LetterRuleType =
+  | 'letter-step'
+  | 'letter-alternate'
+  | 'letter-interleaved'
+  /** Groupes de 2 lettres, une loi PAR COLONNE : « ZT - GK - NB - US ». */
+  | 'pair-columns'
+  /**
+   * Groupes de 2 lettres où la loi est INTERNE au groupe : la seconde se déduit
+   * de la première, et les premières ne suivent aucune progression.
+   * « RK - BU - OH - ZS - FY » — chercher un pas entre les termes n'y mène nulle part.
+   */
+  | 'pair-internal';
 
 export const ALL_LETTER_RULES: LetterRuleType[] = [
   'letter-step',
   'letter-alternate',
   'letter-interleaved',
+  'pair-columns',
+  'pair-internal',
 ];
 
 /**
@@ -46,10 +62,10 @@ export const ALL_LETTER_RULES: LetterRuleType[] = [
  */
 export const LETTER_RULES: LetterRuleType[][] = [
   ['letter-step'],
-  ['letter-step'],
-  ['letter-step', 'letter-alternate'],
-  ['letter-alternate', 'letter-interleaved'],
-  ['letter-step', 'letter-alternate', 'letter-interleaved'],
+  ['letter-step', 'pair-columns'],
+  ['letter-step', 'letter-alternate', 'pair-columns'],
+  ['letter-alternate', 'letter-interleaved', 'pair-columns', 'pair-internal'],
+  ['letter-alternate', 'letter-interleaved', 'pair-columns', 'pair-internal'],
 ];
 
 /** Nombre d'attributs qui varient dans la série figurale, par niveau. */
