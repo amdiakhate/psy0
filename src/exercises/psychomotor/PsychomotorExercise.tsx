@@ -22,10 +22,11 @@ function Shape({ name, size = 60, color = 'var(--ink-200)' }: { name: ShapeName;
   );
 }
 
-// Aucune flèche n'est affichée EN PERMANENCE : le sens se lit sur le mouvement.
-// Le chevron n'apparaît qu'en confirmation d'une flèche correctement maintenue,
-// et alors il montre le sens réel — sinon il validerait le geste en pointant
-// ailleurs que là où va le cercle.
+// Le chevron est TOUJOURS visible, du côté du déplacement, comme sur Pilotest.
+// Bleu, il indique le sens ; vert, il confirme que la bonne flèche est
+// maintenue. Le masquer tant que la poursuite n'était pas correcte privait de
+// tout repère : impossible de savoir si l'on s'était trompé de flèche ou si le
+// cercle venait de changer de direction.
 const CHEVRON_GLYPH: Record<Direction, string> = { up: '\u2227', down: '\u2228', left: '\u003c', right: '\u003e' };
 
 /** Placement autour du cercle, du côté du déplacement. */
@@ -331,9 +332,9 @@ export function PsychomotorExercise({
               en montrant la mauvaise direction.
             */}
             <span
-              className={`absolute flex h-9 w-7 items-center justify-center rounded font-bold text-white transition-opacity ${
+              className={`absolute flex h-9 w-7 items-center justify-center rounded font-bold text-white transition-colors ${
                 CHEVRON_POS[ui.direction]
-              } ${ui.correct ? 'bg-green-600 opacity-100' : 'opacity-0'}`}
+              } ${ui.correct ? 'bg-green-600' : 'bg-sky-600'}`}
             >
               {CHEVRON_GLYPH[ui.direction]}
             </span>
@@ -402,8 +403,8 @@ export function PsychomotorExercise({
       </div>
 
       <p className="max-w-2xl text-center text-xs text-zinc-500">
-        ① Regarde où va le cercle et MAINTIENS la flèche de ce sens (un{' '}
-        <span className="text-green-500">&gt;</span> vert confirme) · ② <kbd className="rounded bg-zinc-800 px-1">Espace</kbd> si les deux formes sont
+        ① MAINTIENS la flèche indiquée à côté du cercle : le chevron passe au{' '}
+        <span className="text-green-500">vert</span> quand c'est bon · ② <kbd className="rounded bg-zinc-800 px-1">Espace</kbd> si les deux formes sont
         identiques · ③ <kbd className="rounded bg-zinc-800 px-1">F</kbd> si le calcul entouré est FAUX
       </p>
     </div>
