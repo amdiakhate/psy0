@@ -384,13 +384,22 @@ function BlockRunner({
   const [item, setItem] = useState<Item>(() =>
     module_.generate(newSeed(), Math.min(startLevel, module_.levels), block.tagFilter),
   );
-  const [feedback, setFeedback] = useState<{ n: number; ok: boolean } | null>(null);
+  const [feedback, setFeedback] = useState<{ n: number; ok: boolean; expected: string } | null>(null);
   const stats = useRef<BlockStats>({ items: 0, correct: 0, rtSum: 0 });
   const blockStart = useRef(Date.now());
   const itemShownAt = useRef(Date.now());
   const [remaining, setRemaining] = useState(block.durationSec ?? 0);
   const adaptiveRef = useRef(adaptive);
   adaptiveRef.current = adaptive;
+
+  // Le bandeau s'efface seul. Une erreur reste plus longtemps qu'une réussite :
+  // il faut le temps de lire la réponse attendue, alors qu'un « juste » n'a
+  // rien à faire lire — il doit seulement se voir.
+  useEffect(() => {
+    if (feedback === null) return;
+    const t = window.setTimeout(() => setFeedback(null), feedback.ok ? 700 : 1600);
+    return () => window.clearTimeout(t);
+  }, [feedback]);
 
   const endBlock = useCallback(() => {
     const s = stats.current;
@@ -473,7 +482,7 @@ function BlockRunner({
         level: item.level,
         seed: item.seed,
       });
-      setFeedback({ n: stats.current.items, ok: correct });
+      setFeedback({ n: stats.current.items, ok: correct, expected: module_.expectedToString(item) });
 
       const elapsed = (Date.now() - blockStart.current) / 1000;
       const doneByCount = block.itemCount !== undefined && stats.current.items >= block.itemCount;
@@ -585,10 +594,27 @@ function BlockRunner({
       </div>
       <div
         key={feedback?.n ?? -1}
-        className={`flex-1 overflow-auto rounded-b-xl p-6 ${
+        className={`relative flex-1 overflow-auto rounded-b-xl p-6 ${
           feedback === null ? '' : feedback.ok ? 'flash-correct' : 'flash-wrong'
         }`}
       >
+        {feedback !== null && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center p-3">
+            <div
+              className={`flash-badge flex items-center gap-3 rounded-full border px-5 py-2 font-semibold shadow-lg ${
+                feedback.ok
+                  ? 'border-green-500 bg-green-600 text-white'
+                  : 'border-red-500 bg-red-600 text-white'
+              }`}
+            >
+              <span className="text-lg leading-none">{feedback.ok ? '\u2713' : '\u2717'}</span>
+              <span>{feedback.ok ? 'Juste' : 'Faux'}</span>
+              {!feedback.ok && feedback.expected !== '' && (
+                <span className="font-normal opacity-90">{'\u2192'} {feedback.expected}</span>
+              )}
+            </div>
+          </div>
+        )}
         <Component
           item={item}
           onAnswer={handleAnswer}

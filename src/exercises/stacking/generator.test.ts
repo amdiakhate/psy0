@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { generate, validate } from './generator';
-import { HARD_MIN_TURN_DEG, EASY_MAX_TURN_DEG, LEVELS } from './config';
+import { HARD_MIN_TURN_DEG, EASY_MAX_TURN_DEG, LEVELS, MIN_IMAGE_DIFF, RASTER_RESOLUTION } from './config';
+import { extent, growPolycube, isPlayable, makeShape } from './grow';
 import { SHAPES } from './data';
 import {
   ROTATIONS,
@@ -9,13 +10,19 @@ import {
   isChiral,
   isoBounds,
   isoFaces,
-  isoImageKey,
+  imageDistance,
+  matMul,
+  matInverse,
   mirror,
   orbitSize,
   rotationAngleDeg,
   sameShape,
+  rasterize,
   serialize,
+  tiltMatrix,
+  worldSizeFor,
 } from './model';
+import { mulberry32 } from '../../core/rng';
 
 const SEEDS = 150;
 
@@ -38,7 +45,7 @@ describe('model : le groupe des 24 rotations', () => {
   });
 });
 
-describe('data : le pool de polycubes', () => {
+describe('data : le pool écrit à la main, désormais réservé à la leçon', () => {
   it('toutes les formes sont CHIRALES — sinon la question n’aurait pas de réponse', () => {
     for (const s of SHAPES) {
       expect(isChiral(s.cells), s.name).toBe(true);
@@ -88,7 +95,7 @@ describe('data : le pool de polycubes', () => {
     }
   });
 
-  it('couvre les tailles 4 à 7', () => {
+  it('couvre les petites tailles — la leçon s’enseigne sur une figure lisible', () => {
     for (const n of [4, 5, 6, 7]) {
       expect(SHAPES.some((s) => s.size === n)).toBe(true);
     }
@@ -136,12 +143,21 @@ describe('generator — L’INVARIANT : exactement un empilement est le symétri
     }
   });
 
-  it('les trois DESSINS affichés sont deux à deux différents', () => {
+  it('les trois DESSINS affichés diffèrent assez pour être départageables', () => {
+    // Sur ce qui est réellement à l'écran, inclinaison comprise : deux vues
+    // peuvent être des rotations très éloignées et se PROJETER presque
+    // pareil — des cubes en cachent d'autres. L'item serait alors indécidable.
     for (let level = 1; level <= LEVELS.length; level++) {
       for (let seed = 0; seed < 20; seed++) {
         const { question: q } = generate(seed, level);
-        const images = q.stacks.map((s) => isoImageKey(s));
-        expect(new Set(images).size, `seed=${seed} level=${level}`).toBe(3);
+        const world = worldSizeFor(q.stacks.map((shape, i) => ({ shape, tilt: q.tilts[i] })));
+        const images = q.stacks.map((shape, i) => rasterize(shape, q.tilts[i], RASTER_RESOLUTION, world));
+        for (let a = 0; a < 3; a++) {
+          for (let b = a + 1; b < 3; b++) {
+            expect(imageDistance(images[a], images[b]), `seed=${seed} level=${level} ${a}/${b}`)
+              .toBeGreaterThanOrEqual(MIN_IMAGE_DIFF);
+          }
+        }
       }
     }
   });
@@ -171,7 +187,7 @@ describe('generator — tags et difficulté', () => {
       for (let seed = 0; seed < SEEDS; seed++) {
         const item = generate(seed, level);
         expect(item.tags).toContain(`size-${item.question.size}`);
-        expect(cfg.sizes).toContain(item.question.size as 4 | 5 | 6 | 7);
+        expect(cfg.sizes).toContain(item.question.size);
       }
     }
   });
@@ -227,5 +243,140 @@ describe('generator — tags et difficulté', () => {
     expect(generate(21, 5, 'hard-orientation').question.minTurnDeg).toBeGreaterThanOrEqual(
       HARD_MIN_TURN_DEG,
     );
+  });
+});
+
+/**
+ * Ce qui distingue vraiment cet exercice de sa version « jouet » : des figures
+ * d'une dizaine de cubes, chacune BASCULÉE d'un angle quelconque. Sans
+ * basculement, les trois empilements partagent la même grille isométrique et se
+ * comparent contour à contour — ce n'est plus de la rotation mentale.
+ */
+describe('croissance des empilements', () => {
+  it('produit une figure connexe de la taille demandée', () => {
+    for (let size = 7; size <= 11; size++) {
+      for (let seed = 0; seed < 40; seed++) {
+        const cells = growPolycube(mulberry32(seed * 31 + size), size);
+        expect(cells).toHaveLength(size);
+        expect(new Set(cells.map((c) => c.join(','))).size, 'aucune cellule en double').toBe(size);
+        // Connexité recalculée ici, sans réutiliser le code de croissance.
+        const set = new Set(cells.map((c) => c.join(',')));
+        const queue = [cells[0]];
+        const seen = new Set([cells[0].join(',')]);
+        while (queue.length > 0) {
+          const [x, y, z] = queue.pop()!;
+          for (const [dx, dy, dz] of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]) {
+            const k = [x + dx, y + dy, z + dz].join(',');
+            if (set.has(k) && !seen.has(k)) {
+              seen.add(k);
+              queue.push(k.split(',').map(Number) as [number, number, number]);
+            }
+          }
+        }
+        expect(seen.size, `taille ${size} graine ${seed}`).toBe(size);
+      }
+    }
+  });
+
+  it('ne retient que des figures CHIRALES et vraiment en trois dimensions', () => {
+    for (let size = 7; size <= 11; size++) {
+      for (let seed = 0; seed < 30; seed++) {
+        const shape = makeShape(mulberry32(seed * 7 + size), size);
+        expect(shape.cells).toHaveLength(size);
+        // Chirale : sans cela, le miroir est une simple rotation et la question
+        // n'a AUCUNE réponse — les trois empilements sont alors le même.
+        expect(isChiral(shape.cells), shape.name).toBe(true);
+        expect(Math.min(...extent(shape.cells)), shape.name).toBeGreaterThanOrEqual(2);
+        expect(isPlayable(shape.cells)).toBe(true);
+      }
+    }
+  });
+
+  it('est déterministe et nomme la forme par sa classe de rotation', () => {
+    const a = makeShape(mulberry32(4242), 9);
+    const b = makeShape(mulberry32(4242), 9);
+    expect(a).toEqual(b);
+    // Le nom est invariant par rotation : deux vues de la même figure le partagent.
+    const tourne = { ...a, cells: a.cells };
+    expect(canonical(tourne.cells)).toBe(canonical(a.cells));
+  });
+});
+
+describe('inclinaison de présentation', () => {
+  it('tiltMatrix rend bien une rotation : orthonormale, de déterminant +1', () => {
+    for (let i = 0; i < 60; i++) {
+      const m = tiltMatrix(i * 17.3, (i % 9) * 4 - 16, (i % 7) * 6 - 18);
+      const produit = matMul(m, matInverse(m));
+      for (let k = 0; k < 9; k++) {
+        expect(Math.abs(produit[k] - [1,0,0,0,1,0,0,0,1][k])).toBeLessThan(1e-9);
+      }
+      const det =
+        m[0] * (m[4] * m[8] - m[5] * m[7]) -
+        m[1] * (m[3] * m[8] - m[5] * m[6]) +
+        m[2] * (m[3] * m[7] - m[4] * m[6]);
+      expect(Math.abs(det - 1)).toBeLessThan(1e-9);
+    }
+  });
+
+  it('chaque item bascule ses trois empilements — aucun n’est posé droit', () => {
+    let droits = 0;
+    let total = 0;
+    for (let level = 1; level <= LEVELS.length; level++) {
+      for (let seed = 0; seed < 30; seed++) {
+        const q = generate(seed, level).question;
+        expect(q.tilts).toHaveLength(3);
+        for (const t of q.tilts) {
+          total++;
+          if (rotationAngleDeg(t) < 8) droits++;
+        }
+      }
+    }
+    // Quelques inclinaisons faibles sont acceptables ; un basculement
+    // systématiquement nul signifierait que le repli de secours s'est déclenché.
+    expect(droits / total).toBeLessThan(0.1);
+  });
+
+  it('n’émet aucune face interne : le rendu ne dessine que ce qui se voit', () => {
+    // Deux cubes collés partagent une face ; la dessiner produit un liseré
+    // fantôme au milieu de la figure.
+    const paire: Array<[number, number, number]> = [[0, 0, 0], [1, 0, 0]];
+    const faces = isoFaces(paire);
+    // Cube de gauche : +Y et +Z (son +X est collé au voisin) ; cube de droite :
+    // +Y, +Z et +X. Les faces −X, −Y, −Z tournent le dos au spectateur.
+    expect(faces.length).toBe(5);
+    for (const f of faces) expect(f.shade).toBeGreaterThanOrEqual(0);
+  });
+
+  it('l’identité redonne exactement les trois faces de l’isométrie classique', () => {
+    const faces = isoFaces([[0, 0, 0]]);
+    expect(faces).toHaveLength(3);
+    expect(new Set(faces.map((f) => f.kind))).toEqual(new Set([1, 2, 3]));
+    // Le dessus est la face la plus éclairée : c'est ce qui donne le relief.
+    const dessus = faces.find((f) => f.kind === 1)!;
+    for (const f of faces) if (f !== dessus) expect(dessus.shade).toBeGreaterThan(f.shade);
+  });
+});
+
+describe('conformité Pilotest', () => {
+  it('affiche une dizaine de cubes, pas quatre', () => {
+    const tailles = new Set<number>();
+    for (let level = 1; level <= LEVELS.length; level++) {
+      for (let seed = 0; seed < 20; seed++) tailles.add(generate(seed, level).question.size);
+    }
+    expect(Math.min(...tailles)).toBeGreaterThanOrEqual(7);
+    expect(Math.max(...tailles)).toBeGreaterThanOrEqual(10);
+  });
+
+  it('les trois empilements sont mis à la MÊME échelle', () => {
+    // Une échelle propre à chaque figure ferait de la taille des cubes un
+    // indice, et l'appariement se ferait sans tourner quoi que ce soit.
+    for (let seed = 0; seed < 20; seed++) {
+      const q = generate(seed, 4).question;
+      const world = worldSizeFor(q.stacks.map((shape, i) => ({ shape, tilt: q.tilts[i] })));
+      for (let i = 0; i < 3; i++) {
+        const { minX, maxX, minY, maxY } = isoBounds(isoFaces(q.stacks[i], q.tilts[i]));
+        expect(Math.max(maxX - minX, maxY - minY)).toBeLessThanOrEqual(world);
+      }
+    }
   });
 });

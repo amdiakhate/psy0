@@ -152,8 +152,78 @@ export type IsoFaceKind = 1 | 2 | 3;
 
 export interface IsoFace {
   kind: IsoFaceKind;
+  /** Éclairement de la face, dans [0, 1] — 0 à l'ombre, 1 en pleine lumière. */
+  shade: number;
   points: Array<[number, number]>;
 }
+
+export type Vec3 = readonly [number, number, number];
+
+/**
+ * Direction du spectateur dans la projection isométrique : l'octant +X+Y+Z.
+ * (Une direction v se projette sur (0,0) ssi v est colinéaire à (1,1,1).)
+ */
+export const VIEW_DIR: Vec3 = [1, 1, 1];
+
+/**
+ * Lumière unique, haute et légèrement décalée : elle sépare nettement le dessus
+ * des deux flancs, et c'est ce contraste franc qui donne le relief — sur cet
+ * exercice, lire le relief EST la tâche.
+ *
+ * Une seconde source placée côté spectateur avait été essayée pour éviter qu'un
+ * empilement mal incliné ne s'assombrisse : elle rattrapait bien la luminosité,
+ * mais en rapprochant les trois familles de faces d'un même rouge moyen, elle
+ * aplatissait les figures. Un simple plancher suffit : rien ne tombe au noir
+ * pur, et l'écart entre les faces reste entier.
+ */
+const LIGHT: Vec3 = [0.2, 1, 0.45];
+const AMBIENT = 0.1;
+
+function dot(a: Vec3, b: Vec3): number {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+function unit(v: Vec3): Vec3 {
+  const n = Math.hypot(v[0], v[1], v[2]);
+  return n === 0 ? v : [v[0] / n, v[1] / n, v[2] / n];
+}
+
+const LIGHT_UNIT = unit(LIGHT);
+
+/**
+ * Rotation CONTINUE, hors du groupe des 24 : lacet autour de la verticale,
+ * tangage, puis roulis. C'est l'inclinaison de PRÉSENTATION — celle qui, chez
+ * Pilotest, fait qu'aucun empilement n'est posé bien droit et qu'on ne peut pas
+ * apparier les figures en comparant des contours familiers.
+ */
+export function tiltMatrix(yawDeg: number, pitchDeg: number, rollDeg: number): Mat3 {
+  const [cy, sy] = [Math.cos((yawDeg * Math.PI) / 180), Math.sin((yawDeg * Math.PI) / 180)];
+  const [cp, sp] = [Math.cos((pitchDeg * Math.PI) / 180), Math.sin((pitchDeg * Math.PI) / 180)];
+  const [cr, sr] = [Math.cos((rollDeg * Math.PI) / 180), Math.sin((rollDeg * Math.PI) / 180)];
+  const ry: Mat3 = [cy, 0, sy, 0, 1, 0, -sy, 0, cy];
+  const rx: Mat3 = [1, 0, 0, 0, cp, -sp, 0, sp, cp];
+  const rz: Mat3 = [cr, -sr, 0, sr, cr, 0, 0, 0, 1];
+  return matMul(rz, matMul(rx, ry));
+}
+
+/** Applique une matrice à un point à coordonnées réelles (les cellules sont entières). */
+function applyReal(m: Mat3, p: Vec3): Vec3 {
+  return [
+    m[0] * p[0] + m[1] * p[1] + m[2] * p[2],
+    m[3] * p[0] + m[4] * p[1] + m[5] * p[2],
+    m[6] * p[0] + m[7] * p[1] + m[8] * p[2],
+  ];
+}
+
+/** Les 6 faces d'un cube unité : normale sortante, famille d'axe, sommets. */
+const CUBE_FACES: Array<{ n: Vec3; d: Cell; kind: IsoFaceKind; corners: Vec3[] }> = [
+  { n: [0, 1, 0], d: [0, 1, 0], kind: 1, corners: [[0, 1, 0], [1, 1, 0], [1, 1, 1], [0, 1, 1]] },
+  { n: [0, -1, 0], d: [0, -1, 0], kind: 1, corners: [[0, 0, 0], [0, 0, 1], [1, 0, 1], [1, 0, 0]] },
+  { n: [0, 0, 1], d: [0, 0, 1], kind: 2, corners: [[0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 1, 1]] },
+  { n: [0, 0, -1], d: [0, 0, -1], kind: 2, corners: [[0, 0, 0], [0, 1, 0], [1, 1, 0], [1, 0, 0]] },
+  { n: [1, 0, 0], d: [1, 0, 0], kind: 3, corners: [[1, 0, 0], [1, 0, 1], [1, 1, 1], [1, 1, 0]] },
+  { n: [-1, 0, 0], d: [-1, 0, 0], kind: 3, corners: [[0, 0, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1]] },
+];
 
 /** Projection isométrique d'un sommet du réseau, cube d'arête 1. */
 export function isoProject(x: number, y: number, z: number): [number, number] {
@@ -161,22 +231,58 @@ export function isoProject(x: number, y: number, z: number): [number, number] {
 }
 
 /**
- * Les faces visibles d'un empilement (3 par cellule : +Y, +Z, +X — le spectateur
- * est dans l'octant +X+Y+Z), triées dans l'ordre du peintre : les plus LOINTAINES
- * d'abord, pour que le dessin des suivantes les recouvre.
+ * Les faces visibles d'un empilement, incliné de `tilt`, dans l'ordre du
+ * peintre — les plus lointaines d'abord.
+ *
+ * Trois filtres successifs, dans cet ordre :
+ *  1. les faces INTERNES (collées à un cube voisin) ne sont pas émises ;
+ *  2. les faces tournant le DOS au spectateur sont écartées ;
+ *  3. le reste est trié par profondeur le long de l'axe de vue.
+ *
+ * Avec `tilt = IDENTITY` on retrouve exactement les trois faces +Y, +Z, +X de
+ * la projection isométrique classique : la généralisation ne change rien au cas
+ * particulier d'où elle vient.
  */
-export function isoFaces(shape: Shape): IsoFace[] {
-  const cells = [...shape].sort((a, b) => a[0] + a[1] + a[2] - (b[0] + b[1] + b[2]));
-  const faces: IsoFace[] = [];
-  const quad = (kind: IsoFaceKind, pts: Array<[number, number, number]>) => {
-    faces.push({ kind, points: pts.map(([x, y, z]) => isoProject(x, y, z)) });
-  };
-  for (const [x, y, z] of cells) {
-    quad(1, [[x, y + 1, z], [x + 1, y + 1, z], [x + 1, y + 1, z + 1], [x, y + 1, z + 1]]);
-    quad(2, [[x, y, z + 1], [x + 1, y, z + 1], [x + 1, y + 1, z + 1], [x, y + 1, z + 1]]);
-    quad(3, [[x + 1, y, z], [x + 1, y, z + 1], [x + 1, y + 1, z + 1], [x + 1, y + 1, z]]);
+export function isoFaces(shape: Shape, tilt: Mat3 = IDENTITY): IsoFace[] {
+  const occupied = new Set(shape.map(([x, y, z]) => `${x},${y},${z}`));
+  // La vue est fixe et l'objet tourne : on incline l'objet, pas le regard.
+  const viewFixed: Vec3 = unit(VIEW_DIR);
+
+  const out: Array<{ face: IsoFace; depth: number }> = [];
+  for (const [x, y, z] of shape) {
+    for (const f of CUBE_FACES) {
+      if (occupied.has(`${x + f.d[0]},${y + f.d[1]},${z + f.d[2]}`)) continue;
+      const n = unit(applyReal(tilt, f.n) as Vec3);
+      if (dot(n, viewFixed) <= 1e-9) continue;
+      const pts = f.corners.map((c) => applyReal(tilt, [x + c[0], y + c[1], z + c[2]] as Vec3));
+      const depth = pts.reduce((sum, p) => sum + dot(p as Vec3, viewFixed), 0) / pts.length;
+      out.push({
+        face: {
+          kind: f.kind,
+          shade: AMBIENT + (1 - AMBIENT) * Math.max(0, dot(n, LIGHT_UNIT)),
+          points: pts.map((p) => isoProject(p[0], p[1], p[2])),
+        },
+        depth,
+      });
+    }
   }
-  return faces;
+  out.sort((a, b) => a.depth - b.depth);
+  return out.map((o) => o.face);
+}
+
+/**
+ * Côté du viewBox (en unités cube) contenant toutes ces figures inclinées.
+ * Une échelle COMMUNE est indispensable : si chaque empilement était mis à sa
+ * propre échelle, la taille des cubes deviendrait un indice — et le candidat
+ * apparierait les figures sans les tourner.
+ */
+export function worldSizeFor(entries: Array<{ shape: Shape; tilt?: Mat3 }>): number {
+  let side = 0;
+  for (const e of entries) {
+    const { minX, maxX, minY, maxY } = isoBounds(isoFaces(e.shape, e.tilt ?? IDENTITY));
+    side = Math.max(side, maxX - minX, maxY - minY);
+  }
+  return side + 0.7;
 }
 
 export function isoBounds(faces: IsoFace[]): { minX: number; maxX: number; minY: number; maxY: number } {
@@ -214,9 +320,18 @@ function pointInQuad(px: number, py: number, poly: Array<[number, number]>): boo
  * forme n'aurait pas de réponse. Les tests exigent que chaque forme du pool
  * produise 48 (ou 24 si elle a un axe de symétrie) images DEUX À DEUX distinctes.
  */
-export function isoImageKey(shape: Shape, resolution = 64, world = 9): string {
+/**
+ * Rasterise l'IMAGE réellement affichée : un octet par pixel, 0 pour le vide et
+ * la famille de face sinon.
+ *
+ * C'est le garde-fou décisif de l'exercice. En projection, des cubes en cachent
+ * d'autres : deux orientations différentes — voire un empilement ET son miroir —
+ * peuvent se dessiner exactement pareil. Un item construit là-dessus n'aurait
+ * pas de réponse, et le candidat chercherait une différence qui n'existe pas.
+ */
+export function rasterize(shape: Shape, tilt: Mat3 = IDENTITY, resolution = 48, world = 9): Uint8Array {
   // Du plus PROCHE au plus lointain : le premier quad touché gagne le pixel.
-  const faces = isoFaces(shape).reverse();
+  const faces = isoFaces(shape, tilt).reverse();
   const boxes = faces.map((f) => {
     const xs = f.points.map((p) => p[0]);
     const ys = f.points.map((p) => p[1]);
@@ -226,24 +341,34 @@ export function isoImageKey(shape: Shape, resolution = 64, world = 9): string {
   const cx = (minX + maxX) / 2;
   const cy = (minY + maxY) / 2;
 
-  const pixels: number[] = [];
+  const pixels = new Uint8Array(resolution * resolution);
   for (let iy = 0; iy < resolution; iy++) {
     const py = cy - world / 2 + ((iy + 0.5) * world) / resolution;
     for (let ix = 0; ix < resolution; ix++) {
       const px = cx - world / 2 + ((ix + 0.5) * world) / resolution;
-      let hit = 0;
       for (let f = 0; f < faces.length; f++) {
         const b = boxes[f];
         if (px < b[0] || px > b[1] || py < b[2] || py > b[3]) continue;
         if (pointInQuad(px, py, faces[f].points)) {
-          hit = faces[f].kind;
+          pixels[iy * resolution + ix] = faces[f].kind;
           break;
         }
       }
-      pixels.push(hit);
     }
   }
-  return pixels.join('');
+  return pixels;
+}
+
+/** Proportion de pixels qui diffèrent entre deux images de même taille. */
+export function imageDistance(a: Uint8Array, b: Uint8Array): number {
+  if (a.length !== b.length) throw new Error('Images de tailles différentes');
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) diff++;
+  return diff / a.length;
+}
+
+export function isoImageKey(shape: Shape, resolution = 64, world = 9): string {
+  return rasterize(shape, IDENTITY, resolution, world).join('');
 }
 
 /** Les images isométriques des 24 vues de la forme ET des 24 vues de son miroir. */
@@ -254,4 +379,3 @@ export function allIsoImageKeys(shape: Shape): string[] {
   }
   return keys;
 }
-

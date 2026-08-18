@@ -19,7 +19,7 @@ Statut au 17/08 : les 16 exercices sont conformes, vérifiés en jeu, et dispose
 | 4 | Formes et couleurs | `formes` | **Deux règles** données au début, en cascade : selon le **remplissage** (vide/rempli) puis la **couleur** ou la **forme** → appuyer sur **N** ou **X**. Ex. : Règle 1, si VIDE : N si BLEUE, X si ORANGE. Règle 2, si REMPLIE : N si CARRÉE, X si TRIANGULAIRE. | 30 formes, une toutes les 3 s, affichée **0,5 s** | ✅ |
 | 5 | Airways | `airways` | Triangles = avions ; **bleus vers la gauche, violets vers la droite**. Les **boutons de couleur déroutent** les avions de cette couleur sur les lignes concernées. **Dérouter le moins d'avions possible.** Par groupe de 6 lignes : jamais plus de **4 avions** ni plus de **2 bleus** dans la **zone grise**. Sinon accident. Compteurs à l'extérieur du groupe. | **10 séries** | ✅ |
 | 6 | Psychomoteur | `psychomot0` | **Trois tâches simultanées de même importance**, 5 min. ① **Poursuite** : maintenir ENFONCÉE la flèche du sens de déplacement du cercle ; un **chevron « > » vert** confirme. Changements de direction irréguliers (2-6 s), 4 directions. ② **Formes** : une forme dans le cercle, une autre dans un **encart fixe en pointillés à GAUCHE de l'écran** (séparé du cercle : la comparaison doit coûter un déplacement du regard). Identiques → **Espace**. ③ **Calculs** : un **BANDEAU HORIZONTAL de 4 calculs** affichés simultanément, défilant de droite à gauche à **vitesse variable d'une vague à l'autre**. **Un seul est entouré** (cadre orange) à la fois, le cadre passant au suivant. Entouré et FAUX → **F**. Format : **égalités à deux membres** avec opérations mixtes et négatifs (« 10×3 = 120/4 », « -27+15 = 2-14 », « 8×13 = 1+103 »), divisions entières, **~50 % de faux**. **Clavier physique obligatoire.** | **5 minutes** | ✅ |
-| 7 | Empilements | `empilements` | **Trois empilements de cubes**. Deux sont identiques **à une rotation près** ; le troisième a **en plus subi une symétrie**. Désigner **celui qui a subi la symétrie**. | 20 questions, **10 s** chacune | ✅ |
+| 7 | Empilements | `empilements` | **Trois empilements de cubes**, d'une **DIZAINE de cubes** chacun, **rouges sur fond gris clair**, chacun **basculé d'un angle quelconque** (aucune figure n'est posée droite). Deux sont identiques **à une rotation près** ; le troisième a **en plus subi une symétrie**. Désigner **celui qui a subi la symétrie**, en cliquant la figure ou en tapant 1, 2, 3. | 20 questions, **10 s** chacune | ✅ |
 | 8 | Objets 3D | `objets3d` | Une **scène d'objets posés dans le désert**. Déterminer **depuis lequel des 8 points de vue** disposés en cercle la scène a été vue (chaque point de vue regarde vers le **centre**). | 20 questions, **10 s** | ✅ |
 | 9 | Billes | `billes` | Billes **NUMÉROTÉES** (toutes distinctes, jamais interchangeables) empilées dans **trois tubes en U** ; **départ** en haut, **arrivée** en bas. Compter le **nombre MINIMUM de déplacements**. Une bille se prend **sur le dessus** d'un tube et se pose **sur le dessus** d'un autre. Capacités **3, 2, 3**. **Réponse par QCM : huit boutons de 2 à 9.** Aucune capacité n'est écrite sous les tubes. | 20 questions, **40 s** | ✅ |
 | 10 | Formes glissées - II | `formes_glissees2` | **Règles de superposition** : marine + marine = marine ; marine + gris = gris ; gris + gris = marine. **3 à 4 formes** en bas à glisser sur la grille centrale pour **reproduire la figure de gauche**. L'ordre de dépose n'a pas d'importance, seule compte la position. | — | ✅ |
@@ -50,6 +50,38 @@ pourcentage à côté de la classe, la classe seule masquant des écarts décisi
 | % | 57 | 69 | 79 | 85 | 90 | 93 | 95 | 96 |
 |---|----|----|----|----|----|----|----|----|
 | classe | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+
+## Empilements — précisions de calibration (relevé du 18/08/2026, sur capture de jeu)
+
+Trois écarts relevés sur capture, tous corrigés :
+
+1. **TAILLE** — quatre à sept cubes contre une **dizaine** chez Pilotest. C'est
+   l'écart décisif : un tétracube se retient comme une image, à dix cubes il
+   faut réellement tourner la figure dans sa tête. L'exercice mesurait autre
+   chose que l'épreuve.
+2. **BASCULEMENT** — les figures étaient toutes rendues dans la même
+   projection isométrique, donc bien droites et alignées sur la même grille.
+   Elles se comparaient alors contour à contour, sans rotation mentale. Chez
+   Pilotest chaque empilement est incliné d'un angle quelconque, et c'est ce qui
+   force le travail réel.
+3. **PALETTE** — cubes gris anthracite contre **rouge vif sur flancs presque
+   noirs** chez Pilotest. Un contraste faible entre les trois familles de faces
+   rend le relief ambigu, or lire le relief EST la tâche.
+
+Écart mineur également corrigé : la réponse se donnait par un bouton
+« Empilement N » doublant la pastille numérotée sous chaque figure — un
+aller-retour du regard de trop sur une épreuve à 10 s la question.
+
+**Les figures ne sont plus écrites à la main mais tirées de la graine de l'item**
+(croissance par accrétion, puis filtre chiralité + vraie tridimensionnalité).
+Un catalogue court finit par s'apprendre : on reconnaît les figures au lieu de
+les tourner.
+
+**Garde-fou à ne jamais retirer** : la génération vérifie que les trois DESSINS
+réellement affichés diffèrent d'au moins 8 % de leurs pixels. Des cubes en
+cachent d'autres à la projection, si bien que deux orientations très éloignées —
+voire un empilement et son miroir — peuvent se dessiner presque pareil. L'item
+serait alors indécidable, et le candidat chercherait une différence inexistante.
 
 ## Vérifier le projet (piège à éviter)
 

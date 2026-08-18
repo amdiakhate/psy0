@@ -17,7 +17,7 @@ export const tips: Tips = {
   ],
   timing: [
     'Budget 10 s : 4 s pour formuler les trois signatures (main droite / main gauche), 3 s pour apparier, 3 s de contre-épreuve. Si la contre-épreuve dépasse, valide quand même et passe.',
-    'Aux tailles 6-7 cubes, ne lis pas tous les cubes : le bras le plus long + son décrochage suffisent à décider dans la grande majorité des items. Lire l’empilement entier coûte 20 s et n’ajoute rien.',
+    'À une dizaine de cubes, ne lis JAMAIS la figure entière : le bras le plus long et son décrochage suffisent à décider dans la grande majorité des items. Lire tout l’empilement coûte 20 s pour 10 s disponibles — c’est le piège de conception de l’épreuve.',
     'Deux empilements de même main trouvés ⇒ réponds immédiatement, ne vérifie pas le troisième. Le contrôle du troisième est du temps dépensé pour une information que tu as déjà.',
   ],
 };

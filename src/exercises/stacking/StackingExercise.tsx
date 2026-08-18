@@ -1,16 +1,29 @@
 import { useMemo } from 'react';
+import { useKeys } from '../../hooks/useKeys';
 import type { ExerciseComponentProps } from '../../core/types';
 import type { StackingAnswer, StackingQuestion } from './generator';
-import { Choices } from '../../components/Choices';
 import { PolycubeSvg, commonWorldSize } from './PolycubeSvg';
 
+/**
+ * Trois empilements encadrés, numérotés, et rien d'autre : chez Pilotest on
+ * désigne la figure elle-même. Doubler la pastille d'un bouton « Empilement N »
+ * ajoutait un aller-retour du regard entre la figure et sa commande, sur une
+ * épreuve chronométrée à 10 s la question.
+ */
 export function StackingExercise({
   item,
   onAnswer,
 }: ExerciseComponentProps<StackingQuestion, StackingAnswer>) {
   const q = item.question;
   // Échelle commune : les cubes ont la même taille sur les trois empilements.
-  const world = useMemo(() => commonWorldSize(q.stacks), [q.stacks]);
+  const world = useMemo(() => commonWorldSize(q.stacks, q.tilts), [q.stacks, q.tilts]);
+
+  // Le clavier reste la voie rapide : à 10 s la question, viser trois cadres à
+  // la souris coûte plus cher que le raisonnement lui-même.
+  useKeys((e) => {
+    const n = Number(e.key);
+    if (n >= 1 && n <= q.stacks.length) onAnswer(n - 1);
+  });
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6">
@@ -19,28 +32,24 @@ export function StackingExercise({
         Lequel a subi la <span className="text-red-400">symétrie</span> ?
       </p>
 
-      <div className="flex flex-wrap items-start justify-center gap-6">
+      <div className="flex flex-wrap items-start justify-center gap-5">
         {q.stacks.map((shape, i) => (
-          <div key={i} className="flex flex-col items-center gap-2">
-            <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-2">
-              <PolycubeSvg shape={shape} world={world} px={150} />
+          <button
+            key={i}
+            onClick={() => onAnswer(i)}
+            className="group flex flex-col items-center gap-2 rounded-xl focus:outline-none"
+          >
+            <div className="rounded-lg border-2 border-zinc-700 bg-zinc-200 p-2 transition-colors group-hover:border-sky-500 group-focus-visible:border-sky-400">
+              <PolycubeSvg shape={shape} tilt={q.tilts[i]} world={world} px={210} />
             </div>
-            <span className="rounded bg-zinc-800 px-2.5 py-0.5 font-mono text-sm text-sky-400 border border-zinc-600">
+            <span className="rounded border border-zinc-600 bg-zinc-800 px-3 py-0.5 font-mono text-sm text-sky-400 transition-colors group-hover:border-sky-500 group-hover:text-sky-300">
               {i + 1}
             </span>
-          </div>
+          </button>
         ))}
       </div>
 
-      <div className="w-full max-w-lg">
-        <Choices
-          columns={3}
-          options={q.stacks.map((_, i) => (
-            <span key={i}>Empilement {i + 1}</span>
-          ))}
-          onPick={onAnswer}
-        />
-      </div>
+      <p className="text-sm text-zinc-500">Clique l’empilement symétrique, ou tape 1, 2 ou 3.</p>
     </div>
   );
 }
