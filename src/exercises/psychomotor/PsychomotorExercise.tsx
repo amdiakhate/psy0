@@ -64,16 +64,22 @@ export function PsychomotorExercise({
     index: -1, answered: false, shownAt: 0, wave: null,
   });
 
-  // Les deux touches s'illuminent brièvement à l'appui, comme sur Pilotest :
-  // c'est le seul retour immédiat que l'appui a bien été pris en compte.
-  const [flash, setFlash] = useState({ space: false, f: false });
+  /**
+   * Retour immédiat sur les tâches ② et ③ : vert si l'appui était justifié,
+   * rouge sinon. Sans lui, on ne sait qu'à la fin des cinq minutes qu'on a
+   * appuyé à tort — trop tard pour corriger quoi que ce soit en séance.
+   */
+  type Verdict = 'ok' | 'ko' | null;
+  const [flash, setFlash] = useState<{ space: Verdict; f: Verdict }>({ space: null, f: null });
   const flashTimers = useRef<{ space: number; f: number }>({ space: 0, f: 0 });
-  const blink = useCallback((key: 'space' | 'f') => {
-    setFlash((s) => ({ ...s, [key]: true }));
+  const blink = useCallback((key: 'space' | 'f', verdict: Exclude<Verdict, null>) => {
+    setFlash((s) => ({ ...s, [key]: verdict }));
     window.clearTimeout(flashTimers.current[key]);
     flashTimers.current[key] = window.setTimeout(
-      () => setFlash((s) => ({ ...s, [key]: false })),
-      140,
+      () => setFlash((s) => ({ ...s, [key]: null })),
+      // Assez long pour être vu du coin de l'œil, assez court pour ne pas
+      // masquer le verdict suivant.
+      320,
     );
   }, []);
 
@@ -109,11 +115,11 @@ export function PsychomotorExercise({
       const t = (now - startRef.current) / 1000;
       if (e.key === ' ') {
         e.preventDefault();
-        blink('space');
         const i = shapeIndexAt(q.shapes, t, q.shapeIntervalMs);
         if (i < 0 || shapeState.current.answered) return;
         shapeState.current.answered = true;
         const pair = q.shapes[i];
+        blink('space', pair.match ? 'ok' : 'ko');
         scores.current.taskTotal += 1;
         if (pair.match) scores.current.taskOk += 1;
         cbRef.current.onContinuousEvent?.({
@@ -126,12 +132,12 @@ export function PsychomotorExercise({
       }
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
-        blink('f');
         const wave = waveAt(q.waves, t, q.calcIntervalMs);
         const i = wave ? calcIndexAt(wave.calcs, t, q.calcIntervalMs) : -1;
         if (!wave || i < 0 || calcState.current.answered) return;
         calcState.current.answered = true;
         const calc = wave.calcs[i];
+        blink('f', calc.wrong ? 'ok' : 'ko');
         scores.current.taskTotal += 1;
         if (calc.wrong) scores.current.taskOk += 1;
         cbRef.current.onContinuousEvent?.({
@@ -346,7 +352,17 @@ export function PsychomotorExercise({
           disposition officielle, et elle impose un vrai déplacement du regard
           entre la forme de référence et le cercle, resté en haut. */}
       <div className="flex w-full max-w-5xl items-center gap-6 px-4">
-        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-zinc-500">
+        {/* L'encart réagit lui aussi : le verdict s'affiche LÀ OÙ se joue la
+            tâche, pas seulement sur la touche, qu'on ne regarde pas. */}
+        <div
+          className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
+            flash.space === 'ok'
+              ? 'border-green-500 bg-green-950/40'
+              : flash.space === 'ko'
+                ? 'border-red-500 bg-red-950/40'
+                : 'border-zinc-500'
+          }`}
+        >
           <Shape name={ui.left} size={40} color="#0ea5e9" />
         </div>
 
@@ -361,10 +377,14 @@ export function PsychomotorExercise({
               ui.lane.map((c, i) => (
                 <span
                   key={`${c.t}-${i}`}
-                  className={`shrink-0 rounded-lg px-5 py-3 font-mono text-xl tabular-nums transition-colors ${
-                    i === ui.laneIndex
-                      ? 'border-2 border-amber-500 text-zinc-100'
-                      : 'border-2 border-transparent text-zinc-400'
+                  className={`shrink-0 rounded-lg border-2 px-5 py-3 font-mono text-xl tabular-nums transition-colors ${
+                    i !== ui.laneIndex
+                      ? 'border-transparent text-zinc-400'
+                      : flash.f === 'ok'
+                        ? 'border-green-500 bg-green-950/40 text-zinc-100'
+                        : flash.f === 'ko'
+                          ? 'border-red-500 bg-red-950/40 text-zinc-100'
+                          : 'border-amber-500 text-zinc-100'
                   }`}
                 >
                   {c.display}
@@ -379,15 +399,19 @@ export function PsychomotorExercise({
           orange pour les calculs. Elles s'illuminent à l'appui. */}
       <div className="flex w-full max-w-5xl items-center gap-4 px-4">
         <span
-          className={`rounded-lg px-6 py-2.5 text-sm font-bold tracking-wide transition-colors ${
-            flash.space ? 'bg-sky-400 text-zinc-950' : 'bg-sky-700 text-white'
+          className={`rounded-lg px-6 py-2.5 text-sm font-bold tracking-wide text-white transition-colors ${
+            flash.space === 'ok'
+              ? 'bg-green-600'
+              : flash.space === 'ko'
+                ? 'bg-red-600'
+                : 'bg-sky-700'
           }`}
         >
           ESPACE
         </span>
         <span
-          className={`rounded-lg px-5 py-2.5 text-sm font-bold transition-colors ${
-            flash.f ? 'bg-amber-400 text-zinc-950' : 'bg-amber-600 text-white'
+          className={`rounded-lg px-5 py-2.5 text-sm font-bold text-white transition-colors ${
+            flash.f === 'ok' ? 'bg-green-600' : flash.f === 'ko' ? 'bg-red-600' : 'bg-amber-600'
           }`}
         >
           F
