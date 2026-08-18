@@ -39,8 +39,14 @@ export function StackingExercise({
             onClick={() => onAnswer(i)}
             className="group flex flex-col items-center gap-2 rounded-xl focus:outline-none"
           >
-            <div className="rounded-lg border-2 border-zinc-700 p-2 transition-colors group-hover:border-sky-500 group-focus-visible:border-sky-400" style={{ background: '#e7e5e4' }}>
-              <PolycubeSvg shape={shape} tilt={q.tilts[i]} world={world} px={210} />
+            {/* Cadre CARRÉ à liseré fin, figure au large dedans : c'est la
+                présentation de Pilotest, et la marge compte — un empilement qui
+                touche le bord se lit par son contour au lieu de son relief. */}
+            <div
+              className="flex items-center justify-center border-2 border-zinc-800 transition-colors group-hover:border-sky-500 group-focus-visible:border-sky-400"
+              style={{ background: '#d4d4d4', width: 250, height: 250 }}
+            >
+              <PolycubeSvg shape={shape} tilt={q.tilts[i]} world={world} px={200} />
             </div>
             <span className="rounded border border-zinc-600 bg-zinc-800 px-3 py-0.5 font-mono text-sm text-sky-400 transition-colors group-hover:border-sky-500 group-hover:text-sky-300">
               {i + 1}

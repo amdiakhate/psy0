@@ -245,9 +245,46 @@ const CUBE_FACES: Array<{ n: Vec3; d: Cell; kind: IsoFaceKind; corners: Vec3[] }
   { n: [-1, 0, 0], d: [-1, 0, 0], kind: 3, corners: [[0, 0, 0], [0, 1, 0], [0, 1, 1], [0, 0, 1]] },
 ];
 
-/** Projection isométrique d'un sommet du réseau, cube d'arête 1. */
+/**
+ * Repère de la caméra, calé sur l'axe de vue (1,1,1).
+ *
+ * `RIGHT` est horizontal à l'écran (il n'a pas de composante verticale), `UP`
+ * complète le trièdre. Fixes une fois pour toutes : c'est l'OBJET qui tourne,
+ * jamais le regard — sinon deux figures inclinées différemment ne seraient plus
+ * comparables.
+ */
+const FORWARD: Vec3 = unit(VIEW_DIR);
+const RIGHT: Vec3 = unit([1, 0, -1]);
+const UP: Vec3 = unit([
+  FORWARD[1] * RIGHT[2] - FORWARD[2] * RIGHT[1],
+  FORWARD[2] * RIGHT[0] - FORWARD[0] * RIGHT[2],
+  FORWARD[0] * RIGHT[1] - FORWARD[1] * RIGHT[0],
+]);
+
+/**
+ * Distance de la caméra au centre de la scène, en arêtes de cube, et distance
+ * focale.
+ *
+ * Pilotest rend ses empilements en perspective, pas en isométrie : les arêtes
+ * fuient, les cubes du fond sont plus petits. Ce n'est pas cosmétique — la
+ * fuite donne une information de profondeur que l'isométrie supprime par
+ * construction, et l'exercice se joue précisément sur la lecture du relief.
+ *
+ * La caméra reste LOIN : de près, la déformation devient telle que deux vues du
+ * même objet ne se ressemblent plus, ce qui rendrait l'appariement plus dur
+ * qu'au test au lieu de plus fidèle.
+ */
+const CAMERA_DIST = 13;
+const FOCAL = 11.5;
+
+/** Projection en perspective d'un sommet du réseau, cube d'arête 1. */
 export function isoProject(x: number, y: number, z: number): [number, number] {
-  return [(x - z) * 0.866, (x + z) * 0.5 - y];
+  const p: Vec3 = [x, y, z];
+  const depth = CAMERA_DIST - dot(p, FORWARD);
+  // Garde-fou : un sommet derrière la caméra renverrait un point aberrant.
+  const d = depth < 0.5 ? 0.5 : depth;
+  const k = FOCAL / d;
+  return [dot(p, RIGHT) * k, -dot(p, UP) * k];
 }
 
 /**
@@ -304,7 +341,7 @@ export function worldSizeFor(entries: Array<{ shape: Shape; tilt?: Mat3 }>): num
     const { minX, maxX, minY, maxY } = isoBounds(isoFaces(e.shape, e.tilt ?? IDENTITY));
     side = Math.max(side, maxX - minX, maxY - minY);
   }
-  return side + 0.7;
+  return side + 1.4;
 }
 
 /** Centre du cube d'une cellule — les flèches de la leçon partent des centres, pas des coins. */
