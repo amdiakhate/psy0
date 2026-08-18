@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ExerciseComponentProps } from '../../core/types';
 import type { PsyQuestion } from './generator';
-import { calcIndexAt, directionAt, scrollOffsetAt, shapeIndexAt, waveAt } from './generator';
+import { calcIndexAt, directionAt, positionAt, scrollOffsetAt, shapeIndexAt, waveAt } from './generator';
 import { ARROW_OF } from './config';
 import type { Direction, ShapeName } from './config';
 import type { CalcItem, CalcWave } from './generator';
@@ -22,7 +22,8 @@ function Shape({ name, size = 60, color = 'var(--ink-200)' }: { name: ShapeName;
   );
 }
 
-const ARROW_GLYPH: Record<Direction, string> = { up: '↑', down: '↓', left: '←', right: '→' };
+// Aucune flèche n'est affichée : le sens se LIT sur le mouvement du cercle.
+// L'indiquer à l'écran donnerait la réponse et supprimerait la poursuite.
 
 /**
  * Psychomoteur : trois tâches simultanées de même importance.
@@ -54,6 +55,7 @@ export function PsychomotorExercise({
   const [ui, setUi] = useState({
     direction: 'up' as Direction,
     correct: false,
+    pos: { x: 0.5, y: 0.5 },
     left: 'rond' as ShapeName,
     inCircle: 'rond' as ShapeName,
     lane: [] as CalcItem[],
@@ -184,6 +186,9 @@ export function PsychomotorExercise({
 
       // ③ Calculs : le cadre orange parcourt la vague visible.
       const wave = waveAt(q.waves, t, q.calcIntervalMs);
+      // La vague suivante est affichée à la suite : sans elle, le dernier
+      // calcul entouré n'aurait aucun successeur visible à anticiper.
+      const nextWave = wave ? q.waves[q.waves.indexOf(wave) + 1] : undefined;
       const ci = wave ? calcIndexAt(wave.calcs, t, q.calcIntervalMs) : -1;
       if (ci !== calcState.current.index) {
         const prev = calcState.current.index;
@@ -207,9 +212,10 @@ export function PsychomotorExercise({
       setUi({
         direction: dir,
         correct: ok,
+        pos: positionAt(q.segments, t),
         left: si >= 0 ? q.shapes[si].left : 'rond',
         inCircle: si >= 0 ? q.shapes[si].inCircle : 'rond',
-        lane: wave?.calcs ?? [],
+        lane: wave ? [...wave.calcs, ...(nextWave?.calcs.slice(0, 3) ?? [])] : [],
         laneIndex: ci,
         scroll: wave ? scrollOffsetAt(wave, t, q.calcIntervalMs) : 0,
         remaining: Math.max(0, durationSec - t),
@@ -276,39 +282,37 @@ export function PsychomotorExercise({
           Pilotest : la comparaison des deux formes doit coûter un déplacement
           du regard. Collés, ils se comparaient d'un seul coup d'œil, ce qui
           supprimait l'essentiel de la charge de la tâche ②. */}
-      <div className="flex w-full max-w-4xl items-center justify-between px-4">
-        {/* ② Encart pointillé fixe : la forme de référence */}
-        <div className="flex h-32 w-32 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-zinc-600 bg-zinc-900">
+      <div className="flex w-full max-w-4xl items-stretch gap-4 px-4">
+        {/* ② Encart pointillé FIXE, à gauche : la forme de référence */}
+        <div className="flex h-32 w-32 shrink-0 self-center items-center justify-center rounded-xl border-2 border-dashed border-zinc-600 bg-zinc-900">
           <Shape name={ui.left} size={64} color="var(--ink-400)" />
         </div>
 
-        {/* ① Le cercle et son sens de déplacement, ② la forme qu'il contient */}
-        <div className="relative flex h-44 w-44 items-center justify-center">
+        {/* ① Le cercle SE DÉPLACE dans cette zone, à vitesse variable : c'est
+            une tâche de poursuite. Il faut maintenir la flèche de son sens. */}
+        <div className="relative h-72 flex-1 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/50">
           <div
-            className={`flex h-40 w-40 items-center justify-center rounded-full border-4 ${
-              ui.correct ? 'border-green-500' : 'border-zinc-600'
-            } bg-zinc-900`}
+            className="absolute"
+            style={{
+              left: `${ui.pos.x * 100}%`,
+              top: `${ui.pos.y * 100}%`,
+              transform: 'translate(-50%, -50%)',
+            }}
           >
-            <Shape name={ui.inCircle} size={72} color="var(--ink-200)" />
+            <div className="relative flex h-20 w-20 items-center justify-center">
+              <div
+                className={`flex h-20 w-20 items-center justify-center rounded-full border-4 ${
+                  ui.correct ? 'border-green-500' : 'border-zinc-600'
+                } bg-zinc-900`}
+              >
+                <Shape name={ui.inCircle} size={38} color="var(--ink-200)" />
+              </div>
+              {/* Le chevron vert : la bonne flèche est maintenue */}
+              {ui.correct && (
+                <span className="absolute -right-5 text-3xl font-bold text-green-500">&gt;</span>
+              )}
+            </div>
           </div>
-          {/* Le « > » vert quand la bonne flèche est maintenue */}
-          {ui.correct && (
-            <span className="absolute -right-6 text-4xl font-bold text-green-500">&gt;</span>
-          )}
-          {/* Sens de déplacement du cercle */}
-          <span
-            className={`absolute font-mono text-3xl text-sky-400 ${
-              ui.direction === 'up'
-                ? '-top-8'
-                : ui.direction === 'down'
-                  ? '-bottom-8'
-                  : ui.direction === 'left'
-                    ? '-left-9'
-                    : '-right-9'
-            }`}
-          >
-            {ARROW_GLYPH[ui.direction]}
-          </span>
         </div>
       </div>
 
@@ -340,8 +344,8 @@ export function PsychomotorExercise({
       </div>
 
       <p className="max-w-2xl text-center text-xs text-zinc-500">
-        ① Maintiens la flèche du sens du cercle (un <span className="text-green-500">&gt;</span> vert
-        confirme) · ② <kbd className="rounded bg-zinc-800 px-1">Espace</kbd> si les deux formes sont
+        ① Regarde où va le cercle et MAINTIENS la flèche de ce sens (un{' '}
+        <span className="text-green-500">&gt;</span> vert confirme) · ② <kbd className="rounded bg-zinc-800 px-1">Espace</kbd> si les deux formes sont
         identiques · ③ <kbd className="rounded bg-zinc-800 px-1">F</kbd> si le calcul entouré est FAUX
       </p>
     </div>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SCROLL_MAX, allCalcs, calcIndexAt, directionAt, generate, scrollOffsetAt, shapeIndexAt } from './generator';
+import { DRIFT_MARGIN, SCROLL_MAX, allCalcs, calcIndexAt, directionAt, generate, positionAt, scrollOffsetAt, shapeIndexAt } from './generator';
 import { CALC_LANE_SIZE, DIRECTIONS, LEVELS, SCHEDULE_HORIZON_S } from './config';
 
 /** Évalue un membre « a+b » / « 120/4 » / « -51 » — recalcul indépendant. */
@@ -174,6 +174,61 @@ describe('défilement du bandeau', () => {
       const off = scrollOffsetAt(w, t, q.calcIntervalMs);
       expect(off).toBeGreaterThanOrEqual(precedent);
       precedent = off;
+    }
+  });
+});
+
+describe('① déplacement du cercle', () => {
+  it('bouge réellement : la position change au fil du temps', () => {
+    // Un cercle immobile avec une flèche à lire ne serait plus une poursuite.
+    const { segments } = generate(4, 3).question;
+    const a = positionAt(segments, 0);
+    const b = positionAt(segments, 8);
+    expect(a).toEqual({ x: 0.5, y: 0.5 });
+    expect(b.x !== a.x || b.y !== a.y).toBe(true);
+  });
+
+  it('part dans le sens annoncé par le segment', () => {
+    for (let seed = 0; seed < 30; seed++) {
+      const { segments } = generate(seed, 2).question;
+      const seg = segments[0];
+      const avant = positionAt(segments, seg.t);
+      const apres = positionAt(segments, seg.t + 0.5);
+      if (seg.direction === 'up') expect(apres.y).toBeLessThan(avant.y);
+      if (seg.direction === 'down') expect(apres.y).toBeGreaterThan(avant.y);
+      if (seg.direction === 'left') expect(apres.x).toBeLessThan(avant.x);
+      if (seg.direction === 'right') expect(apres.x).toBeGreaterThan(avant.x);
+    }
+  });
+
+  it('ne sort jamais de la zone de jeu', () => {
+    // Sans bornes, le cercle disparaîtrait de l'écran et la tâche deviendrait
+    // impossible à suivre.
+    for (let seed = 0; seed < 15; seed++) {
+      const { segments } = generate(seed, 5).question;
+      for (let t = 0; t < 120; t += 0.25) {
+        const p = positionAt(segments, t);
+        expect(p.x).toBeGreaterThanOrEqual(DRIFT_MARGIN - 1e-9);
+        expect(p.x).toBeLessThanOrEqual(1 - DRIFT_MARGIN + 1e-9);
+        expect(p.y).toBeGreaterThanOrEqual(DRIFT_MARGIN - 1e-9);
+        expect(p.y).toBeLessThanOrEqual(1 - DRIFT_MARGIN + 1e-9);
+      }
+    }
+  });
+
+  it('change de vitesse d’un segment à l’autre', () => {
+    // Une vitesse constante se suivrait au réflexe, sans regarder.
+    const { segments } = generate(6, 3).question;
+    const vitesses = new Set(segments.slice(0, 40).map((s) => s.speed));
+    expect(vitesses.size).toBeGreaterThan(30);
+    for (const s of segments) expect(s.speed).toBeGreaterThan(0);
+  });
+
+  it('est déterministe : même graine, même trajectoire', () => {
+    const a = generate(21, 3).question.segments;
+    const b = generate(21, 3).question.segments;
+    for (let t = 0; t < 60; t += 1.5) {
+      expect(positionAt(a, t)).toEqual(positionAt(b, t));
     }
   });
 });

@@ -14,6 +14,12 @@ export interface DriftSegment {
   /** Instant de début (s). */
   t: number;
   direction: Direction;
+  /**
+   * Fraction de la zone parcourue par seconde. Elle change à chaque segment :
+   * le cercle officiel ne file pas au même rythme d'un déplacement à l'autre,
+   * et c'est ce qui interdit de suivre au réflexe plutôt qu'à l'œil.
+   */
+  speed: number;
 }
 
 export interface ShapePair {
@@ -72,7 +78,8 @@ export function generate(seed: number, level: number, forceTag?: string): Item<P
   while (t < SCHEDULE_HORIZON_S) {
     let direction = pick(rng, DIRECTIONS);
     while (direction === previous) direction = pick(rng, DIRECTIONS);
-    segments.push({ t, direction });
+    const [slo, shi] = cfg.driftSpeed;
+    segments.push({ t, direction, speed: slo + rng() * (shi - slo) });
     previous = direction;
     t += (cfg.driftSegmentMs[0] + rng() * (cfg.driftSegmentMs[1] - cfg.driftSegmentMs[0])) / 1000;
   }
@@ -150,6 +157,55 @@ export function shapeIndexAt(shapes: ShapePair[], t: number, intervalMs: number)
 
 /** Index du calcul entouré à l'instant t, ou -1. */
 /**
+ * Marge gardée sur les bords, en fraction. Elle doit couvrir la DEMI-TAILLE du
+ * cercle : à 0,08 il débordait de son cadre, la position étant celle de son
+ * centre.
+ */
+export const DRIFT_MARGIN = 0.16;
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+const STEP: Record<Direction, Point> = {
+  up: { x: 0, y: -1 },
+  down: { x: 0, y: 1 },
+  left: { x: -1, y: 0 },
+  right: { x: 1, y: 0 },
+};
+
+function clampToArena(v: number): number {
+  return Math.min(1 - DRIFT_MARGIN, Math.max(DRIFT_MARGIN, v));
+}
+
+/**
+ * Position du cercle à l'instant t, en fractions de la zone de jeu.
+ *
+ * Le cercle SE DÉPLACE réellement : c'est une tâche de POURSUITE. Une version
+ * antérieure le laissait immobile avec une flèche indiquant la direction —
+ * il n'y avait alors plus rien à poursuivre, seulement un symbole à lire.
+ *
+ * Contre un bord, la position est bornée plutôt que réfléchie : un rebond
+ * inverserait le sens réel sans que la direction annoncée change, et la
+ * consigne « maintiens la flèche du sens de déplacement » deviendrait fausse.
+ */
+export function positionAt(segments: DriftSegment[], t: number): Point {
+  let x = 0.5;
+  let y = 0.5;
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i];
+    if (seg.t >= t) break;
+    const end = Math.min(t, segments[i + 1]?.t ?? t);
+    const dt = Math.max(0, end - seg.t);
+    const d = STEP[seg.direction];
+    x = clampToArena(x + d.x * seg.speed * dt);
+    y = clampToArena(y + d.y * seg.speed * dt);
+  }
+  return { x, y };
+}
+
+/**
  * Vague visible à l'instant t : celle dont le cadre parcourt les calculs.
  * `null` avant la première vague.
  */
@@ -174,13 +230,21 @@ export function waveAt(waves: CalcWave[], t: number, intervalMs: number): CalcWa
  */
 export const SCROLL_MAX = 0.55;
 
+/**
+ * Décalage du bandeau, en fraction de largeur.
+ *
+ * Il amène le calcul ENTOURÉ à gauche, de sorte que les suivants restent
+ * visibles à sa droite : c'est là toute la valeur du bandeau, pouvoir les lire
+ * avant qu'ils soient entourés. Une version antérieure laissait l'entouré à
+ * droite, avec uniquement des calculs déjà traités à gauche — il n'y avait
+ * plus rien à anticiper.
+ */
 export function scrollOffsetAt(wave: CalcWave, t: number, intervalMs: number): number {
   const step = intervalMs / 1000;
   const elapsed = Math.max(0, t - wave.t);
-  const progress = Math.min(1, elapsed / (CALC_LANE_SIZE * step));
-  // speed est de l'ordre de 0,03 à 0,09 : ramené sur [0,7 ; 1] d'amplitude.
-  const amplitude = SCROLL_MAX * Math.min(1, 0.7 + wave.speed * 4);
-  return progress * amplitude;
+  // Avance continue, d'un emplacement par intervalle.
+  const progress = Math.min(CALC_LANE_SIZE, elapsed / step);
+  return (progress / CALC_LANE_SIZE) * SCROLL_MAX;
 }
 
 export function calcIndexAt(calcs: CalcItem[], t: number, intervalMs: number): number {
