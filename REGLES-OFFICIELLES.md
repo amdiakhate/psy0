@@ -18,7 +18,7 @@ Statut au 17/08 : les 16 exercices sont conformes, vérifiés en jeu, et dispose
 | 3 | M2 Back numérique | `m2back_numerique` | Un chiffre affiché **1 s**, puis boutons **Oui / Non pendant 3 s**. Répondre Oui si le chiffre est le même que **2 coups avant**. N = 2 fixe. | séries de **42 chiffres** | ✅ |
 | 4 | Formes et couleurs | `formes` | **Deux règles** données au début, en cascade : selon le **remplissage** (vide/rempli) puis la **couleur** ou la **forme** → appuyer sur **N** ou **X**. Ex. : Règle 1, si VIDE : N si BLEUE, X si ORANGE. Règle 2, si REMPLIE : N si CARRÉE, X si TRIANGULAIRE. | 30 formes, une toutes les 3 s, affichée **0,5 s** | ✅ |
 | 5 | Airways | `airways` | Triangles = avions ; **bleus vers la gauche, violets vers la droite**. Les **boutons de couleur déroutent** les avions de cette couleur sur les lignes concernées. **Dérouter le moins d'avions possible.** Par groupe de 6 lignes : jamais plus de **4 avions** ni plus de **2 bleus** dans la **zone grise**. Sinon accident. Compteurs à l'extérieur du groupe. | **10 séries** | ✅ |
-| 6 | Psychomoteur | `psychomot0` | **Trois tâches simultanées de même importance** : ① suivre le **cercle** avec les flèches (maintenir la flèche du sens de déplacement ; un `>` vert apparaît quand c'est correct) ; ② quand la **forme dans le cercle** et celle de **l'encart pointillé** sont identiques → **Espace** ; ③ quand le **calcul entouré est FAUX** → touche **F**. | **5 minutes** | ✅ |
+| 6 | Psychomoteur | `psychomot0` | **Trois tâches simultanées de même importance**, 5 min. ① **Poursuite** : maintenir ENFONCÉE la flèche du sens de déplacement du cercle ; un **chevron « > » vert** confirme. Changements de direction irréguliers (2-6 s), 4 directions. ② **Formes** : une forme dans le cercle, une autre dans un **encart fixe en pointillés à GAUCHE de l'écran** (séparé du cercle : la comparaison doit coûter un déplacement du regard). Identiques → **Espace**. ③ **Calculs** : un **BANDEAU HORIZONTAL de 4 calculs** affichés simultanément, défilant de droite à gauche à **vitesse variable d'une vague à l'autre**. **Un seul est entouré** (cadre orange) à la fois, le cadre passant au suivant. Entouré et FAUX → **F**. Format : **égalités à deux membres** avec opérations mixtes et négatifs (« 10×3 = 120/4 », « -27+15 = 2-14 », « 8×13 = 1+103 »), divisions entières, **~50 % de faux**. **Clavier physique obligatoire.** | **5 minutes** | ✅ |
 | 7 | Empilements | `empilements` | **Trois empilements de cubes**. Deux sont identiques **à une rotation près** ; le troisième a **en plus subi une symétrie**. Désigner **celui qui a subi la symétrie**. | 20 questions, **10 s** chacune | ✅ |
 | 8 | Objets 3D | `objets3d` | Une **scène d'objets posés dans le désert**. Déterminer **depuis lequel des 8 points de vue** disposés en cercle la scène a été vue (chaque point de vue regarde vers le **centre**). | 20 questions, **10 s** | ✅ |
 | 9 | Billes | `billes` | Billes **NUMÉROTÉES** (toutes distinctes, jamais interchangeables) empilées dans **trois tubes en U** ; **départ** en haut, **arrivée** en bas. Compter le **nombre MINIMUM de déplacements**. Une bille se prend **sur le dessus** d'un tube et se pose **sur le dessus** d'un autre. Capacités **3, 2, 3**. **Réponse par QCM : huit boutons de 2 à 9.** Aucune capacité n'est écrite sous les tubes. | 20 questions, **40 s** | ✅ |
@@ -29,6 +29,27 @@ Statut au 17/08 : les 16 exercices sont conformes, vérifiés en jeu, et dispose
 | 14 | Boîtes à mots | `boxes` | **Boîtes vides de 4 à 6 cases**. Un mot apparaît brièvement au centre → le classer **par champ lexical**. **Au premier mot d'un thème, on choisit librement la boîte** ; ensuite il faut rester cohérent. | **5 séries**, minimum d'erreurs | ✅ |
 | 15 | Mots en étoile | `mots_en_etoile` | Liste de **9 mots de 7 lettres**. En **sélectionner 6** et les placer sur une **étoile** de sorte que les **cases communes à deux mots** portent une seule et même lettre. Plusieurs solutions possibles. | 10 questions, **50 s** | ✅ |
 | 16 | Anglais | `english` | **30 QCM**, réponse à l'automatisme plus qu'à la réflexion. Distingue bilingues et bons non-bilingues. | **7 min 30** pour 30 questions (15 s/question) | ✅ |
+
+## Psychomoteur — précisions de calibration (relevé du 18/08/2026)
+
+**Le bandeau de 4 calculs est LA divergence à ne pas réintroduire.** Afficher un
+calcul isolé supprime la possibilité de **lire les suivants à l'avance**, qui est
+précisément la compétence mesurée. Le défilement doit rester borné : si les
+calculs quittent l'écran avant d'être entourés, il n'y a plus rien à anticiper.
+
+**Deux pièges complémentaires sur les faux**, à garder tous les deux :
+- `unites-fausses` — le chiffre des unités diffère : comparer les unités suffit ;
+- `unites-ok` — l'écart est un multiple de 10, les unités CONCORDENT : le
+  raccourci ne voit rien, il faut calculer.
+
+N'entraîner que le premier installerait un réflexe faux ; que le second, de la lenteur.
+
+**Barème stanine officiel, volontairement écrasé** — d'où l'affichage du
+pourcentage à côté de la classe, la classe seule masquant des écarts décisifs :
+
+| % | 57 | 69 | 79 | 85 | 90 | 93 | 95 | 96 |
+|---|----|----|----|----|----|----|----|----|
+| classe | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
 
 ## Vérifier le projet (piège à éviter)
 

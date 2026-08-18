@@ -1,8 +1,9 @@
-import { mulberry32, pick, randInt } from '../../core/rng';
-import type { Rng } from '../../core/rng';
+import { mulberry32, pick } from '../../core/rng';
 import type { Item } from '../../core/types';
-import { DIRECTIONS, LEVELS, SCHEDULE_HORIZON_S, SHAPES } from './config';
+import { CALC_LANE_SIZE, DIRECTIONS, LEVELS, SCHEDULE_HORIZON_S, SHAPES } from './config';
 import type { Direction, ShapeName } from './config';
+import { makeCalc } from './calc';
+import type { Calc, Trap } from './calc';
 
 /**
  * Les trois tâches sont planifiées à l'avance (déterministe depuis le seed) :
@@ -26,46 +27,37 @@ export interface ShapePair {
 }
 
 export interface CalcItem {
+  /** Instant où ce calcul devient ENTOURÉ (s). */
   t: number;
   display: string;
   /** true si le calcul entouré est FAUX → touche F attendue. */
   wrong: boolean;
+  /** Nature du faux, pour la taxonomie d'erreurs. */
+  trap: Trap;
+}
+
+/**
+ * Une vague du bandeau : CALC_LANE_SIZE calculs visibles simultanément, qui
+ * défilent de droite à gauche à une vitesse propre à la vague.
+ *
+ * C'est la divergence majeure avec l'ancienne version, qui n'affichait qu'un
+ * calcul à la fois : voir les suivants arriver permet de les LIRE À L'AVANCE,
+ * et c'est précisément la compétence que l'épreuve mesure.
+ */
+export interface CalcWave {
+  /** Instant d'entrée de la vague (s). */
+  t: number;
+  /** Fraction de largeur parcourue par seconde. */
+  speed: number;
+  calcs: CalcItem[];
 }
 
 export interface PsyQuestion {
   segments: DriftSegment[];
   shapes: ShapePair[];
-  calcs: CalcItem[];
+  waves: CalcWave[];
   shapeIntervalMs: number;
   calcIntervalMs: number;
-}
-
-/** Calcul simple avec un résultat affiché, parfois faux (erreur plausible ±1/±2/±10). */
-function makeCalc(rng: Rng, wrong: boolean): { display: string; wrong: boolean } {
-  const kind = randInt(rng, 0, 2);
-  let a: number;
-  let b: number;
-  let op: string;
-  let truth: number;
-  if (kind === 0) {
-    a = randInt(rng, 11, 79);
-    b = randInt(rng, 4, 29);
-    op = '+';
-    truth = a + b;
-  } else if (kind === 1) {
-    a = randInt(rng, 25, 95);
-    b = randInt(rng, 4, 24);
-    op = '−';
-    truth = a - b;
-  } else {
-    a = randInt(rng, 3, 12);
-    b = randInt(rng, 3, 9);
-    op = '×';
-    truth = a * b;
-  }
-  const deltas = [1, -1, 2, -2, 10, -10];
-  const shown = wrong ? truth + pick(rng, deltas) : truth;
-  return { display: `${a} ${op} ${b} = ${shown}`, wrong: shown !== truth };
 }
 
 export function generate(seed: number, level: number, forceTag?: string): Item<PsyQuestion> {
@@ -99,19 +91,31 @@ export function generate(seed: number, level: number, forceTag?: string): Item<P
     shapes.push({ t: s, left, inCircle, match: left === inCircle });
   }
 
-  // ③ Calculs, à intervalle régulier.
-  const wrongRate = forceTag === 'calc-wrong' ? 0.6 : cfg.calcWrongRate;
-  const calcs: CalcItem[] = [];
-  for (let s = 2.5; s < SCHEDULE_HORIZON_S; s += cfg.calcIntervalMs / 1000) {
-    const c = makeCalc(rng, rng() < wrongRate);
-    calcs.push({ t: s, display: c.display, wrong: c.wrong });
+  // ③ Bandeau de calculs : des vagues de CALC_LANE_SIZE calculs qui défilent,
+  // le cadre orange passant de l'un au suivant à intervalle régulier.
+  const wrongRate = forceTag === 'calc-wrong' ? 0.65 : cfg.calcWrongRate;
+  const step = cfg.calcIntervalMs / 1000;
+  const waves: CalcWave[] = [];
+  let waveT = 2.5;
+  while (waveT < SCHEDULE_HORIZON_S) {
+    // Une vitesse propre à chaque vague : le bandeau officiel n'avance pas au
+    // même rythme d'une vague à l'autre, ce qui interdit de se caler dessus.
+    const [lo, hi] = cfg.scrollSpeed;
+    const speed = lo + rng() * (hi - lo);
+    const calcs: CalcItem[] = [];
+    for (let k = 0; k < CALC_LANE_SIZE; k++) {
+      const c: Calc = makeCalc(rng, { wrongRate });
+      calcs.push({ t: waveT + k * step, display: c.display, wrong: c.wrong, trap: c.trap });
+    }
+    waves.push({ t: waveT, speed, calcs });
+    waveT += CALC_LANE_SIZE * step;
   }
 
   return {
     question: {
       segments,
       shapes,
-      calcs,
+      waves,
       shapeIntervalMs: cfg.shapeIntervalMs,
       calcIntervalMs: cfg.calcIntervalMs,
     },
@@ -119,6 +123,11 @@ export function generate(seed: number, level: number, forceTag?: string): Item<P
     level,
     tags: ['tracking'],
   };
+}
+
+/** Tous les calculs, dans l'ordre où le cadre les entoure. */
+export function allCalcs(waves: CalcWave[]): CalcItem[] {
+  return waves.flatMap((w) => w.calcs);
 }
 
 /** Direction attendue à l'instant t (s). */
@@ -140,6 +149,40 @@ export function shapeIndexAt(shapes: ShapePair[], t: number, intervalMs: number)
 }
 
 /** Index du calcul entouré à l'instant t, ou -1. */
+/**
+ * Vague visible à l'instant t : celle dont le cadre parcourt les calculs.
+ * `null` avant la première vague.
+ */
+export function waveAt(waves: CalcWave[], t: number, intervalMs: number): CalcWave | null {
+  const span = (CALC_LANE_SIZE * intervalMs) / 1000;
+  for (let i = waves.length - 1; i >= 0; i--) {
+    if (waves[i].t <= t && t < waves[i].t + span) return waves[i];
+  }
+  return null;
+}
+
+/**
+ * Décalage horizontal du bandeau, en fraction de largeur.
+ *
+ * Le défilement suit la PROGRESSION DU CADRE et non une vitesse libre : sinon
+ * le bandeau file devant et les derniers calculs quittent l'écran avant même
+ * d'être entourés — on ne pourrait plus les lire à l'avance, ce qui vide
+ * l'exercice de son intérêt.
+ *
+ * `speed` module l'amplitude d'une vague à l'autre, pour qu'on ne puisse pas
+ * se caler mécaniquement, mais elle reste bornée par SCROLL_MAX.
+ */
+export const SCROLL_MAX = 0.55;
+
+export function scrollOffsetAt(wave: CalcWave, t: number, intervalMs: number): number {
+  const step = intervalMs / 1000;
+  const elapsed = Math.max(0, t - wave.t);
+  const progress = Math.min(1, elapsed / (CALC_LANE_SIZE * step));
+  // speed est de l'ordre de 0,03 à 0,09 : ramené sur [0,7 ; 1] d'amplitude.
+  const amplitude = SCROLL_MAX * Math.min(1, 0.7 + wave.speed * 4);
+  return progress * amplitude;
+}
+
 export function calcIndexAt(calcs: CalcItem[], t: number, intervalMs: number): number {
   for (let i = calcs.length - 1; i >= 0; i--) {
     if (calcs[i].t <= t && t < calcs[i].t + intervalMs / 1000) return i;

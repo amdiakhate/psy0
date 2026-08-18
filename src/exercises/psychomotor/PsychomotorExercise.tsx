@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ExerciseComponentProps } from '../../core/types';
 import type { PsyQuestion } from './generator';
-import { calcIndexAt, directionAt, shapeIndexAt } from './generator';
+import { calcIndexAt, directionAt, scrollOffsetAt, shapeIndexAt, waveAt } from './generator';
 import { ARROW_OF } from './config';
 import type { Direction, ShapeName } from './config';
+import type { CalcItem, CalcWave } from './generator';
 
 const SHAPE_PATH: Record<ShapeName, string> = {
   rond: 'M50,12 A38,38 0 1,1 49.9,12 Z',
@@ -46,14 +47,18 @@ export function PsychomotorExercise({
   const trackWindow = useRef({ start: 0, okMs: 0, totalMs: 0, last: 0 });
   // Tâches discrètes : index traité et réponse donnée.
   const shapeState = useRef({ index: -1, answered: false, shownAt: 0 });
-  const calcState = useRef({ index: -1, answered: false, shownAt: 0 });
+  const calcState = useRef<{ index: number; answered: boolean; shownAt: number; wave: CalcWave | null }>({
+    index: -1, answered: false, shownAt: 0, wave: null,
+  });
 
   const [ui, setUi] = useState({
     direction: 'up' as Direction,
     correct: false,
     left: 'rond' as ShapeName,
     inCircle: 'rond' as ShapeName,
-    calc: '',
+    lane: [] as CalcItem[],
+    laneIndex: -1,
+    scroll: 0,
     remaining: durationSec,
     trackPct: 100,
     taskPct: 100,
@@ -93,14 +98,15 @@ export function PsychomotorExercise({
       }
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
-        const i = calcIndexAt(q.calcs, t, q.calcIntervalMs);
-        if (i < 0 || calcState.current.answered) return;
+        const wave = waveAt(q.waves, t, q.calcIntervalMs);
+        const i = wave ? calcIndexAt(wave.calcs, t, q.calcIntervalMs) : -1;
+        if (!wave || i < 0 || calcState.current.answered) return;
         calcState.current.answered = true;
-        const calc = q.calcs[i];
+        const calc = wave.calcs[i];
         scores.current.taskTotal += 1;
         if (calc.wrong) scores.current.taskOk += 1;
         cbRef.current.onContinuousEvent?.({
-          tags: ['calc-check', 'dual-load'],
+          tags: ['calc-check', 'dual-load', calc.trap],
           correct: calc.wrong,
           rtMs: now - calcState.current.shownAt,
           given: 'F',
@@ -128,7 +134,7 @@ export function PsychomotorExercise({
     startRef.current = now0;
     trackWindow.current = { start: now0, okMs: 0, totalMs: 0, last: now0 };
     shapeState.current = { index: -1, answered: false, shownAt: now0 };
-    calcState.current = { index: -1, answered: false, shownAt: now0 };
+    calcState.current = { index: -1, answered: false, shownAt: now0, wave: null };
     scores.current = { trackOk: 0, trackTotal: 0, taskOk: 0, taskTotal: 0 };
 
     const frame = (now: number) => {
@@ -176,12 +182,14 @@ export function PsychomotorExercise({
         shapeState.current = { index: si, answered: false, shownAt: now };
       }
 
-      // ③ Calculs : idem.
-      const ci = calcIndexAt(q.calcs, t, q.calcIntervalMs);
+      // ③ Calculs : le cadre orange parcourt la vague visible.
+      const wave = waveAt(q.waves, t, q.calcIntervalMs);
+      const ci = wave ? calcIndexAt(wave.calcs, t, q.calcIntervalMs) : -1;
       if (ci !== calcState.current.index) {
         const prev = calcState.current.index;
         if (prev >= 0 && !calcState.current.answered) {
-          const calc = q.calcs[prev];
+          const calc = calcState.current.wave?.calcs[prev];
+          if (!calc) return;
           scores.current.taskTotal += 1;
           if (!calc.wrong) scores.current.taskOk += 1;
           cbRef.current.onContinuousEvent?.({
@@ -192,7 +200,7 @@ export function PsychomotorExercise({
             expected: calc.wrong ? 'F' : 'ne rien faire',
           });
         }
-        calcState.current = { index: ci, answered: false, shownAt: now };
+        calcState.current = { index: ci, answered: false, shownAt: now, wave };
       }
 
       const s = scores.current;
@@ -201,7 +209,9 @@ export function PsychomotorExercise({
         correct: ok,
         left: si >= 0 ? q.shapes[si].left : 'rond',
         inCircle: si >= 0 ? q.shapes[si].inCircle : 'rond',
-        calc: ci >= 0 ? q.calcs[ci].display : '',
+        lane: wave?.calcs ?? [],
+        laneIndex: ci,
+        scroll: wave ? scrollOffsetAt(wave, t, q.calcIntervalMs) : 0,
         remaining: Math.max(0, durationSec - t),
         trackPct: s.trackTotal > 0 ? Math.round((100 * s.trackOk) / s.trackTotal) : 100,
         taskPct: s.taskTotal > 0 ? Math.round((100 * s.taskOk) / s.taskTotal) : 100,
@@ -223,6 +233,31 @@ export function PsychomotorExercise({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item.seed, durationSec]);
 
+  // Les trois tâches exigent flèches MAINTENUES, Espace et F simultanément :
+  // sans clavier physique, l'exercice est injouable et les données produites
+  // seraient trompeuses. On détecte l'absence probable de clavier (pointeur
+  // grossier) plutôt que la présence du tactile, pour ne pas écarter les
+  // portables à écran tactile, qui en ont un.
+  const sansClavier =
+    typeof window !== 'undefined' &&
+    window.matchMedia?.('(pointer: coarse)').matches === true &&
+    window.matchMedia?.('(hover: none)').matches === true;
+
+  if (sansClavier) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-2xl font-bold text-amber-400">Clavier physique requis</p>
+        <p className="max-w-md text-zinc-300">
+          Le Psychomoteur demande de maintenir une flèche tout en frappant Espace et F. Sur un
+          écran tactile, l'exercice est injouable — et le score obtenu ne voudrait rien dire.
+        </p>
+        <p className="max-w-md text-sm text-zinc-500">
+          Reprends-le sur ordinateur. Le jour du test, ce sera de toute façon au clavier.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5">
       <div className="flex w-full max-w-3xl items-center justify-between text-sm text-zinc-400">
@@ -237,9 +272,13 @@ export function PsychomotorExercise({
         </span>
       </div>
 
-      <div className="flex items-center justify-center gap-8">
-        {/* ② Encart pointillé : la forme de référence */}
-        <div className="flex h-32 w-32 items-center justify-center rounded-xl border-2 border-dashed border-zinc-600 bg-zinc-900">
+      {/* L'encart est À GAUCHE et NETTEMENT SÉPARÉ du cercle, comme sur
+          Pilotest : la comparaison des deux formes doit coûter un déplacement
+          du regard. Collés, ils se comparaient d'un seul coup d'œil, ce qui
+          supprimait l'essentiel de la charge de la tâche ②. */}
+      <div className="flex w-full max-w-4xl items-center justify-between px-4">
+        {/* ② Encart pointillé fixe : la forme de référence */}
+        <div className="flex h-32 w-32 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-zinc-600 bg-zinc-900">
           <Shape name={ui.left} size={64} color="var(--ink-400)" />
         </div>
 
@@ -273,15 +312,31 @@ export function PsychomotorExercise({
         </div>
       </div>
 
-      {/* ③ Le calcul entouré */}
-      <div className="flex h-16 items-center">
-        {ui.calc ? (
-          <div className="rounded-full border-2 border-amber-500 bg-amber-950/20 px-8 py-2">
-            <span className="font-mono text-2xl tabular-nums text-zinc-100">{ui.calc}</span>
-          </div>
-        ) : (
-          <span className="text-zinc-700">—</span>
-        )}
+      {/* ③ Le BANDEAU de calculs : quatre visibles, un seul entouré.
+          Voir arriver les suivants permet de les lire à l'avance — c'est
+          l'anticipation que l'épreuve mesure, impossible avec un calcul isolé. */}
+      <div className="w-full max-w-4xl overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/60 py-3">
+        <div
+          className="flex items-center gap-8 whitespace-nowrap will-change-transform"
+          style={{ transform: `translateX(${-ui.scroll * 100}%)` }}
+        >
+          {ui.lane.length === 0 ? (
+            <span className="pl-8 text-zinc-700">—</span>
+          ) : (
+            ui.lane.map((c, i) => (
+              <span
+                key={`${c.t}-${i}`}
+                className={`shrink-0 rounded-full px-6 py-2 font-mono text-2xl tabular-nums transition-colors ${
+                  i === ui.laneIndex
+                    ? 'border-2 border-amber-500 bg-amber-950/20 text-zinc-100'
+                    : 'border-2 border-transparent text-zinc-500'
+                }`}
+              >
+                {c.display}
+              </span>
+            ))
+          )}
+        </div>
       </div>
 
       <p className="max-w-2xl text-center text-xs text-zinc-500">

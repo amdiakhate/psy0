@@ -1,6 +1,7 @@
 import { useSession } from '../app/SessionContext';
 import { psychoRemainingTodaySec } from '../coach/daily';
 import { PSYCHO_DAILY_CAP_SEC } from '../coach/daily-logic';
+import { SESSION_SEC } from '../exercises/psychomotor/config';
 import { getExercise, hasExercise } from '../exercises';
 
 /**
@@ -15,7 +16,9 @@ export default function Sprint() {
   const usedSec = PSYCHO_DAILY_CAP_SEC - remainingSec;
   const pct = Math.min(100, Math.round((usedSec / PSYCHO_DAILY_CAP_SEC) * 100));
   const module_ = hasExercise('psychomotor') ? getExercise('psychomotor') : null;
-  const canRun = remainingSec >= 60;
+  // Le cap borne ce que le coach PROGRAMME ; il ne t'interdit pas d'en
+  // refaire volontairement. Au-delà, on avertit plutôt que de bloquer.
+  const auDela = remainingSec < SESSION_SEC;
 
   return (
     <div className="max-w-2xl">
@@ -44,16 +47,25 @@ export default function Sprint() {
           />
         </div>
         <p className="mt-3 text-sm text-zinc-500">
-          Cap dur de 12 min par jour, tous modes confondus. L'apprentissage moteur se consolide
-          entre les séances, pas pendant : au-delà, tu fatigues sans progresser.
+          Repère de {Math.round(PSYCHO_DAILY_CAP_SEC / 60)} min par jour, tous modes confondus —
+          soit deux séances de 5 min. Le coach ne t'en programmera pas plus ; à toi de décider
+          si tu en refais.
         </p>
+
+        {auDela && (
+          <p className="mt-3 rounded-lg border border-amber-800/60 bg-amber-950/20 p-3 text-sm text-amber-300">
+            Tu as atteint les {Math.round(PSYCHO_DAILY_CAP_SEC / 60)} min conseillées aujourd'hui.
+            Tu peux continuer — mais l'apprentissage moteur se consolide entre les séances, pas
+            pendant : au-delà, tu fatigues surtout ta main et ton attention.
+          </p>
+        )}
 
         <button
           onClick={() =>
             module_ &&
             start({
               mode: 'sprint',
-              blocks: [{ exercise: 'psychomotor', level: 'adaptive', durationSec: 300, role: 'psychomotor' }],
+              blocks: [{ exercise: 'psychomotor', level: 'adaptive', durationSec: SESSION_SEC, role: 'psychomotor' }],
               briefing: [
                 'Psychomoteur — 5 minutes, la durée officielle de l’épreuve.',
                 'Les trois tâches comptent autant : ne sacrifie pas la poursuite pour le calcul.',
@@ -61,14 +73,16 @@ export default function Sprint() {
               ],
             })
           }
-          disabled={!canRun || module_ === null}
+          disabled={module_ === null}
           className={`mt-4 rounded-lg px-6 py-2.5 font-semibold ${
-            canRun && module_
-              ? 'bg-sky-600 hover:bg-sky-500'
+            module_
+              ? auDela
+                ? 'border border-amber-700 text-amber-300 hover:bg-amber-950/30'
+                : 'bg-sky-600 hover:bg-sky-500'
               : 'cursor-not-allowed bg-zinc-800 text-zinc-600'
           }`}
         >
-          {canRun ? 'Lancer 5 minutes' : 'Cap atteint — reviens demain'}
+          {auDela ? 'Lancer quand même 5 min' : 'Lancer 5 minutes'}
         </button>
       </div>
 
