@@ -172,16 +172,19 @@ describe('logic-series — contrat commun', () => {
       for (let seed = 0; seed < SEEDS; seed++) {
         const item = generate(seed, level);
         const q = item.question;
-        const shown = q.format === 'figural' ? q.cells.length : q.terms.length;
-        expect([4, 5]).toContain(shown);
-        lengths.add(shown);
+        // L'énigme n'est pas une suite : elle n'a pas de termes à compter.
+        if (q.format !== 'riddle') {
+          const shown = q.format === 'figural' ? q.cells.length : q.terms.length;
+          expect([4, 5]).toContain(shown);
+          lengths.add(shown);
+        }
         formats.add(q.format);
         checkMcq(item);
       }
     }
     // Les deux longueurs et les trois formats sortent réellement.
     expect([...lengths].sort()).toEqual([4, 5]);
-    expect([...formats].sort()).toEqual(['figural', 'letters', 'numeric']);
+    expect([...formats].sort()).toEqual(['figural', 'letters', 'numeric', 'riddle', 'words']);
   });
 });
 
@@ -368,5 +371,67 @@ describe('abstention « Je ne sais pas… »', () => {
     // l'option 0 — et vaudrait le point une fois sur quatre.
     expect(isAbstention(ABSTENTION as never)).toBe(true);
     for (let i = 0; i < 4; i++) expect(isAbstention(String(i) as never)).toBe(false);
+  });
+});
+
+describe('logic-series — mots', () => {
+  it('tous les termes partagent la propriété, et AUCUN distracteur ne la partage', () => {
+    // C'est ce qui rend la question décidable : la bonne réponse est la seule
+    // option qui prolonge la propriété. Un distracteur qui la partagerait
+    // serait une seconde bonne réponse.
+    const key = (type: string, w: string) =>
+      type === 'same-length' ? String(w.length) : type === 'same-initial' ? w[0] : w[w.length - 1];
+    let seen = 0;
+    for (const level of LEVELS) {
+      for (let seed = 0; seed < SEEDS; seed++) {
+        const q = generate(seed, level, 'words').question;
+        expect(q.format).toBe('words');
+        if (q.format !== 'words') continue;
+        seen++;
+        for (const t of q.terms) expect(key(q.rule.type, t)).toBe(q.rule.value);
+        q.options.forEach((o, i) => {
+          expect(key(q.rule.type, o) === q.rule.value).toBe(i === q.correctIndex);
+        });
+        // Aucun mot ne doit apparaître deux fois : il désignerait la réponse.
+        expect(new Set([...q.terms, ...q.options]).size).toBe(q.terms.length + q.options.length);
+        checkMcq(generate(seed, level, 'words'));
+      }
+    }
+    expect(seen).toBeGreaterThan(0);
+  });
+});
+
+describe('logic-series — énigmes de prénoms', () => {
+  it('le nombre de chaque prénom se recalcule depuis la règle annoncée', () => {
+    // Recalcul INDÉPENDANT du générateur : on relit l'énoncé et on refait le
+    // rang des lettres à la main.
+    const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const rankOf = (name: string) => {
+      const c = name.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+      return { first: ALPHA.indexOf(c[0]) + 1, last: ALPHA.indexOf(c[c.length - 1]) + 1, len: c.length };
+    };
+    const expected = (type: string, name: string) => {
+      const { first, last, len } = rankOf(name);
+      if (type === 'first-last-concat') return Number(`${first}${last}`);
+      if (type === 'first-last-sum') return first + last;
+      return Number(`${len}${first}`);
+    };
+
+    for (const level of LEVELS) {
+      for (let seed = 0; seed < SEEDS; seed++) {
+        const item = generate(seed, level, 'riddle');
+        const q = item.question;
+        expect(q.format).toBe('riddle');
+        if (q.format !== 'riddle') continue;
+
+        // Les trois prénoms donnés portent bien la valeur qu'annonce la règle.
+        for (const name of q.rule.names.slice(0, 3)) {
+          expect(q.prompt).toContain(`${name} a ${expected(q.rule.type, name)} ans.`);
+        }
+        expect(q.prompt).toContain(`Quel âge a ${q.rule.target} ?`);
+        expect(q.options[q.correctIndex]).toBe(`${expected(q.rule.type, q.rule.target)} ans`);
+        checkMcq(item);
+      }
+    }
   });
 });

@@ -25,10 +25,30 @@ Statut au 17/08 : les 16 exercices sont conformes, vérifiés en jeu, et dispose
 | 10 | Formes glissées - II | `formes_glissees2` | **Règles de superposition** : marine + marine = marine ; marine + gris = gris ; gris + gris = marine. **3 à 4 formes** en bas à glisser sur la grille centrale pour **reproduire la figure de gauche**. L'ordre de dépose n'a pas d'importance, seule compte la position. | — | ✅ |
 | 11 | Cubes 2D/3D | `cubes_psy0` | Un **patron de cube déplié** à gauche ; un **patron à faces manquantes** à droite. **Glisser-déposer** les faces proposées pour reconstituer le cube de gauche. Les faces sont proposées **à l'endroit** et se tournent d'un **quart de tour au clic**, avant ou après la pose. **Aucun retournement en miroir.** **Autant de pièces que de trous** — pas de leurre. Deux familles de symboles : **lettres** (les 4 orientations se distinguent) et **formes** (carré, octogone, cercle, trèfle, étoile : invariantes par quart de tour, leur orientation ne compte pas ; seule la croix en garde une). | 10 questions, **60 s** (4 questions au test AF 2020) | ✅ |
 | 12 | Grilles de calculs | `grille_calculs` | Une **grille de 9 calculs**, dont **0 à 4 sont faux**. **Cliquer les cases fausses**, puis **Valider**. | 10 grilles, **45 s** | ✅ |
-| 13 | Séries logiques | `series_psy0_af` | Séries de **4 ou 5 items** à compléter par **QCM à 4 choix**. Trouver la loi. **Mauvaise réponse = −1/3 point**, et un bouton **« Je ne sais pas… »** permet de s'abstenir pour 0 — sans lui, la stratégie d'abstention est inapplicable. | 15 questions, **30 s** | ✅ |
+| 13 | Séries logiques | `series_psy0_af` | Séries de **4 ou 5 items** à compléter par **QCM à 4 choix**. Trouver la loi. **Mauvaise réponse = −1/3 point**, et un bouton **« Je ne sais pas… »** permet de s'abstenir pour 0 — sans lui, la stratégie d'abstention est inapplicable. **Cinq formats** : nombres, lettres (isolées ou en groupes de 2), figures, **mots** (propriété commune : longueur, initiale, finale) et **énigmes en prose** (« Emma a 51 ans » : E=5, A=1). | 15 questions, **30 s** | ✅ |
 | 14 | Boîtes à mots | `boxes` | **Boîtes vides de 4 à 6 cases**. Un mot apparaît brièvement au centre → le classer **par champ lexical**. **Au premier mot d'un thème, on choisit librement la boîte** ; ensuite il faut rester cohérent. | **5 séries**, minimum d'erreurs | ✅ |
 | 15 | Mots en étoile | `mots_en_etoile` | Liste de **9 mots de 7 lettres**. En **sélectionner 6** et les placer sur une **étoile** de sorte que les **cases communes à deux mots** portent une seule et même lettre. Plusieurs solutions possibles. | 10 questions, **50 s** | ✅ |
 | 16 | Anglais | `english` | **30 QCM**, réponse à l'automatisme plus qu'à la réflexion. Distingue bilingues et bons non-bilingues. | **7 min 30** pour 30 questions (15 s/question) | ✅ |
+
+## Séries logiques — où vit la loi (relevé du 18/08/2026)
+
+Le piège de conception n'est pas la difficulté des lois mais l'endroit où on les
+cherche. Cinq emplacements, relevés sur les captures :
+
+1. **entre les termes** — écarts, rapports, somme des deux précédents ;
+2. **une position sur deux** — deux suites entrelacées ;
+3. **DANS le terme** — `RK-BU-OH` (2ᵉ = 1ʳᵉ − 7), `54845` (palindrome),
+   `U21` (le nombre est le rang), `67212` (6/72/12 car 6×12 = 72) ;
+4. **par colonne** — `ZT-GK-NB` : +7 d'un côté, −9 de l'autre ;
+5. **hors des mathématiques** — `F2-M3-A4-M5` : les mois. Aucun calcul n'y mène.
+
+Les cas 3 à 5 ne viennent pas à l'esprit et rendent la série apparemment
+insoluble, alors qu'ils sont les plus faciles une fois identifiés. Une version
+antérieure ne générait et n'enseignait que les cas 1 et 2.
+
+Deux formats dépassent la « suite » : les **séries de mots**, dont la propriété
+est formelle et jamais sémantique (`lit - cou - été - gaz` → trois lettres), et
+les **énigmes en prose**, où un nombre se déduit des lettres d'un prénom.
 
 ## Cubes 2D/3D — la page de règles contredit l'écran (relevé du 18/08/2026)
 

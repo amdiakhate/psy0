@@ -111,6 +111,24 @@ function LogicScene({ scene }: { scene: string; stepIndex: number }) {
           notes={['26·20', '7·11', '14·2', '21·19', '+7 · −9']}
         />
       );
+    case 'riddle':
+      return (
+        <div className="max-w-2xl space-y-3 text-center">
+          <p className="text-lg font-semibold text-zinc-100">
+            Emma a 51 ans. Gabriel a 712 ans. Maika a 131 ans. Quel âge a Gabrielle ?
+          </p>
+          <div className="space-y-1 font-mono text-sm text-zinc-300">
+            <p><span className="text-sky-300">E</span>mm<span className="text-amber-300">a</span> → 5 · 1 → <span className="font-bold">51</span></p>
+            <p><span className="text-sky-300">G</span>abrie<span className="text-amber-300">l</span> → 7 · 12 → <span className="font-bold">712</span></p>
+            <p><span className="text-sky-300">M</span>aik<span className="text-amber-300">a</span> → 13 · 1 → <span className="font-bold">131</span></p>
+            <p className="text-green-400"><span className="text-sky-300">G</span>abriell<span className="text-amber-300">e</span> → 7 · 5 → <span className="font-bold">75</span></p>
+          </div>
+        </div>
+      );
+    case 'words':
+      return (
+        <Row terms={['lit', 'cou', 'été', 'gaz', '??']} notes={['3', '3', '3', '3', '3']} highlight={[0, 1, 2, 3, 4]} />
+      );
     case 'where':
       return (
         <div className="max-w-2xl space-y-2 text-sm text-zinc-200">
@@ -244,6 +262,28 @@ export const lesson: Lesson = {
         'Sur tout terme composé, pose-toi les DEUX questions, dans cet ordre : « les colonnes progressent-elles ? » puis « les lettres d’un même groupe sont-elles liées entre elles ? ». Ici seule la seconde répond. Réponse : YR — Y − 7 = R.',
       pitfall:
         'Le signe qui doit alerter : les premières lettres partent dans tous les sens, sans le moindre pas régulier. Ce n’est pas une série ratée ni un piège — c’est l’indice que la loi est ailleurs. Cherche-la dans le terme, pas entre les termes.',
+    },
+    {
+      scene: 'riddle',
+      title: 'L’énigme : le nombre sort du mot',
+      observe:
+        'Ce n’est plus une suite mais une devinette. Emma vaut 51, Gabriel 712, Maika 131. Aucun rapport entre ces nombres — mais chacun se lit sur son prénom : PREMIÈRE et DERNIÈRE lettre, converties en rang, collées. E=5 et A=1 donnent 51. G=7 et L=12 donnent 712.',
+      why: 'Le format change, le réflexe reste : la loi est dans le terme. Ici le « terme » est un prénom, et le nombre en est la traduction. Dès qu’un énoncé associe un mot à un nombre sans lien apparent, regarde les LETTRES — première, dernière, longueur, initiale.',
+      action:
+        'Convertis toujours dans le même ordre : première lettre, puis dernière. Gabrielle : G=7, E=5 → 75. Et vérifie ta relation sur les TROIS exemples avant de répondre — une seule concordance peut être un hasard.',
+      pitfall:
+        'La relation change d’une question à l’autre : parfois c’est la somme des deux rangs, parfois la longueur du prénom. Ne présume jamais que c’est la même qu’à la question précédente — c’est ce qu’on te fait payer.',
+    },
+    {
+      scene: 'words',
+      title: 'Les séries de mots : une propriété, pas un sens',
+      observe:
+        'lit - cou - été - gaz - ?? Ces mots n’ont aucun rapport de sens. Ce qu’ils partagent est purement formel : ils font tous TROIS lettres.',
+      why: 'C’est le piège de conception : on cherche un champ lexical, une association d’idées, et il n’y en a aucune. Les propriétés employées sont mécaniques — longueur, initiale, lettre finale — et se contrôlent d’un coup d’œil, sans réfléchir au sens.',
+      action:
+        'Trois contrôles, dans cet ordre, sur les termes donnés : même longueur ? même première lettre ? même dernière lettre ? Puis applique-le aux options — une seule passera.',
+      pitfall:
+        'Chercher le sens est le réflexe naturel et c’est du temps pur perdu : « soulier » et « carabine » n’ont rien à voir avec « lit », mais ce n’est pas pour ça qu’ils sont faux — ils sont faux parce qu’ils n’ont pas trois lettres.',
     },
     {
       scene: 'palindrome',

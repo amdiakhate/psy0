@@ -8,8 +8,12 @@ import {
   FORMATS,
   LETTER_RULES,
   NUMERIC_RULES,
+  RIDDLE_RULES,
   SERIES_LENGTHS,
+  WORD_RULES,
 } from './config';
+import type { RiddleRuleType, WordRuleType } from './config';
+import { FIRST_NAMES, WORDS_BY_LENGTH } from './data';
 import type { LetterRuleType, NumericRuleType, SeriesFormat } from './config';
 
 /* ------------------------------------------------------------------ */
@@ -525,6 +529,21 @@ export type LogicQuestion =
       rule: LetterRule;
     }
   | {
+      format: 'words';
+      terms: string[];
+      options: string[];
+      correctIndex: number;
+      rule: WordRule;
+    }
+  | {
+      format: 'riddle';
+      /** L'énoncé en prose : « Emma a 51 ans. … Quel âge a Gabrielle ? » */
+      prompt: string;
+      options: string[];
+      correctIndex: number;
+      rule: RiddleRule;
+    }
+  | {
       format: 'figural';
       cells: FigDesc[];
       options: FigDesc[];
@@ -652,7 +671,11 @@ export function generate(seed: number, level: number, forceTag?: string): Item<L
         ? generateNumeric(rng, lvl)
         : format === 'letters'
           ? generateLetters(rng, lvl)
-          : generateFigural(rng, lvl);
+          : format === 'words'
+            ? generateWords(rng)
+            : format === 'riddle'
+              ? generateRiddle(rng)
+              : generateFigural(rng, lvl);
   } else if (forceTag && (ALL_NUMERIC_RULES as string[]).includes(forceTag)) {
     question = generateNumeric(rng, lvl, forceTag as NumericRuleType);
   } else if (forceTag && (ALL_LETTER_RULES as string[]).includes(forceTag)) {
@@ -664,7 +687,11 @@ export function generate(seed: number, level: number, forceTag?: string): Item<L
         ? generateNumeric(rng, lvl)
         : format === 'letters'
           ? generateLetters(rng, lvl)
-          : generateFigural(rng, lvl);
+          : format === 'words'
+            ? generateWords(rng)
+            : format === 'riddle'
+              ? generateRiddle(rng)
+              : generateFigural(rng, lvl);
   }
 
   const tags =
@@ -672,4 +699,108 @@ export function generate(seed: number, level: number, forceTag?: string): Item<L
       ? ['figural', `attrs-${question.rule.attrs.length}`]
       : [question.format, question.rule.type];
   return { question, seed, level, tags };
+}
+
+/* ------------------------------------------------------------------ */
+/* Mots et énigmes                                                     */
+/* ------------------------------------------------------------------ */
+
+export type WordRule = { type: WordRuleType; value: string };
+
+/** La propriété d'un mot, selon la règle. */
+function wordKey(rule: WordRuleType, word: string): string {
+  if (rule === 'same-length') return String(word.length);
+  if (rule === 'same-initial') return word[0];
+  return word[word.length - 1];
+}
+
+const ALL_WORDS = Object.values(WORDS_BY_LENGTH).flat();
+
+function generateWords(rng: Rng): LogicQuestion {
+  // On ne retient une propriété que si assez de mots la partagent ET assez de
+  // mots ne la partagent PAS : sans les seconds, il n'y a pas de distracteur.
+  const type = pick(rng, WORD_RULES);
+  const groups = new Map<string, string[]>();
+  for (const w of ALL_WORDS) {
+    const k = wordKey(type, w);
+    groups.set(k, [...(groups.get(k) ?? []), w]);
+  }
+  const usable = [...groups.entries()].filter(([, ws]) => ws.length >= 6);
+  if (usable.length === 0) return generateWords(mulberry32(randInt(rng, 1, 1e9)));
+
+  const [value, family] = pick(rng, usable);
+  const chosen = shuffle(rng, family);
+  const shownCount = pick(rng, SERIES_LENGTHS);
+  const terms = chosen.slice(0, shownCount);
+  const answer = chosen[shownCount];
+  const others = shuffle(rng, ALL_WORDS.filter((w) => wordKey(type, w) !== value));
+  const options = shuffle(rng, [answer, ...others.slice(0, 3)]);
+  return {
+    format: 'words',
+    terms,
+    options,
+    correctIndex: options.indexOf(answer),
+    rule: { type, value },
+  };
+}
+
+export type RiddleRule = { type: RiddleRuleType; names: string[]; target: string };
+
+/** Le nombre associé à un prénom, selon la règle. */
+export function riddleValue(type: RiddleRuleType, name: string): number {
+  const clean = name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toUpperCase();
+  const rank = (c: string) => ALPHABET.indexOf(c) + 1;
+  const first = rank(clean[0]);
+  const last = rank(clean[clean.length - 1]);
+  if (type === 'first-last-concat') return Number(`${first}${last}`);
+  if (type === 'first-last-sum') return first + last;
+  return Number(`${clean.length}${first}`);
+}
+
+function generateRiddle(rng: Rng): LogicQuestion {
+  const type = pick(rng, RIDDLE_RULES);
+  const picked = shuffle(rng, [...FIRST_NAMES]).slice(0, 4);
+  const target = picked[3];
+  const answer = riddleValue(type, target);
+  const prompt = picked
+    .slice(0, 3)
+    .map((n) => `${n} a ${riddleValue(type, n)} ans.`)
+    .join(' ');
+
+  const seen = new Set([answer]);
+  const wrong: number[] = [];
+  // Les leurres sont les valeurs qu'AUTRES règles donneraient sur le même
+  // prénom : ils punissent la relation mal identifiée, pas le calcul raté.
+  for (const other of RIDDLE_RULES) {
+    const v = riddleValue(other, target);
+    if (!seen.has(v)) {
+      seen.add(v);
+      wrong.push(v);
+    }
+  }
+  for (const n of shuffle(rng, picked)) {
+    if (wrong.length >= 3) break;
+    const v = riddleValue(type, n);
+    if (!seen.has(v)) {
+      seen.add(v);
+      wrong.push(v);
+    }
+  }
+  for (let k = 1; wrong.length < 3; k++) {
+    if (seen.has(answer + k)) continue;
+    seen.add(answer + k);
+    wrong.push(answer + k);
+  }
+
+  const options = shuffle(rng, [answer, ...wrong.slice(0, 3)]).map((v) => `${v} ans`);
+  return {
+    format: 'riddle',
+    prompt: `${prompt} Quel âge a ${target} ?`,
+    options,
+    correctIndex: options.indexOf(`${answer} ans`),
+    rule: { type, names: picked, target },
+  };
 }

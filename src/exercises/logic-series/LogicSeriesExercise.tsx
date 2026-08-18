@@ -84,6 +84,57 @@ function AbstainButton({ onAnswer }: { onAnswer: (a: LogicAnswer) => void }) {
 export function LogicSeriesExercise({ item, onAnswer }: ExerciseComponentProps<LogicQuestion, LogicAnswer>) {
   const q = item.question;
 
+  // Série de MOTS : même écran que les lettres, mais en minuscules et sans
+  // chasse fixe — un mot se lit, il ne se déchiffre pas caractère par caractère.
+  if (q.format === 'words') {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-8">
+        <PenaltyBanner />
+        <p className="text-4xl font-bold tracking-wide md:text-5xl">
+          {q.terms.join(' , ')}
+          <span className="text-sky-400">{' , ?'}</span>
+        </p>
+        <div className="w-full max-w-xl">
+          <Choices
+            options={q.options.map((o, i) => (
+              <span key={i} className="text-2xl font-bold">
+                {o}
+              </span>
+            ))}
+            onPick={(i) => onAnswer(String(i))}
+            columns={4}
+          />
+          <AbstainButton onAnswer={onAnswer} />
+        </div>
+      </div>
+    );
+  }
+
+  // Énigme : un énoncé en prose, pas une suite. Le nombre de chaque prénom s'en
+  // déduit, et c'est cette relation qu'il faut trouver.
+  if (q.format === 'riddle') {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-8">
+        <PenaltyBanner />
+        <p className="max-w-2xl text-center text-2xl font-semibold leading-relaxed md:text-3xl">
+          {q.prompt}
+        </p>
+        <div className="w-full max-w-xl">
+          <Choices
+            options={q.options.map((o, i) => (
+              <span key={i} className="text-2xl font-bold tabular-nums">
+                {o}
+              </span>
+            ))}
+            onPick={(i) => onAnswer(String(i))}
+            columns={4}
+          />
+          <AbstainButton onAnswer={onAnswer} />
+        </div>
+      </div>
+    );
+  }
+
   if (q.format === 'numeric' || q.format === 'letters') {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-8">

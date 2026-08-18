@@ -81,7 +81,23 @@ export const LETTER_RULES: LetterRuleType[][] = [
 export const FIGURAL_ATTR_COUNT: number[] = [1, 1, 2, 2, 3];
 
 /** Les trois formats de série, tels qu'ils apparaissent au test. */
-export const FORMATS = ['numeric', 'letters', 'figural'] as const;
+export const FORMATS = ['numeric', 'letters', 'figural', 'words', 'riddle'] as const;
+
+/**
+ * Règles des séries de MOTS. La propriété est commune à tous les termes et ne
+ * relie pas les termes entre eux — c'est encore une loi « dans le terme ».
+ */
+export const WORD_RULES = ['same-length', 'same-initial', 'same-final'] as const;
+export type WordRuleType = (typeof WORD_RULES)[number];
+
+/**
+ * Règles des énigmes sur les prénoms. Seule `first-last-concat` a été relevée
+ * chez Pilotest (« Emma a 51 ans » : E=5, A=1). Les deux autres sont du même
+ * genre — un nombre déduit des lettres — et évitent qu'une seule relation,
+ * apprise en trois questions, rende l'exercice sans objet.
+ */
+export const RIDDLE_RULES = ['first-last-concat', 'first-last-sum', 'length-first'] as const;
+export type RiddleRuleType = (typeof RIDDLE_RULES)[number];
 export type SeriesFormat = (typeof FORMATS)[number];
 
 /** Le test présente des séries de 4 OU 5 items — jamais un nombre fixe. */
