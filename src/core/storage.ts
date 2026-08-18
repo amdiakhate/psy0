@@ -15,12 +15,22 @@ export function saveJson(key: string, value: unknown): void {
   localStorage.setItem(PREFIX + key, JSON.stringify(value));
 }
 
+/**
+ * Dump BRUT : les valeurs sont copiées telles qu'elles sont stockées, sans
+ * `JSON.parse`.
+ *
+ * Toutes les clés ne contiennent pas du JSON — `psy0.theme` vaut simplement
+ * `clair`, parce qu'un script inline la lit avant tout JavaScript pour éviter
+ * que l'écran ne clignote. Parser sans filet faisait échouer l'export ENTIER
+ * sur cette seule clé, et avec lui la synchronisation et la sauvegarde.
+ */
 export function exportAll(): string {
-  const dump: Record<string, unknown> = {};
+  const dump: Record<string, string> = {};
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
     if (key?.startsWith(PREFIX)) {
-      dump[key] = JSON.parse(localStorage.getItem(key)!);
+      const raw = localStorage.getItem(key);
+      if (raw !== null) dump[key] = raw;
     }
   }
   return JSON.stringify({ app: 'psy0-trainer', exportedAt: Date.now(), data: dump }, null, 2);
@@ -32,7 +42,10 @@ export function importAll(json: string): { keys: number } {
     throw new Error('Fichier invalide : export psy0-trainer attendu.');
   }
   for (const [key, value] of Object.entries(parsed.data)) {
-    if (key.startsWith(PREFIX)) localStorage.setItem(key, JSON.stringify(value));
+    if (!key.startsWith(PREFIX)) continue;
+    // Les exports récents portent des chaînes brutes ; ceux d'avant portaient
+    // des valeurs déjà parsées. Les deux formats doivent se restaurer.
+    localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
   }
   return { keys: Object.keys(parsed.data).length };
 }
