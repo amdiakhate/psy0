@@ -127,7 +127,7 @@ export const lesson: Lesson = {
       "60 s suppose les trois paires d’opposées relevées en 15 s. Tant que tu cherches encore quelle case fait face à quelle case, compte-en 30 : tu traiteras un trou au lieu de deux, et ce sera le bon choix.",
     fallback: [
       "Le temps serre : traite UN seul trou à fond plutôt que deux à moitié. Une pièce juste rapporte, deux pièces au hasard non.",
-      "Lâche le contrôle d’orientation contre l’arête commune et prends le bon symbole dans le sens qui te paraît naturel. Tu perdras sur les leurres tournés à 90°, mais tu auras une réponse.",
+      "Lâche le contrôle d’orientation contre l’arête commune et pose le bon symbole dans le sens qui te paraît naturel. Tu perdras sur les questions où l’orientation décide, mais tu auras une réponse — et sur une famille de formes, tu ne perdras rien du tout.",
       "Ne lâche JAMAIS le contrôle final des trois paires : 10 secondes pour attraper une pièce mal placée, c’est le meilleur rapport de tout l’exercice.",
     ],
     recover:
@@ -186,7 +186,7 @@ export const lesson: Lesson = {
       scene: 'solve',
       title: 'Étape 3 — l’orientation, jamais l’identité seule',
       observe:
-        'Tu sais QUEL symbole va dans le trou. Reste à savoir dans quel SENS. Les leurres proposent souvent le bon symbole tourné de 90°.',
+        'Tu sais QUEL symbole va dans le trou. Reste à savoir dans quel SENS — et comme les pièces arrivent toutes à l’endroit, ce sens, c’est toi qui dois le produire au clic.',
       why: 'Deux faces voisines sur le patron partagent une arête qui est la même arête sur le cube. Regarde quel côté du symbole touche cette arête sur la référence : ça doit rester vrai après placement.',
       pitfall:
         'Valider sur le symbole seul est le piège n°2. Contrôle toujours l’orientation contre une arête commune avec une face déjà en place.',

@@ -12,10 +12,10 @@ export const tips: Tips = {
   ],
   traps: [
     'Recopier case par case le patron de gauche : les deux patrons sont dans des orientations différentes, la position d’une face sur la croix n’a rien à voir d’un patron à l’autre. C’est l’erreur qui coûte la question entière.',
-    'Poser la bonne pièce dans la mauvaise orientation : les leurres sont souvent le BON symbole tourné de 90°. Toujours vérifier l’orientation contre une arête commune avec une face déjà en place.',
+    'Poser la bonne pièce dans la mauvaise orientation : c’est LA faute qui coûte le plus, parce qu’on croit la question finie. Le symbole ne prouve rien tant que l’orientation n’est pas contrôlée contre une arête commune avec une face déjà en place.',
     'Croire à un retournement en miroir : il n’y en a pas. Le clic fait tourner d’un quart de tour, donc quatre orientations possibles, jamais huit. Si une pièce ne colle dans aucun des quatre sens, c’est qu’elle ne va pas dans ce trou — change de pièce, pas de géométrie.',
     'Traiter une forme comme une lettre : carré, octogone, cercle, trèfle et étoile sont identiques à eux-mêmes après un quart de tour, leur orientation ne compte donc pas. Chercher « le bon sens » d’un cercle est du temps pur perdu. Seule la croix, au bras du bas plus long, garde une orientation.',
-    'Utiliser un leurre dont le symbole est déjà visible ailleurs sur le patron : un symbole n’apparaît qu’UNE fois sur un cube. Si tu le vois déjà posé, la pièce qui le porte est un leurre.',
+    'Chercher un leurre : il n’y en a pas. Il y a exactement autant de pièces que de trous, donc TOUTES doivent servir. C’est même une arme : quand il ne reste qu’une pièce et qu’un trou, la question est finie — pose-la sans réfléchir et passe au contrôle des paires.',
   ],
   timing: [
     '60 s par question au test : 15 s pour relever les 3 paires d’opposées du patron de référence, 30 s pour placer, 15 s de contrôle final.',
