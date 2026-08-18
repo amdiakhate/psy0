@@ -72,6 +72,21 @@ function PsychoScene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Les premières séances, tu tiendras une tâche sur trois, et les deux autres s’effondreront. C’est le fonctionnement normal de l’attention divisée : elle ne se partage pas, elle alterne. Ce qui progresse n’est pas ta capacité à tout faire en même temps, c’est la VITESSE de ta boucle d’alternance — et ça, ça s’entraîne.",
+    budget:
+      "Cinq minutes sans interruption. La boucle « cercle → formes → calcul → cercle » en une seconde suppose que le contrôle des unités est un réflexe. Au début elle t’en prendra trois, et le cercle sera rouge une bonne partie du temps. Douze minutes par jour maximum : au-delà, tu fatigues ta main et ton attention sans rien consolider.",
+    fallback: [
+      "Tout s’écroule : lâche le calcul, garde la poursuite et les formes. La poursuite est la seule tâche CONTINUE — elle est échantillonnée en permanence, donc c’est elle qui coûte le plus cher à abandonner.",
+      "Ça s’écroule encore : ne garde que la poursuite, flèche tenue, chevron vert allumé. Une tâche propre vaut mieux que trois en miettes.",
+      "Doute sur les formes : ne fais rien. Une fausse alarme compte comme une erreur, l’absence de réponse est la réponse par défaut.",
+    ],
+    recover:
+      "Un changement de direction non corrigé coûte plusieurs secondes de poursuite continue : dès que le chevron s’éteint, corrige AVANT de finir ce que tu étais en train de faire. C’est la seule interruption légitime de la boucle.",
+    bail:
+      "Rien ne s’abandonne pendant les 5 minutes. En revanche, une séance ratée s’arrête : si au bout de deux minutes la poursuite est rouge en permanence, coupe et reprends plus tard. S’acharner installe le mauvais geste au lieu du bon.",
+  },
   title: 'Mener trois tâches de front',
   intro:
     'C’est l’épreuve reine du PSY0, et la consigne officielle est explicite : les trois tâches sont de MÊME importance. On les voit une par une, puis on assemble — et on installe la boucle de balayage qui fait tout le score.',

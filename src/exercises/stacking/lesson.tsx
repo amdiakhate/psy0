@@ -348,6 +348,21 @@ function StackingScene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Sur une dizaine de cubes basculés, retrouver le bras, la saillie et le cube du dessus te prendra cinq bonnes secondes PAR FIGURE les premières fois — donc plus que le temps total de la question. C’est normal et ce n’est pas un problème de méthode : c’est la reconnaissance des trois rôles qui est lente, et c’est exactement ce que l’entraînement accélère.",
+    budget:
+      "Le budget officiel est de 10 s pour la question entière. Honnêtement : les trois verdicts en 4 s supposent les rôles reconnus d’un coup d’œil, ce qui vient après plusieurs centaines de figures. Tant que ce n’est pas le cas, juge DEUX figures au lieu de trois — dès qu’elles partagent la même main, la réponse est la troisième, sans l’avoir regardée.",
+    fallback: [
+      "Deux figures jugées, même main : réponds la troisième immédiatement. Tu n’as pas besoin de la regarder, et c’est le gain de temps le plus sûr de l’exercice.",
+      "Deux figures jugées, mains opposées : la troisième tranche, et elle seule. Juge-la, elle fait paire avec l’une des deux.",
+      "Les rôles ne se lisent pas (plusieurs bras de même longueur) : prends n’importe lequel, mais LE MÊME sur les trois figures. La main se compare, elle ne se lit pas dans l’absolu.",
+    ],
+    recover:
+      "Si tu perds le fil au milieu d’une figure, ne recommence pas les trois : une main déjà établie reste valide, elle ne dépend pas des autres. Reprends la seule figure en cours.",
+    bail:
+      "Pas de point négatif : il faut cocher. À 8 s, si aucune paire ne s’est formée, ne réponds PAS « celle qui a l’air différente » — c’est le piège documenté de l’exercice. Prends celle sur laquelle ton geste des trois doigts a été le plus net, même si tu n’as jugé qu’elle.",
+  },
   title: 'La main d’une figure : trois flèches, un sens',
   intro:
     "Trois empilements, 10 secondes. Deux sont le même objet tourné, le troisième a EN PLUS subi une symétrie — c'est lui qu'il faut désigner. La méthode tient en un geste : trois flèches tracées sur la figure, dans un ordre imposé, et le sens dans lequel elles circulent. Ce sens ne change jamais quand on tourne la figure ; il s'inverse quand on la reflète. La leçon le montre sur un cas piégé, puis sur un item à la taille réelle de l'épreuve.",
@@ -407,14 +422,14 @@ export const lesson: Lesson = {
         "Sous chaque figure, ses trois flèches ramenées à un même point : son repère. Les repères de 1 et 3 sont le même trio, tourné. Celui de 2 est le trio INVERSÉ — signe − au lieu de +.",
       why: "Comparer trois images demande de les tenir toutes en tête pendant qu'on les tourne — on perd le fil à la deuxième. Trois verdicts (main droite / main gauche) tiennent en mémoire sans effort, et se comparent d'un coup d'œil.",
       action:
-        'Formule les trois verdicts d’affilée, sans revenir en arrière sur une figure déjà jugée. 4 secondes au total.',
+        'Formule les verdicts d’affilée, sans revenir en arrière sur une figure déjà jugée. Et arrête-toi dès que deux figures partagent la même main : la troisième est la réponse, tu n’as pas à la juger.',
     },
     {
       scene: 'answer',
       title: 'La réponse : empilement 2',
       observe:
         'Les empilements 1 et 3 partagent la même main : ils sont le même objet, séparés d’un quart de tour. Le 2 est de main opposée : c’est lui qui a subi la symétrie.',
-      why: "Dès que deux figures partagent la même main, la réponse est acquise : ne contrôle pas la troisième, elle ne t'apprendra rien. Budget 10 s : 4 s pour les trois verdicts, 3 s pour apparier, 3 s de marge.",
+      why: "Dès que deux figures partagent la même main, la réponse est acquise : ne contrôle pas la troisième, elle ne t'apprendra rien. C'est ce qui rend les 10 s tenables — non pas en jugeant vite trois figures, mais en n'en jugeant que deux.",
       action:
         'Contre-épreuve, seulement si le temps le permet : refais le geste des trois doigts sur les deux figures déclarées identiques — même main attendue des deux côtés.',
     },

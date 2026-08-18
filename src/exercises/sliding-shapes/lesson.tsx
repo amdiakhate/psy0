@@ -226,6 +226,21 @@ function SlidingScene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Les premières grilles, tu raisonneras « en peinture » : gris posé sur gris reste gris. C’est faux, et c’est le réflexe le plus tenace de l’exercice — il résiste même quand on connaît la règle. Il ne cède qu’à force de voir des cases s’éteindre, pas à force de relire la table.",
+    budget:
+      "Environ 45 s. Le contrôle de parité prend 10 s une fois acquis, et c’est lui qui te dit à l’avance combien de recouvrements chercher. Au début, compte 20 s : c’est du temps rentable, il t’évite de tâtonner pendant les 25 qui suivent.",
+    fallback: [
+      "Tu tâtonnes : retire tout et repars de l’ancre la plus contrainte — un bord, un coin, un bloc isolé de la cible qu’une seule forme peut produire. Repartir proprement coûte moins cher que permuter au hasard.",
+      "Une case reste grise alors qu’elle doit être marine : n’enlève jamais de gris. Cherche la forme qui va la RE-basculer en passant dessus.",
+      "Une forme « ne rentre nulle part » : ce n’est jamais l’orientation, le test n’autorise que la translation. C’est ta lecture de la cible qui est fausse — reviens à la parité.",
+    ],
+    recover:
+      "Le compte de parité est ton filet : si tu annonçais une case doublement couverte et que tu n’en as posé aucune, tu t’es trompé quelque part, sans avoir à chercher où. Recompte AVANT de déplacer quoi que ce soit.",
+    bail:
+      "À 30 s, si tu tâtonnes encore, pose ce dont tu es sûr et laisse le reste. Une grille partiellement juste vaut mieux qu’une grille entièrement permutée dans les dernières secondes.",
+  },
   title: 'La règle de superposition est un XOR',
   intro: `Trois formes à glisser sur une grille 6×6 pour reproduire la figure de gauche. Toute la difficulté tient dans une seule ligne de la règle : deux cases grises superposées redonnent du MARINE. Cas décortiqué : ${GREY_TOTAL} cases grises posées par les trois formes, ${GREY_TARGET} seulement dans la cible.`,
   Scene: SlidingScene,

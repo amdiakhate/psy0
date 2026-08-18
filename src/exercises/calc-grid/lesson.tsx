@@ -53,6 +53,21 @@ function Scene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Les premières grilles, tu recalculeras les opérations une par une et tu en traiteras cinq sur neuf avant la fin du chrono. C’est le passage obligé : le contrôle par les unités ne devient rapide qu’après quelques centaines de calculs. L’atelier de Calcul mental existe exactement pour raccourcir cette étape.",
+    budget:
+      "45 s suppose que « le dernier chiffre » est un réflexe, pas une opération. Tant qu’il te demande de réfléchir, compte 20 s pour la première passe au lieu de 10 — et accepte de ne pas atteindre la troisième. Mieux vaut deux passes propres que trois bâclées.",
+    fallback: [
+      "Le temps file : arrête de chercher et coche uniquement ce que la passe des unités a franchement invalidé. Un faux certain vaut mieux que trois cases à moitié explorées.",
+      "Traite les grosses multiplications en dernier : ce sont les plus coûteuses à vérifier, et pas les plus souvent fausses.",
+      "À 5 secondes de la fin, VALIDE. Une grille non validée perd tout, y compris les bonnes cases déjà cochées.",
+    ],
+    recover:
+      "Chaque grille est indépendante : il n’y a rien à rattraper. Le piège est de sortir d’une grille ratée et de cocher plus largement sur la suivante « pour compenser » — c’est exactement ce qui fabrique les faux positifs.",
+    bail:
+      "Le doute non résolu se tranche en faveur du « juste ». Ne coche jamais une case pour te rassurer : un faux positif coûte autant qu’une erreur manquée, et une grille sans aucune faute est une réponse parfaitement légitime.",
+  },
   title: 'Trouver les calculs faux en trois passes',
   intro:
     'Neuf calculs, 45 secondes : recalculer les neuf est impossible, et c’est exactement le piège de conception. La méthode tient en trois passes de plus en plus coûteuses, appliquées à de moins en moins de cases.',

@@ -185,6 +185,21 @@ function BigCross() {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Les premières séries partent à l’accident sans que tu comprennes pourquoi : l’œil suit les avions, jamais les compteurs. C’est le défaut de départ de tout le monde, et c’est aussi celui qui se corrige le plus vite du PSY0 — souvent en trois ou quatre séries.",
+    budget:
+      "Il n’y a pas de chrono par question : c’est le trafic qui impose le rythme. La boucle de scan « en 2 secondes » suppose que tu lis les deux compteurs sans avoir à les chercher des yeux. Au début elle t’en prendra quatre ou cinq, et tu rateras des entrées en zone. C’est mécanique, pas un manque d’attention.",
+    fallback: [
+      "Tu ne tiens plus les deux compteurs : ne garde que le BLEU. Il est deux fois plus serré, il casse presque toujours en premier — et un compteur surveillé vaut mieux que deux survolés.",
+      "Plusieurs blocs saturent ensemble : abandonne l’économie de déroutages et sauve les séries. Un accident coûte toute la série ; un avion dérouté de trop ne coûte qu’un peu de score de stratégie.",
+      "Dernier recours assumé : la grosse croix. Elle abîme la note de stratégie, elle ne perd jamais la série.",
+    ],
+    recover:
+      "Après un accident, la série est perdue — pas les suivantes. Le vrai danger est le réflexe de « rattraper » en jouant plus serré : c’est comme ça qu’on en enchaîne deux. Repars sur la boucle normale, comme si de rien n’était.",
+    bail:
+      "Rien ne s’abandonne ici, la série continue quoi qu’il arrive. Ce qui s’abandonne, c’est l’ambition du zéro déroutage : dès que tu n’es plus sûr de tenir, déroute et respire.",
+  },
   title: 'Lire les compteurs et choisir qui dérouter',
   intro:
     'Airways n’est pas un jeu de réflexes : c’est un jeu de comptage. Tout se décide sur deux chiffres. On déroule une situation qui dégénère, image par image, pour voir où se prend la bonne décision.',

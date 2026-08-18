@@ -134,6 +134,21 @@ function Objects3dScene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Les premières questions, tu essaieras d’imaginer la scène depuis chaque rond — et tu n’en feras pas trois avant la fin des 10 s. C’est le piège de conception de l’épreuve : la simulation mentale est hors de portée de n’importe qui. Le raisonnement par découpes, lui, s’apprend, mais il demande de renoncer à « voir » la scène.",
+    budget:
+      "Le budget officiel de 10 s suppose les découpes déjà mécaniques. Honnêtement : au début, une seule découpe bien faite te prendra 8 s. Fais-en UNE et devine entre les quatre survivants plutôt que d’en bâcler trois — une chance sur quatre vaut mieux qu’un raisonnement faux.",
+    fallback: [
+      "Une seule découpe tenue : garde la paire d’objets la plus ÉCARTÉE sur le plan. C’est celle dont l’ordre gauche-droite est le plus franc à l’écran, donc celle où tu ne peux pas te tromper.",
+      "Deux ronds survivent et rien ne les sépare : prends celui dont la profondeur colle — l’objet dont le PIED est le plus bas dans l’image doit être le plus proche de ton rond sur le plan.",
+      "Toujours indécis : ne prends jamais un rond VOISIN de ton candidat, prends son OPPOSÉ. La moitié des erreurs de cet exercice sont le rond n+4, jamais n+1.",
+    ],
+    recover:
+      "Si ta lecture gauche-droite te semble inversée, ne recommence pas le raisonnement : prends directement le rond diamétralement opposé. C’est presque toujours l’explication, et ça coûte 2 secondes au lieu de 10.",
+    bail:
+      "Pas de point négatif : une case doit être cochée à chaque fois. À 7 s, arrête de raisonner et réponds avec ce que la première découpe a laissé. Une question abandonnée proprement en protège deux autres.",
+  },
   title: 'Éliminer les points de vue par découpes successives',
   intro:
     "Une scène du désert vue depuis l'un des 8 ronds disposés en cercle, chacun tourné vers le centre : retrouve lequel, en 10 secondes. Le raisonnement se fait sur le PLAN, jamais sur l'image 3D — celle-ci ne sert qu'à lire deux ou trois relations entre objets.",
@@ -200,7 +215,7 @@ export const lesson: Lesson = {
         "Le rond 4 est l'opposé du rond 8. Depuis lui, on voit la même scène à peu près en miroir gauche-droite : la tour passerait à droite, le cube à gauche.",
       why: "La moitié des erreurs de cet exercice sont le rond n+4. Ils se ressemblent parce qu'ils regardent le même axe, en sens inverse. La profondeur les sépare toujours de façon nette : l'objet le plus proche de l'un est le plus lointain de l'autre.",
       action:
-        "Budget 10 s : 3 s pour lire l'ordre gauche→droite, 4 s pour les deux découpes sur le plan, 3 s de contrôle par la profondeur. Si ton rond te semble « presque bon mais inversé », prends son opposé — jamais son voisin.",
+        "Si ton rond te semble « presque bon mais inversé », prends son opposé — jamais son voisin. Et vise UNE découpe propre plutôt que trois approximatives : une découpe juste laisse quatre candidats, trois découpes fausses n'en laissent aucun de bon.",
     },
   ],
 };

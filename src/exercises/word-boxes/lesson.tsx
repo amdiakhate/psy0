@@ -113,6 +113,21 @@ function WordBoxesScene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Tu te tromperas sur les rappels lointains, et ça donnera l’impression d’une mémoire défaillante. Ce n’en est pas une : une association arbitraire vieille de cinq mots a été écrasée par les thèmes plus récents, chez tout le monde. La parade n’est pas de mieux se souvenir, c’est de fabriquer un lien qui ne demande pas de se souvenir.",
+    budget:
+      "Environ une minute par série. Tout le temps utile est concentré sur les CINQ PREMIERS mots : c’est là qu’on fabrique les associations. Après, il n’y a plus rien à réfléchir, seulement à restituer — et si tu réfléchis encore, c’est que l’encodage n’a pas été fait.",
+    fallback: [
+      "Trou de mémoire : ne fouille pas ta tête, SCANNE les boîtes. Chacune affiche les mots qu’elle contient déjà — cherche celle qui en contient un du même champ lexical. La reconnaissance est plus rapide et plus fiable que le rappel.",
+      "Toujours rien : applique la règle d’ordre — le n-ième thème rencontré occupe la n-ième boîte. Même approximative, elle bat le hasard.",
+      "Le délai expire : n’importe quelle boîte plausible vaut mieux qu’une non-réponse, qui compte comme fausse à coup sûr.",
+    ],
+    recover:
+      "Une erreur passée ne se rejoue pas, et la ruminer pendant que le mot suivant s’affiche en coûte deux ou trois de plus. Le geste de récupération est mécanique : nomme le THÈME du mot en cours, puis seulement cherche sa boîte.",
+    bail:
+      "Rien ne s’abandonne. La seule décision qui compte se prend au tout début : prendre la première boîte libre sans hésiter, et encoder le lien à voix intérieure dans la seconde qui suit. Une seconde investie là vaut cinq rappels plus tard.",
+  },
   title: 'Mémoriser ses propres attributions',
   intro: `${Q.boxCount} boîtes vides et sans étiquette, ${Q.steps.length} mots qui défilent, ${Q.wordMs} ms d'affichage puis ${Q.answerMs} ms pour répondre. Reconnaître le champ lexical d'un mot est trivial : ce qui est réellement testé, c'est ta mémoire des attributions que TU as créées.`,
   Scene: WordBoxesScene,

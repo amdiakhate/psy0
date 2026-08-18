@@ -382,6 +382,21 @@ function ShapesColorsScene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Les premières séries, tu chercheras la règle à chaque forme et tu répondras en retard d’un cran. C’est attendu : 0,5 s d’affichage ne laisse aucune place à la reconstruction. Ce qui change tout n’est pas la vitesse de réaction, c’est la qualité de l’encodage fait AVANT la série — le seul moment où tu as du temps.",
+    budget:
+      "3 s par forme dont 0,5 s visible. Ce budget suppose la racine « vide → couleur, rempli → forme » encodée en quatre mots, disponible sans effort. Tant que tu dois te la redire en entier, tu perdras une forme sur trois — travaille le briefing, pas la réaction.",
+    fallback: [
+      "Tu as raté une forme : ne la ruminE pas, elle est passée. Le coût réel d’une forme ratée est la SUIVANTE, que tu rateras aussi si tu es encore sur la précédente.",
+      "La règle t’échappe en pleine série : reviens à la racine seule — vide ou rempli ? Le bon étage de l’arbre suffit souvent à écarter une des deux touches.",
+      "Doute total sur une forme : réponds quand même. Une non-réponse est une faute certaine, une réponse au hasard est une faute une fois sur deux.",
+    ],
+    recover:
+      "L’effondrement vient toujours du même endroit : on répond à la forme n pendant que la forme n+1 s’affiche. Pour te recaler, sacrifie délibérément une forme — ne réponds pas, respire, et reprends propre à la suivante.",
+    bail:
+      "Rien ne s’abandonne : la série défile toute seule. La seule décision est de relire les deux règles à voix haute pendant le briefing, autant de fois que nécessaire. Trente secondes de plus là-bas valent dix formes ici.",
+  },
   title: 'Un arbre à deux étages : le remplissage d’abord, toujours',
   intro:
     'Deux règles en cascade annoncées AVANT la série, puis 30 formes, une toutes les 3 s, chacune visible 0,5 s seulement. Le remplissage (vide / rempli) ne se répond pas : il décide quelle règle s’applique — et donc si c’est la couleur ou la forme qui commande N ou X. Exemple officiel décortiqué ici.',

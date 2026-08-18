@@ -87,6 +87,21 @@ function Scene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Le tri « en une passe » donne l’impression que tout le monde y arrive sauf toi. Personne n’y arrive : dix nombres triés en deux files ne tiennent PAS dans une mémoire humaine. Ce qui tient, c’est deux nombres — le dernier pair et le dernier impair joués — et l’écran fait le reste.",
+    budget:
+      "Compte 8 à 10 s de lecture initiale, pas 5. Et ne cherche pas à mémoriser : cherche à REPÉRER, c’est-à-dire à savoir où se trouvent les petits nombres de chaque parité. La grille reste sous tes yeux pendant toute la série : elle est ta mémoire externe.",
+    fallback: [
+      "Tu ne sais plus où tu en es : relis simplement les deux derniers nombres cliqués. Ils te donnent la parité à jouer et le seuil à dépasser — c’est toute l’information nécessaire.",
+      "Deux nombres proches de même parité (470 / 472) : compare les unités et rien d’autre. La longueur à l’écran est un leurre.",
+      "Sous pression, ralentis au lieu d’accélérer. Une erreur renvoie au début de la série : le temps « gagné » se paie dix fois.",
+    ],
+    recover:
+      "Après une erreur, tu reprends la série — mais pas ton travail : la grille n’a pas changé, et tu connais déjà les premiers coups. Rejoue le premier tiers vite et sans le revérifier, puis reprends au rythme normal. C’est la précipitation post-erreur qui déclenche la deuxième reprise, jamais la lenteur.",
+    bail:
+      "Rien ne s’abandonne : la série ne se termine que réussie. La seule décision qui compte est de ralentir dès la deuxième reprise — une série finie lentement vaut toutes les séries recommencées.",
+  },
   title: 'Alterner pair/impair en restant croissant',
   intro:
     'Exemple officiel du test : en partant de 54 (START), on clique alternativement un nombre pair puis un impair, chaque catégorie devant rester croissante. Toute erreur renvoie au début de la série.',
@@ -104,8 +119,8 @@ export const lesson: Lesson = {
       scene: 'sorted',
       title: 'Étape 1 — deux files, triées (5 à 8 s)',
       observe:
-        'Une passe, et on range : pairs = 54, 678, 764, 816, 952 ; impairs = 27, 327, 545, 619, 755. La parité se lit sur le DERNIER chiffre, jamais sur le nombre entier.',
-      why: 'Comme pour « Un mot sur deux », ces deux files SONT l’exercice. Une fois construites, on dépile leur sommet en alternance sans jamais relire la grille.',
+        'Une passe, et on repère : pairs = 54, 678, 764, 816, 952 ; impairs = 27, 327, 545, 619, 755. La parité se lit sur le DERNIER chiffre, jamais sur le nombre entier.',
+      why: 'Ne cherche pas à retenir ces dix nombres : personne n’y arrive, et l’essayer consomme toute ton attention. Cette passe sert à REPÉRER — savoir où sont les petits de chaque parité, et lequel ouvre chaque file. Ensuite tu ne tiens que deux nombres en tête : le dernier pair et le dernier impair joués. La grille, elle, ne bouge pas — elle porte le reste.',
       action: 'Compare par longueur d’abord (96 < 291 < 2152), par chiffres ensuite. Pas de calcul.',
     },
     {
@@ -121,7 +136,7 @@ export const lesson: Lesson = {
       scene: 'second',
       title: 'Étape 3 — retour chez les pairs',
       observe: 'Après 27, on revient chez les pairs, sur celui qui suit 54 : 678.',
-      why: 'Deux contraintes à chaque coup : changer de parité ET prendre le suivant immédiat dans la file. L’ordre croissant vaut à l’intérieur de chaque file, jamais entre les deux.',
+      why: 'Deux contraintes à chaque coup : changer de parité ET prendre le suivant immédiat dans la file. L’ordre croissant vaut à l’intérieur de chaque file, jamais entre les deux. Le « suivant » se RELIT sur la grille à partir du dernier joué — c’est une recherche, pas un souvenir.',
       pitfall:
         'Prendre 764 parce qu’il est plus visible : l’ordre est strict, c’est 678 qui vient d’abord.',
     },

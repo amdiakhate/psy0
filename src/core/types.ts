@@ -87,12 +87,38 @@ export interface LessonStep {
   scene: string;
 }
 
+/**
+ * Le volet « quand ça se passe mal » d'une leçon.
+ *
+ * Une leçon décrit la méthode quand tout va bien : on trouve, dans les temps,
+ * sans se tromper. Ça n'arrive presque jamais — et c'est exactement là que les
+ * points se perdent. Sans ce volet, un candidat qui dépasse le chrono ou qui
+ * casse une série n'a AUCUNE consigne, et improvise au pire moment.
+ *
+ * Il est OBLIGATOIRE : le compilateur refuse une leçon qui n'en a pas, parce
+ * qu'une leçon sans plan B est une leçon à moitié écrite.
+ */
+export interface LessonReality {
+  /** Ce que ça donne vraiment les premières fois — pour qu'un mauvais score ne soit pas lu comme un verdict. */
+  atFirst: string;
+  /** Le budget honnête, et ce qu'il suppose DÉJÀ automatisé. */
+  budget: string;
+  /** La méthode dégradée : ce qu'on lâche en premier, dans l'ordre, quand le temps manque. */
+  fallback: string[];
+  /** Reprendre après une erreur, ou après avoir perdu le fil. */
+  recover: string;
+  /** Quand renoncer à la question — et pourquoi ça rapporte. */
+  bail: string;
+}
+
 export interface Lesson {
   title: string;
   intro: string;
   steps: LessonStep[];
   /** Rendu de la scène figée pour une étape donnée. */
   Scene: React.FC<{ scene: string; stepIndex: number }>;
+  /** Le plan B. Obligatoire — voir `LessonReality`. */
+  reality: LessonReality;
 }
 
 export interface Tips {

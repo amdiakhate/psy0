@@ -103,6 +103,21 @@ function Scene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Les premières séries, tu traduiras mentalement — et tu dépasseras les 15 s sur la moitié des questions. C’est le mécanisme même que le test cherche à départager. La méthode du marqueur ne devient rapide qu’une fois la table des marqueurs sue par cœur, pas comprise : apprends-la comme une liste, pas comme une règle.",
+    budget:
+      "15 s par question suppose que tu reconnais le marqueur sans le chercher. Au début, compte 25 s sur les questions de temps verbaux et 8 s sur le vocabulaire — le total tient quand même, parce que le lexique va très vite.",
+    fallback: [
+      "Tu ne trouves pas le marqueur : élimine les deux options les plus improbables et choisis entre les deux restantes. Une chance sur deux vaut mieux qu’une sur quatre.",
+      "Sur une question de vocabulaire que tu ne sais pas, ne réfléchis pas : le mot manquant n’apparaîtra pas. Choisis et passe immédiatement.",
+      "Sur la compréhension, lis LA QUESTION d’abord, puis cherche le seul mot-clé dans le texte. Ne lis jamais le texte en entier.",
+    ],
+    recover:
+      "Rien ne s’enchaîne ici : une question ratée n’en abîme aucune autre. Le vrai risque est le décrochage de rythme — si tu sens que tu traînes, force-toi à répondre aux trois suivantes en moins de 10 s chacune pour te recaler.",
+    bail:
+      "Ce que tu sais, tu le sais en 3 secondes. Au-delà, la réponse ne viendra pas : élimine ce que tu peux, choisis, passe. Il n’y a pas de point négatif — une case cochée au hasard vaut toujours mieux qu’une case vide.",
+  },
   title: 'Trouver le marqueur, éliminer, trancher',
   intro:
     '30 questions en 7 min 30, soit 15 secondes chacune. À ce rythme la réponse doit relever du réflexe. La bonne nouvelle : la grande majorité des questions de grammaire se résolvent avec UN seul élément de la phrase — le marqueur.',

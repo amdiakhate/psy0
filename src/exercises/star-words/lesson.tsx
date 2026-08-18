@@ -76,6 +76,21 @@ function StarLesson({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "La première fois, tu liras les neuf mots en entier et tu chercheras un rapport de sens entre eux. Il n’y en a aucun — la parenté est purement géométrique. Se forcer à ne lire que la 3e et la 5e lettre est contre-intuitif au point de demander un effort conscient pendant plusieurs questions.",
+    budget:
+      "50 s. Le relevé des neuf couples (3e, 5e lettre) prend 15 s une fois le geste pris ; au début il t’en prendra 30, parce que compter jusqu’à la 3e lettre d’un mot de 7 n’est pas automatique. Compte les lettres avec le doigt sur l’écran si besoin : c’est plus rapide que de se tromper.",
+    fallback: [
+      "Le temps serre : ne cherche plus la lettre rare, pose n’importe quel mot et propage autour du cycle. Tu reviendras peut-être en arrière une fois, ce sera toujours plus rapide que de continuer à comparer neuf couples.",
+      "Conflit sur une case : retire le DERNIER mot posé, pas un autre. C’est celui dont tu as le moins de raisons d’être sûr.",
+      "Deux mots ont le même couple : ils sont interchangeables. Prends le premier, ne cherche pas lequel est « le bon » — la consigne officielle dit qu’il existe plusieurs solutions.",
+    ],
+    recover:
+      "L’étoile vérifie à ta place : une case rouge signale le conflit sans que tu aies à recompter quoi que ce soit. Ne recompte JAMAIS les lettres d’un mot déjà posé — regarde les cases communes, elles sont exactes par construction.",
+    bail:
+      "Dès que les six cases communes sont cohérentes, valide et passe — ne cherche pas « la » bonne solution, il y en a plusieurs. Et si à 40 s tu enchaînes les conflits, valide l’état en cours : une étoile partiellement juste vaut mieux qu’une étoile démontée.",
+  },
   title: 'Ne lire que deux lettres par mot',
   intro:
     'Neuf mots de 7 lettres, six emplacements dans l’étoile. On ne « cherche » pas quels mots vont ensemble : on lit deux lettres par mot et on laisse les contraintes désigner les gagnants. Cas réel décortiqué de bout en bout.',

@@ -116,6 +116,21 @@ function LogicScene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Les premières séries, tu chercheras la règle « en regardant » la suite, et tu ne trouveras rien sur la moitié d’entre elles. Le passage aux écarts n’est pas naturel : c’est un geste à installer de force, et il change tout dès qu’il l’est.",
+    budget:
+      "30 s par série suppose la hiérarchie de tests appliquée dans l’ordre, sans hésiter sur l’ordre. Au début, chaque test te coûtera 8 à 10 s au lieu de 3 : tu n’en feras que deux. C’est suffisant pour la majorité des séries — les tests 3 et 4 servent le tiers restant.",
+    fallback: [
+      "Écarts illisibles : teste une position sur deux (deux suites entrelacées). C’est 3 secondes et ça débloque la moitié des séries qui résistent.",
+      "Toujours rien : élimine ce que tu peux justifier — une option qui recopie le dernier terme, une qui applique le mauvais signe. Dès qu’UNE option tombe pour une vraie raison, répondre devient rentable.",
+      "Rien d’éliminable : abstiens-toi. C’est une décision, pas un renoncement.",
+    ],
+    recover:
+      "Chaque série est indépendante. Le danger est cumulatif et de fin d’épreuve : c’est répondre au hasard aux cinq dernières parce que le temps presse. Ces cinq-là coûtent plus qu’elles ne rapportent.",
+    bail:
+      "Le barème rend l’abstention rationnelle : −1/3 par erreur, 0 pour un blanc. Répondre au hasard entre quatre options a une espérance NULLE et ajoute du bruit. Règle unique : je réponds si j’ai éliminé au moins une option par raisonnement — sinon je passe, sans culpabilité.",
+  },
   title: 'La hiérarchie de tests (et quand ne pas répondre)',
   intro:
     'Quinze séries, 30 s chacune, quatre options à chaque fois. Une bonne réponse vaut +1, une mauvaise −1/3 : la première compétence de cette épreuve n’est pas de trouver la règle, c’est de savoir quand renoncer. On voit d’abord le barème, puis la méthode format par format.',

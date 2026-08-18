@@ -86,6 +86,21 @@ function Scene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Tu vas t’effondrer vers le vingtième chiffre les premières fois, et te sentir stupide. Tu ne l’es pas : tenir une fenêtre subvocale trois minutes sans interruption est un effort réel, et la seule chose qui le rend tenable est le rythme, pas la volonté. Ça vient par séries entières, pas progressivement.",
+    budget:
+      "1 s d’affichage, 3 s de réponse. La comparaison doit être faite PENDANT la seconde d’affichage — les 3 s servent à cliquer et à réamorcer. Au début tu chercheras encore quand les boutons apparaissent, et tu répondras en retard d’un cran. C’est le décalage classique, il se corrige en resynchronisant, pas en accélérant.",
+    fallback: [
+      "Tu as perdu le fil : réponds NON aux deux chiffres suivants sans réfléchir, en te contentant de les mémoriser. Deux Non te coûtent au pire deux points ; continuer désynchronisé en coûte dix.",
+      "Le rythme subvocal se casse : reviens à voix intérieure très marquée, « cinq – trois », au tempo des apparitions. La régularité prime sur la justesse à cet instant.",
+      "Doute sur un chiffre familier : c’est NON. La familiarité est un signal de fréquence, jamais de position.",
+    ],
+    recover:
+      "Après un match, le cerveau garde le chiffre « vainqueur » et décale toute la suite : c’est LA cause d’effondrement en milieu de série. Le réflexe correct est de resynchroniser explicitement sur les deux derniers chiffres AFFICHÉS, pas sur ceux dont tu te souviens.",
+    bail:
+      "Il n’y a pas d’abandon possible — une non-réponse compte comme une faute. Entre deux séries en revanche, vide EXPLICITEMENT la fenêtre précédente : ses restes fabriquent de faux leurres dans la série suivante.",
+  },
   title: 'Tenir une fenêtre de deux chiffres',
   intro:
     'Le dispositif officiel : un chiffre paraît 1 seconde, s’efface, puis « Oui » et « Non » restent 3 secondes. Oui si le chiffre est identique à celui de DEUX coups avant. 42 chiffres par série, et une non-réponse compte comme une faute.',

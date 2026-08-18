@@ -47,6 +47,21 @@ function MarblesScene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Au début tu simuleras les déplacements dans ta tête, et tu perdras le fil vers le troisième. C’est normal : la simulation ne tient pas en mémoire. Le comptage — mal placées, puis bloquantes — est justement ce qui la remplace, et il demande quelques dizaines de questions pour devenir naturel.",
+    budget:
+      "40 s par question, c’est confortable une fois le comptage acquis : il prend 10 s. Au début, la lecture des deux dispositions t’en prendra 15 à elle seule. Ne cherche pas à accélérer la lecture — c’est la simulation qu’il faut supprimer.",
+    fallback: [
+      "Perdu dans la simulation : reviens au comptage pur. Nombre de billes mal placées, plus 2 par bille bien placée posée SUR une mal placée. C’est la réponse dans la grande majorité des cas.",
+      "Doute entre deux valeurs : prends la plus GRANDE. Le comptage oublie plus souvent une bille bloquante qu’il n’en invente une.",
+      "Le QCM va de 2 à 9 : une réponse hors de cette plage signale une erreur de lecture, pas un cas exotique.",
+    ],
+    recover:
+      "Si tu t’embrouilles, ne repars pas de la simulation : repars de la question « quelles billes ne sont PAS dans leur tube d’arrivée ». Ce compte-là est robuste, il ne dépend d’aucun ordre.",
+    bail:
+      "Pas de point négatif : une case doit toujours être cochée. À 30 s, arrête de vérifier et donne ton plancher — le nombre de billes mal placées. C’est la meilleure estimation disponible, et elle est juste plus souvent qu’on ne croit.",
+  },
   title: 'Compter le minimum de déplacements',
   intro:
     'On ne « résout » pas le puzzle : on COMPTE. Cas d’école décortiqué — tube gauche plein (billes 0, 1, 2 du fond vers le haut), et il faut une bille par tube à l’arrivée.',

@@ -133,6 +133,21 @@ function CubesScene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "Au début tu replieras le cube mentalement, et tu ne finiras pas dans les 60 s. C’est attendu. La règle des opposées ne remplace vraiment le pliage qu’après une dizaine de questions faites LENTEMENT, sans chrono — c’est le meilleur investissement possible sur cet exercice.",
+    budget:
+      "60 s suppose les trois paires d’opposées relevées en 15 s. Tant que tu cherches encore quelle case fait face à quelle case, compte-en 30 : tu traiteras un trou au lieu de deux, et ce sera le bon choix.",
+    fallback: [
+      "Le temps serre : traite UN seul trou à fond plutôt que deux à moitié. Une pièce juste rapporte, deux pièces au hasard non.",
+      "Lâche le contrôle d’orientation contre l’arête commune et prends le bon symbole dans le sens qui te paraît naturel. Tu perdras sur les leurres tournés à 90°, mais tu auras une réponse.",
+      "Ne lâche JAMAIS le contrôle final des trois paires : 10 secondes pour attraper une pièce mal placée, c’est le meilleur rapport de tout l’exercice.",
+    ],
+    recover:
+      "Si tu découvres qu’une pièce posée est fausse, ne reprends pas tout : seules cette pièce et son opposée sont en cause. Les autres paires restent valides — c’est justement pour ça qu’on raisonne par paires.",
+    bail:
+      "Si à 45 s la pièce ne s’est pas imposée, pose la plus plausible et valide. Un patron laissé incomplet ne rapporte rien, et le temps gagné profite à la question suivante.",
+  },
   title: 'Compléter un patron sans le plier',
   intro:
     "D'abord, voir le pliage en vrai — une fois, en le pilotant soi-même. Ensuite, ne plus jamais plier : le patron à compléter est le même cube que la référence, déplié dans une autre orientation, et on ne recopie RIEN case par case. On raisonne sur les paires de faces opposées, qui elles ne changent jamais.",

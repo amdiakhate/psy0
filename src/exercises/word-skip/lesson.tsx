@@ -89,6 +89,21 @@ function Scene({ scene }: { scene: string; stepIndex: number }) {
 }
 
 export const lesson: Lesson = {
+  reality: {
+    atFirst:
+      "« Construis les deux files dans ta tête » donne l’impression que tout le monde y arrive sauf toi. Personne n’y arrive : huit mots triés en deux listes ne tiennent PAS dans une mémoire humaine, et prétendre le contraire ne rend service à personne. Ce qui tient, c’est DEUX mots — le dernier joué de chaque thématique — et la grille reste sous tes yeux pour le reste.",
+    budget:
+      "Compte 10 s de lecture initiale plutôt que 5. Le but de cette lecture n’est pas de mémoriser : c’est de savoir OÙ sont les mots de chaque thématique à l’écran, et lesquels ouvrent chaque file. Ensuite tu ne retiens que deux mots à la fois et tu relis la grille autant que nécessaire — elle est ta mémoire externe.",
+    fallback: [
+      "Tu ne sais plus où tu en es : regarde les deux derniers mots cliqués. Ils donnent la thématique à jouer et le seuil alphabétique à dépasser. C’est toute l’information nécessaire.",
+      "Deux mots à même initiale (FRISE / FRONTON) : compare lettre à lettre, FRI < FRO. Ni la longueur, ni la position à l’écran ne veulent rien dire.",
+      "Sous pression, ralentis. Une erreur renvoie au début de la série : chaque seconde « gagnée » se paie dix fois.",
+    ],
+    recover:
+      "Après une erreur, tu reprends la série mais pas ton travail : la grille n’a pas bougé et tu connais déjà les premiers coups. Rejoue-les vite, sans les revérifier, puis reprends au rythme normal. C’est la précipitation post-erreur qui déclenche la deuxième reprise — jamais la lenteur.",
+    bail:
+      "Rien ne s’abandonne : la série ne se termine que réussie. La seule décision utile est de ralentir dès la deuxième reprise. Une série finie lentement vaut mieux que trois séries recommencées vite.",
+  },
   title: 'Deux files alphabétiques qu’on dépile en alternance',
   intro:
     'Exemple officiel du test : deux thématiques, « Musique classique » et « Science physique », mélangées sur la grille. En partant de START, on clique alternativement un mot de chaque thématique, en respectant l’ordre alphabétique DANS chaque thématique. Toute erreur renvoie au début.',
@@ -106,9 +121,9 @@ export const lesson: Lesson = {
       scene: 'sorted',
       title: 'Étape 1 — le tri initial (5 à 8 s)',
       observe:
-        'Une seule passe sur la grille, et on range : Musique = ARIA, OPUS, SOUPIR, TREMOLO. Physique = ASTROLABE, NEUTRON, NOYAU, RADIANT. Chaque file est triée alphabétiquement.',
-      why: 'Ces deux files sont l’exercice tout entier. Une fois construites, on ne relit plus JAMAIS la grille : on dépile le sommet de chaque file en alternance. Le tri n’est pas du temps perdu, c’est ce qui rend la suite mécanique.',
-      action: 'Construis les deux files dans ta tête AVANT de toucher quoi que ce soit.',
+        'Une seule passe sur la grille, et on RANGE DES YEUX : Musique = ARIA, OPUS, SOUPIR, TREMOLO. Physique = ASTROLABE, NEUTRON, NOYAU, RADIANT. Le but n’est pas d’apprendre ces listes par cœur — c’est de savoir OÙ elles sont à l’écran, et lequel ouvre chaque file.',
+      why: 'Huit mots triés en deux listes ne tiennent pas dans une mémoire humaine, et essayer de les y mettre coûte le temps de toute la série. Ce qu’on retient réellement est bien plus léger : DEUX mots, le dernier joué de chaque thématique. La grille reste sous tes yeux — c’est elle, ta mémoire.',
+      action: 'Repère seulement les deux mots qui ouvrent chaque file, et les zones de l’écran où chaque thématique se concentre. Le reste, tu le reliras au fur et à mesure.',
     },
     {
       scene: 'first',
@@ -133,8 +148,8 @@ export const lesson: Lesson = {
       title: 'Étape 4 — dépiler sans relire',
       observe:
         'ARIA, NEUTRON, OPUS sont validés. Le suivant est NOYAU : c’est le mot de Physique qui suit NEUTRON. Aucune relecture de la grille n’est nécessaire.',
-      why: 'À ce stade, tu ne regardes plus que le sommet de deux files. Le regard sert uniquement à localiser le mot sur l’écran pour cliquer, plus à décider.',
-      action: 'Anticipe : pendant que tu cliques, ton œil cherche déjà le mot suivant de l’autre file.',
+      why: 'Ta mémoire de travail ne porte jamais que deux choses : le dernier mot joué en Musique, le dernier joué en Physique. Le mot suivant se RELIT sur la grille — « le plus petit de cette thématique après celui-là » — au lieu de se rappeler. Deux items tenus, c’est soutenable ; huit ne l’est pas.',
+      action: 'Anticipe : pendant que tu cliques, ton œil cherche déjà, sur la grille, le suivant de l’autre thématique.',
     },
     {
       scene: 'done',
