@@ -65,9 +65,10 @@ export function Stacking3DTip() {
         <Viewer cells={mirrored} color="#f87171" label="le symétrique — tourne-moi 🖱" />
       </div>
       <p className="mt-6 text-sm text-zinc-400">
-        Repère utile : place le plus long bras vers toi, note de quel côté part le décrochage
-        (droite ou gauche). Ce « sens » est invariant par rotation, il s'inverse par symétrie —
-        c'est le seul test dont tu as besoin.
+        Le test qui tranche : trois flèches sur la figure — ① le long du plus long bras, ② vers ce
+        qui en sort, ③ vers le cube posé au bout — puis pouce, index, majeur. Si ta main droite
+        fait le geste sur l'une et pas sur l'autre, elles sont miroirs. Ce sens survit à toutes les
+        rotations que tu infliges ici à la souris — essaie de le prendre en défaut.
       </p>
     </div>
   );

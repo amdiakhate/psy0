@@ -154,6 +154,8 @@ export interface IsoFace {
   kind: IsoFaceKind;
   /** Éclairement de la face, dans [0, 1] — 0 à l'ombre, 1 en pleine lumière. */
   shade: number;
+  /** Index (dans la forme) de la cellule qui porte cette face — pour colorer un cube isolément. */
+  cell: number;
   points: Array<[number, number]>;
 }
 
@@ -249,7 +251,8 @@ export function isoFaces(shape: Shape, tilt: Mat3 = IDENTITY): IsoFace[] {
   const viewFixed: Vec3 = unit(VIEW_DIR);
 
   const out: Array<{ face: IsoFace; depth: number }> = [];
-  for (const [x, y, z] of shape) {
+  for (let ci = 0; ci < shape.length; ci++) {
+    const [x, y, z] = shape[ci];
     for (const f of CUBE_FACES) {
       if (occupied.has(`${x + f.d[0]},${y + f.d[1]},${z + f.d[2]}`)) continue;
       const n = unit(applyReal(tilt, f.n) as Vec3);
@@ -260,6 +263,7 @@ export function isoFaces(shape: Shape, tilt: Mat3 = IDENTITY): IsoFace[] {
         face: {
           kind: f.kind,
           shade: AMBIENT + (1 - AMBIENT) * Math.max(0, dot(n, LIGHT_UNIT)),
+          cell: ci,
           points: pts.map((p) => isoProject(p[0], p[1], p[2])),
         },
         depth,
@@ -283,6 +287,21 @@ export function worldSizeFor(entries: Array<{ shape: Shape; tilt?: Mat3 }>): num
     side = Math.max(side, maxX - minX, maxY - minY);
   }
   return side + 0.7;
+}
+
+/** Centre du cube d'une cellule — les flèches de la leçon partent des centres, pas des coins. */
+export function cellCenterOf(c: Cell): [number, number, number] {
+  return [c[0] + 0.5, c[1] + 0.5, c[2] + 0.5];
+}
+
+/** Projette un point réel (coordonnées cube) après inclinaison — pour dessiner PAR-DESSUS les faces. */
+export function projectPoint(p: readonly [number, number, number], tilt: Mat3 = IDENTITY): [number, number] {
+  const q = [
+    tilt[0] * p[0] + tilt[1] * p[1] + tilt[2] * p[2],
+    tilt[3] * p[0] + tilt[4] * p[1] + tilt[5] * p[2],
+    tilt[6] * p[0] + tilt[7] * p[1] + tilt[8] * p[2],
+  ] as const;
+  return isoProject(q[0], q[1], q[2]);
 }
 
 export function isoBounds(faces: IsoFace[]): { minX: number; maxX: number; minY: number; maxY: number } {

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { isoBounds, isoFaces, worldSizeFor, IDENTITY } from './model';
 import type { Mat3, Shape } from './model';
 
@@ -16,7 +17,7 @@ import type { Mat3, Shape } from './model';
  * même taille, chacun centré sur sa propre boîte.
  */
 
-type Rgb = readonly [number, number, number];
+export type Rgb = readonly [number, number, number];
 
 const NEUTRAL: { dark: Rgb; bright: Rgb } = { dark: [58, 51, 53], bright: [251, 116, 114] };
 const ACCENT: { dark: Rgb; bright: Rgb } = { dark: [24, 52, 71], bright: [94, 200, 251] };
@@ -45,6 +46,8 @@ export function PolycubeSvg({
   world,
   px = 150,
   accent = false,
+  cellPalette,
+  children,
 }: {
   shape: Shape;
   /** Inclinaison de présentation — identité pour les figures de la leçon. */
@@ -54,6 +57,10 @@ export function PolycubeSvg({
   /** Côté du SVG en pixels. */
   px?: number;
   accent?: boolean;
+  /** Leçon : palette dédiée pour certains cubes (index → couleurs), pour montrer bras / saillie / dessus. */
+  cellPalette?: (cellIndex: number) => { dark: Rgb; bright: Rgb } | null;
+  /** Leçon : tracés ajoutés PAR-DESSUS les faces, dans le même repère (voir `projectPoint`). */
+  children?: ReactNode;
 }) {
   const faces = isoFaces(shape, tilt);
   const { minX, maxX, minY, maxY } = isoBounds(faces);
@@ -73,12 +80,13 @@ export function PolycubeSvg({
         <polygon
           key={i}
           points={f.points.map(([x, y]) => `${x.toFixed(3)},${y.toFixed(3)}`).join(' ')}
-          fill={ramp(palette, f.shade)}
+          fill={ramp(cellPalette?.(f.cell) ?? palette, f.shade)}
           stroke="rgb(32 27 29)"
           strokeWidth={0.03}
           strokeLinejoin="round"
         />
       ))}
+      {children}
     </svg>
   );
 }
