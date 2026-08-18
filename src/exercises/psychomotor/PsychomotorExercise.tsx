@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import type { ExerciseComponentProps } from '../../core/types';
 import type { PsyQuestion } from './generator';
 import { calcIndexAt, directionAt, positionAt, scrollOffsetAt, shapeIndexAt, waveAt } from './generator';
@@ -52,6 +52,19 @@ export function PsychomotorExercise({
     index: -1, answered: false, shownAt: 0, wave: null,
   });
 
+  // Les deux touches s'illuminent brièvement à l'appui, comme sur Pilotest :
+  // c'est le seul retour immédiat que l'appui a bien été pris en compte.
+  const [flash, setFlash] = useState({ space: false, f: false });
+  const flashTimers = useRef<{ space: number; f: number }>({ space: 0, f: 0 });
+  const blink = useCallback((key: 'space' | 'f') => {
+    setFlash((s) => ({ ...s, [key]: true }));
+    window.clearTimeout(flashTimers.current[key]);
+    flashTimers.current[key] = window.setTimeout(
+      () => setFlash((s) => ({ ...s, [key]: false })),
+      140,
+    );
+  }, []);
+
   const [ui, setUi] = useState({
     direction: 'up' as Direction,
     correct: false,
@@ -84,6 +97,7 @@ export function PsychomotorExercise({
       const t = (now - startRef.current) / 1000;
       if (e.key === ' ') {
         e.preventDefault();
+        blink('space');
         const i = shapeIndexAt(q.shapes, t, q.shapeIntervalMs);
         if (i < 0 || shapeState.current.answered) return;
         shapeState.current.answered = true;
@@ -100,6 +114,7 @@ export function PsychomotorExercise({
       }
       if (e.key === 'f' || e.key === 'F') {
         e.preventDefault();
+        blink('f');
         const wave = waveAt(q.waves, t, q.calcIntervalMs);
         const i = wave ? calcIndexAt(wave.calcs, t, q.calcIntervalMs) : -1;
         if (!wave || i < 0 || calcState.current.answered) return;
@@ -282,65 +297,91 @@ export function PsychomotorExercise({
           Pilotest : la comparaison des deux formes doit coûter un déplacement
           du regard. Collés, ils se comparaient d'un seul coup d'œil, ce qui
           supprimait l'essentiel de la charge de la tâche ②. */}
-      <div className="flex w-full max-w-4xl items-stretch gap-4 px-4">
-        {/* ② Encart pointillé FIXE, à gauche : la forme de référence */}
-        <div className="flex h-32 w-32 shrink-0 self-center items-center justify-center rounded-xl border-2 border-dashed border-zinc-600 bg-zinc-900">
-          <Shape name={ui.left} size={64} color="var(--ink-400)" />
-        </div>
-
-        {/* ① Le cercle SE DÉPLACE dans cette zone, à vitesse variable : c'est
-            une tâche de poursuite. Il faut maintenir la flèche de son sens. */}
-        <div className="relative h-72 flex-1 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/50">
-          <div
-            className="absolute"
-            style={{
-              left: `${ui.pos.x * 100}%`,
-              top: `${ui.pos.y * 100}%`,
-              transform: 'translate(-50%, -50%)',
-            }}
-          >
-            <div className="relative flex h-20 w-20 items-center justify-center">
-              <div
-                className={`flex h-20 w-20 items-center justify-center rounded-full border-4 ${
-                  ui.correct ? 'border-green-500' : 'border-zinc-600'
-                } bg-zinc-900`}
-              >
-                <Shape name={ui.inCircle} size={38} color="var(--ink-200)" />
-              </div>
-              {/* Le chevron vert : la bonne flèche est maintenue */}
-              {ui.correct && (
-                <span className="absolute -right-5 text-3xl font-bold text-green-500">&gt;</span>
-              )}
+      {/* ① Zone de déplacement du cercle : large et SANS cadre, comme sur
+          Pilotest — le cercle évolue dans l'espace de l'écran. */}
+      <div className="relative h-64 w-full max-w-4xl">
+        <div
+          className="absolute"
+          style={{
+            left: `${ui.pos.x * 100}%`,
+            top: `${ui.pos.y * 100}%`,
+            transform: 'translate(-50%, -50%)',
+          }}
+        >
+          <div className="flex items-center gap-2">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-sky-500">
+              <Shape name={ui.inCircle} size={40} color="#0ea5e9" />
             </div>
+            {/* Chevron PLEIN à droite du cercle : la bonne flèche est maintenue. */}
+            <span
+              className={`flex h-11 w-8 items-center justify-center rounded text-2xl font-bold text-white transition-opacity ${
+                ui.correct ? 'bg-green-600 opacity-100' : 'opacity-0'
+              }`}
+            >
+              &gt;
+            </span>
           </div>
         </div>
       </div>
 
-      {/* ③ Le BANDEAU de calculs : quatre visibles, un seul entouré.
-          Voir arriver les suivants permet de les lire à l'avance — c'est
-          l'anticipation que l'épreuve mesure, impossible avec un calcul isolé. */}
-      <div className="w-full max-w-4xl overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950/60 py-3">
-        <div
-          className="flex items-center gap-8 whitespace-nowrap will-change-transform"
-          style={{ transform: `translateX(${-ui.scroll * 100}%)` }}
-        >
-          {ui.lane.length === 0 ? (
-            <span className="pl-8 text-zinc-700">—</span>
-          ) : (
-            ui.lane.map((c, i) => (
-              <span
-                key={`${c.t}-${i}`}
-                className={`shrink-0 rounded-full px-6 py-2 font-mono text-2xl tabular-nums transition-colors ${
-                  i === ui.laneIndex
-                    ? 'border-2 border-amber-500 bg-amber-950/20 text-zinc-100'
-                    : 'border-2 border-transparent text-zinc-500'
-                }`}
-              >
-                {c.display}
-              </span>
-            ))
-          )}
+      {/* ② l'encart pointillé et ③ le bandeau, SUR LA MÊME LIGNE : c'est la
+          disposition officielle, et elle impose un vrai déplacement du regard
+          entre la forme de référence et le cercle, resté en haut. */}
+      <div className="flex w-full max-w-5xl items-center gap-6 px-4">
+        <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-zinc-500">
+          <Shape name={ui.left} size={40} color="#0ea5e9" />
         </div>
+
+        <div className="min-w-0 flex-1 overflow-hidden">
+          <div
+            className="flex items-center gap-10 whitespace-nowrap will-change-transform"
+            style={{ transform: `translateX(${-ui.scroll * 100}%)` }}
+          >
+            {ui.lane.length === 0 ? (
+              <span className="text-zinc-700">—</span>
+            ) : (
+              ui.lane.map((c, i) => (
+                <span
+                  key={`${c.t}-${i}`}
+                  className={`shrink-0 rounded-lg px-5 py-3 font-mono text-xl tabular-nums transition-colors ${
+                    i === ui.laneIndex
+                      ? 'border-2 border-amber-500 text-zinc-100'
+                      : 'border-2 border-transparent text-zinc-400'
+                  }`}
+                >
+                  {c.display}
+                </span>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Les deux touches, aux couleurs de leur tâche : bleu pour les formes,
+          orange pour les calculs. Elles s'illuminent à l'appui. */}
+      <div className="flex w-full max-w-5xl items-center gap-4 px-4">
+        <span
+          className={`rounded-lg px-6 py-2.5 text-sm font-bold tracking-wide transition-colors ${
+            flash.space ? 'bg-sky-400 text-zinc-950' : 'bg-sky-700 text-white'
+          }`}
+        >
+          ESPACE
+        </span>
+        <span
+          className={`rounded-lg px-5 py-2.5 text-sm font-bold transition-colors ${
+            flash.f ? 'bg-amber-400 text-zinc-950' : 'bg-amber-600 text-white'
+          }`}
+        >
+          F
+        </span>
+      </div>
+
+      {/* Barre de progression : le temps restant, lisible sans quitter la zone. */}
+      <div className="h-1.5 w-full max-w-5xl overflow-hidden rounded-full bg-zinc-700">
+        <div
+          className="h-full bg-red-500 transition-[width] duration-1000 ease-linear"
+          style={{ width: `${Math.max(0, 100 - (ui.remaining / durationSec) * 100)}%` }}
+        />
       </div>
 
       <p className="max-w-2xl text-center text-xs text-zinc-500">

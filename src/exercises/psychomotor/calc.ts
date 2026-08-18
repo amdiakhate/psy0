@@ -44,8 +44,18 @@ export function valueOf(side: Side): number {
   }
 }
 
+/**
+ * Un opérande négatif est absorbé dans le signe : « 67+-86 » s'écrit « 67-86 ».
+ * Pilotest n'affiche jamais deux signes à la suite, et cette collure est un
+ * bruit de lecture pur — elle ralentit sans rien tester.
+ */
 export function render(side: Side): string {
-  return side.kind === 'num' ? String(side.value) : `${side.a}${side.op}${side.b}`;
+  if (side.kind === 'num') return String(side.value);
+  const { a, op, b } = side;
+  if (b < 0 && (op === '+' || op === '-')) {
+    return `${a}${op === '+' ? '-' : '+'}${Math.abs(b)}`;
+  }
+  return `${a}${op}${b}`;
 }
 
 export function displayOf(calc: Pick<Calc, 'left' | 'right'>): string {

@@ -39,6 +39,14 @@ describe('makeCalc — véracité', () => {
     }
   });
 
+  it('n’affiche jamais deux signes à la suite', () => {
+    // « 67+-86 » se lit mal et ne teste rien de plus que « 67-86 ».
+    for (const c of batch({ wrongRate: 0.5 })) {
+      expect(c.display).not.toMatch(/[+×/]-\d/);
+      expect(c.display).not.toMatch(/--/);
+    }
+  });
+
   it('rend une égalité lisible des deux côtés', () => {
     for (const c of batch({ wrongRate: 0.5 }).slice(0, 50)) {
       expect(c.display).toBe(displayOf(c));
