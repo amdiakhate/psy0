@@ -90,7 +90,12 @@ export type DailyDecision =
   | { kind: 'rest' }
   | { kind: 'locked' }
   | { kind: 'simulation-first' }
-  | { kind: 'done-today' };
+  /**
+   * Le devoir du jour est fait. `replay` porte la décision qui AURAIT été
+   * offerte : elle permet de reproposer exactement le même programme en
+   * entraînement libre, sans avoir à deviner ce qu'il contenait.
+   */
+  | { kind: 'done-today'; replay: DailyDecision };
 
 export interface DecideArgs {
   moment: ParisMoment;
@@ -119,8 +124,11 @@ export function decideDaily(args: DecideArgs): DailyDecision {
 
   if (day <= DISCOVERY_END) {
     if (isMorning) {
-      if (morningDone) return { kind: 'done-today' };
-      return { kind: 'discovery-morning', toDiscover: allExercises.filter((e) => !discovered.has(e)) };
+      const morning: DailyDecision = {
+        kind: 'discovery-morning',
+        toDiscover: allExercises.filter((e) => !discovered.has(e)),
+      };
+      return morningDone ? { kind: 'done-today', replay: morning } : morning;
     }
     // Sprint léger du soir : un exercice déjà vu, jamais celui de la veille, jamais le Psychomoteur (cap).
     const candidates = weakestOrder.filter(
@@ -131,11 +139,14 @@ export function decideDaily(args: DecideArgs): DailyDecision {
 
   // Phase montée en charge (18/08 → 29/08 hors samedis/dimanche spéciaux).
   if (isMorning) {
-    if (morningDone) return { kind: 'done-today' };
+    // La priorité et le groupe se calculent AVANT de savoir si la séance est
+    // faite : c'est ce qui permet de reproposer le même programme à l'identique.
+    // Le curseur n'a pas bougé — `advanceAfterMorning` est idempotent par jour.
     const priority = priorities?.[state.priorityCursor % 3] ?? weakestOrder[0] ?? allExercises[0];
     let g = state.groupCursor % GROUPS.length;
     if (GROUPS[g].members.includes(priority)) g = (g + 1) % GROUPS.length;
-    return { kind: 'buildup-morning', priority, groupIndex: g };
+    const morning: DailyDecision = { kind: 'buildup-morning', priority, groupIndex: g };
+    return morningDone ? { kind: 'done-today', replay: morning } : morning;
   }
   const suggestion = weakestOrder.filter((e) => e !== 'psychomotor' && e !== state.lastEveningExercise)[0] ?? null;
   return { kind: 'buildup-evening', exercise: suggestion };

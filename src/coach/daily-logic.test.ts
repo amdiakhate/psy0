@@ -214,3 +214,35 @@ describe('bandeau sommeil', () => {
     expect(isAfterBedtime(at('2026-08-19T23:15:00'))).toBe(true);
   });
 });
+
+describe('refaire la séance du jour', () => {
+  const base = {
+    moment: parisMoment(new Date('2026-08-19T09:00:00+02:00')),
+    discovered: new Set<ExerciseId>(ALL),
+    allExercises: ALL,
+    priorities: ['cubes', 'marbles', 'english'] as [ExerciseId, ExerciseId, ExerciseId],
+    weakestOrder: ALL,
+  };
+
+  it('porte le programme qui AURAIT été offert, pour pouvoir le rejouer', () => {
+    const state = { ...INITIAL_DAILY_STATE, priorityCursor: 1, groupCursor: 2 };
+    const avant = decideDaily({ ...base, state });
+    const apres = decideDaily({ ...base, state: { ...state, lastMorningDoneDay: base.moment.dayKey } });
+
+    expect(avant.kind).toBe('buildup-morning');
+    expect(apres.kind).toBe('done-today');
+    if (apres.kind !== 'done-today') return;
+    // Le programme rejoué est EXACTEMENT celui du matin : même priorité, même
+    // groupe. Un curseur qui aurait bougé donnerait un autre programme.
+    expect(apres.replay).toEqual(avant);
+  });
+
+  it('ne fait pas réavancer les rotations : l’avancement est idempotent par jour', () => {
+    const day = '2026-08-19';
+    const state = { ...INITIAL_DAILY_STATE, priorityCursor: 1, groupCursor: 2 };
+    const apresPremier = advanceAfterMorning(state, 2, day);
+    expect(apresPremier.priorityCursor).toBe(2);
+    // Rejouer la séance le même jour ne doit rien décaler.
+    expect(advanceAfterMorning(apresPremier, 2, day)).toEqual(apresPremier);
+  });
+});

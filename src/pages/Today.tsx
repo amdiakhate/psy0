@@ -136,6 +136,19 @@ export default function Today() {
               )}
             </div>
           </>
+        ) : offer.replay ? (
+          <div className="mt-6 flex flex-wrap items-center gap-4">
+            <button
+              onClick={() => start(offer.replay!)}
+              className="rounded-xl border border-zinc-600 px-6 py-2.5 font-semibold text-zinc-200 hover:border-sky-500 hover:text-sky-300"
+            >
+              Refaire le programme du matin
+            </button>
+            <span className="max-w-md text-sm text-zinc-500">
+              Mêmes exercices, mêmes durées, questions nouvelles. Compté comme entraînement libre :
+              ni rotation avancée, ni journal de fin, ni double comptage.
+            </span>
+          </div>
         ) : null}
       </div>
 

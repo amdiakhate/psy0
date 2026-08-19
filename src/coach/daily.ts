@@ -41,6 +41,12 @@ export function psychoRemainingTodaySec(now: Date = new Date()): number {
 
 export interface DailyOffer {
   decision: DailyDecision;
+  /**
+   * Le programme du jour REPROPOSÉ alors qu'il est déjà fait. C'est de
+   * l'entraînement libre : il ne recompte pas comme la séance du jour, ne fait
+   * pas réavancer les rotations et n'impose pas le journal de fin.
+   */
+  replay?: SessionPlan;
   moment: ParisMoment;
   title: string;
   subtitle: string;
@@ -78,6 +84,18 @@ export function getDailyOffer(now: Date = new Date(), morningMin: MorningDuratio
     weakestOrder,
   });
 
+  return buildOffer(decision, moment, morningMin);
+}
+
+/** Construit l'offre correspondant à une décision. Extrait pour que « done-today » puisse rejouer la sienne. */
+function buildOffer(
+  decision: DailyDecision,
+  moment: ParisMoment,
+  morningMin: MorningDuration,
+): DailyOffer {
+  const state = getDailyState();
+  const prefs = getPrefs();
+  const weakestOrder = rankWeakest().map((s) => s.exercise);
   switch (decision.kind) {
     case 'locked':
       return {
@@ -91,12 +109,32 @@ export function getDailyOffer(now: Date = new Date(), morningMin: MorningDuratio
         title: 'Repos',
         subtitle: 'Dimanche off. La consolidation se fait pendant la pause — reviens demain.',
       };
-    case 'done-today':
+    case 'done-today': {
+      // On reconstruit l'offre qui AURAIT été faite, puis on la dépouille de
+      // tout ce qui la rendait « officielle ». Le programme est identique — les
+      // questions, elles, seront nouvelles : les items se tirent au hasard.
+      const original = buildOffer(decision.replay, moment, morningMin);
+      const replay = original.plan
+        ? {
+            ...original.plan,
+            meta: { ...original.plan.meta, daily: undefined, requiresLog: false },
+            // Le briefing du matin promet le journal de fin « qui pilote
+            // demain ». Un replay ne l'ouvre pas : garder cette phrase
+            // annoncerait un écran qui ne viendra jamais.
+            briefing: [
+              ...(original.plan.briefing ?? []).slice(0, -1),
+              'Reprise libre : mêmes exercices, questions nouvelles. Rien n’est recompté, et le journal du jour reste celui de ta vraie séance.',
+            ],
+          }
+        : undefined;
       return {
-        decision, moment, plan: null, optional: false,
+        decision, moment, plan: null, optional: false, replay,
         title: 'Session du matin déjà faite ✓',
-        subtitle: 'Reviens après 12 h pour la session du soir (optionnelle).',
+        subtitle: replay
+          ? 'Reviens après 12 h pour la session du soir (optionnelle). Tu peux aussi refaire le programme du matin — il ne comptera pas une seconde fois.'
+          : 'Reviens après 12 h pour la session du soir (optionnelle).',
       };
+    }
     case 'discovery-morning': {
       if (decision.toDiscover.length === 0) {
         // Tout est découvert : session guidée classique de 30 min.
