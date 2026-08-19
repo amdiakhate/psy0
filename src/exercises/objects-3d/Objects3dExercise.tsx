@@ -15,8 +15,14 @@ import { SceneMap } from './SceneMap';
 export function Objects3dExercise({
   item,
   onAnswer,
+  revealAnswer = false,
+  givenAnswer,
 }: ExerciseComponentProps<Objects3dQuestion, Objects3dAnswer>) {
   const q = item.question;
+  // Arrêt sur image : le bon emplacement passe au vert sur la carte, et le
+  // choix erroné reste marqué. Voir les deux côte à côte est ce qui apprend —
+  // le plus souvent c'est le rond diamétralement opposé.
+  const given = revealAnswer && typeof givenAnswer === 'number' ? givenAnswer : null;
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4">
@@ -34,9 +40,16 @@ export function Objects3dExercise({
         </div>
 
         <div>
-          <SceneMap objects={q.objects} highlight={null} onPick={onAnswer} />
+          <SceneMap
+            objects={q.objects}
+            highlight={given !== null && given !== q.viewpoint ? given : null}
+            reveal={revealAnswer ? q.viewpoint : null}
+            onPick={revealAnswer ? undefined : onAnswer}
+          />
           <p className="mt-1 text-center text-xs text-zinc-500">
-            la vue aérienne — chaque rond regarde vers le centre
+            {revealAnswer
+              ? 'en vert, l’emplacement d’où la photo a été prise'
+              : 'la vue aérienne — chaque rond regarde vers le centre'}
           </p>
         </div>
       </div>

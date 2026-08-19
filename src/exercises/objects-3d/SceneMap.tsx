@@ -209,7 +209,6 @@ export function SceneMap({
 
       {Array.from({ length: VIEWPOINT_COUNT }, (_, k) => {
         const { x: cx, y: cy } = ringXY(k);
-        const active = highlight === k || reveal === k;
         return (
           <g
             key={k}
@@ -223,8 +222,8 @@ export function SceneMap({
               cx={cx}
               cy={cy}
               r={11}
-              fill="none"
-              stroke={reveal === k ? '#16a34a' : active ? '#0ea5e9' : '#1d2a8a'}
+              fill={reveal === k ? '#22c55e' : highlight === k ? '#f59e0b' : 'none'}
+              stroke={reveal === k ? '#15803d' : highlight === k ? '#b45309' : '#1d2a8a'}
               strokeWidth={4}
             />
           </g>

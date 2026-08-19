@@ -5,13 +5,13 @@ import type {
   Item,
   SessionPlan,
   SessionRecord,
-  ExplainProps,
 } from '../core/types';
 import { appendEvent, flushNow } from '../core/eventlog';
 import { adaptiveStep, initAdaptive, newSessionId, saveLevel, saveSession, getSavedLevel } from '../core/session';
 import type { AdaptiveState } from '../core/session';
 import { newSeed } from '../core/rng';
 import { getExercise } from '../exercises';
+import type { AnyExerciseModule } from '../exercises';
 import { useKeys } from '../hooks/useKeys';
 import { buildDebrief } from '../coach/debriefing';
 import { familyReport } from '../coach/simulation';
@@ -389,7 +389,7 @@ function BlockRunner({
   // Item raté mis de côté pour la correction visuelle. Tant qu'il est là, la
   // séance est en pause : on ne génère PAS l'item suivant, sinon l'explication
   // porterait sur une figure qui n'est plus à l'écran.
-  const [review, setReview] = useState<{ item: Item; answer: unknown } | null>(null);
+  const [review, setReview] = useState<{ item: Item; answer: unknown; correct: boolean } | null>(null);
   // Temps passé dans les corrections, retranché du chrono du bloc : lire une
   // explication ne doit pas manger le temps d'entraînement que le coach a prévu.
   const explainedMs = useRef(0);
@@ -516,12 +516,15 @@ function BlockRunner({
       const next = adaptiveStep(adaptiveRef.current, correct, rtMs);
       setAdaptive(next);
 
-      // Correction visuelle : seulement sur une erreur, seulement si l'exercice
-      // sait se démontrer en image, et jamais en simulation — au test personne
-      // ne t'explique rien, s'y habituer fausserait la répétition.
-      if (!correct && module_.Explain && getPrefs().explainOnError && plan.mode !== 'simulation') {
+      // Arrêt sur image. Il ne dépend PLUS de l'existence d'un schéma : même
+      // sans explication dédiée, figer la question et afficher la réponse
+      // attendue vaut infiniment mieux qu'un bandeau qui survole la question
+      // suivante. Jamais en simulation — au test, rien ne s'arrête.
+      const pause = getPrefs().pauseAfterAnswer;
+      const freeze = plan.mode !== 'simulation' && (pause === 'toujours' || (pause === 'erreurs' && !correct));
+      if (freeze) {
         reviewStart.current = Date.now();
-        setReview({ item, answer });
+        setReview({ item, answer, correct });
         return;
       }
 
@@ -589,6 +592,19 @@ function BlockRunner({
     });
     setFeedback({ n: stats.current.items, ok: false, expected: module_.expectedToString(item) });
 
+    // Une question perdue au chrono est justement celle dont on n'a pas vu la
+    // solution : elle mérite l'arrêt sur image autant qu'une erreur.
+    // Le pas adaptatif s'applique AVANT toute sortie : une question perdue au
+    // chrono doit peser sur le niveau, qu'on marque une pause ou non.
+    setAdaptive(adaptiveStep(adaptiveRef.current, false, Math.round((itemLimitSec ?? 0) * 1000)));
+
+    const pause = getPrefs().pauseAfterAnswer;
+    if (plan.mode !== 'simulation' && pause !== 'jamais') {
+      reviewStart.current = Date.now();
+      setReview({ item, answer: undefined, correct: false });
+      return;
+    }
+
     const elapsed = (Date.now() - blockStart.current - explainedMs.current) / 1000;
     const doneByCount = block.itemCount !== undefined && stats.current.items >= block.itemCount;
     const doneByTime = block.durationSec !== undefined && elapsed >= block.durationSec;
@@ -596,16 +612,13 @@ function BlockRunner({
       endBlockRef.current();
       return;
     }
-    // Le niveau baisse comme sur une erreur : ne pas finir dans les temps est
-    // un signal aussi net que se tromper.
-    const next = adaptiveStep(adaptiveRef.current, false, Math.round((itemLimitSec ?? 0) * 1000));
-    setAdaptive(next);
+    const next = adaptiveRef.current;
     setItem(module_.generate(newSeed(), next.level, block.tagFilter));
     itemShownAt.current = Date.now();
     setHintLevel(0);
     usedHintRef.current = false;
     setItemLeft(itemLimitSec);
-  }, [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, itemLimitSec]);
+  }, [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, itemLimitSec, plan.mode]);
 
   const timeoutRef = useRef(handleTimeout);
   timeoutRef.current = handleTimeout;
@@ -806,8 +819,14 @@ function BlockRunner({
             </button>
           </div>
         )}
-        {review !== null && module_.Explain ? (
-          <Review Explain={module_.Explain} item={review.item} answer={review.answer} onNext={closeReview} />
+        {review !== null ? (
+          <Review
+            module_={module_}
+            item={review.item}
+            answer={review.answer}
+            correct={review.correct}
+            onNext={closeReview}
+          />
         ) : (
           <Component
             item={item}
@@ -830,14 +849,16 @@ function BlockRunner({
  * s'affiche n'est pas lue du tout.
  */
 function Review({
-  Explain,
+  module_,
   item,
   answer,
+  correct,
   onNext,
 }: {
-  Explain: React.FC<ExplainProps>;
+  module_: AnyExerciseModule;
   item: Item;
   answer: unknown;
+  correct: boolean;
   onNext: () => void;
 }) {
   useKeys((e) => {
@@ -847,10 +868,46 @@ function Review({
     }
   });
 
+  const Explain = module_.Explain;
+  const Component = module_.Component;
+  const expected = module_.expectedToString(item);
+  const given = answer === undefined ? 'temps écoulé' : module_.answerToString(answer);
+
   return (
     <div className="flex h-full flex-col">
       <div className="flex-1 overflow-auto">
-        <Explain item={item} answer={answer} />
+        {/* Bandeau de correction : il porte la vérité même quand l'exercice ne
+            sait pas se montrer, et reste à l'écran tant qu'on n'enchaîne pas. */}
+        <div
+          className={`mb-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border px-4 py-3 ${
+            correct ? 'border-green-700 bg-green-950/30' : 'border-red-700 bg-red-950/30'
+          }`}
+        >
+          <span className={`font-semibold ${correct ? 'text-green-300' : 'text-red-300'}`}>
+            {correct ? '✓ Juste' : '✗ Faux'}
+          </span>
+          {!correct && (
+            <>
+              <span className="text-sm text-zinc-400">
+                Ta réponse : <span className="font-mono text-zinc-200">{given}</span>
+              </span>
+              {expected !== '' && (
+                <span className="text-sm text-zinc-400">
+                  Attendu : <span className="font-mono text-green-300">{expected}</span>
+                </span>
+              )}
+            </>
+          )}
+        </div>
+
+        {Explain ? (
+          <Explain item={item} answer={answer} />
+        ) : (
+          /* Pas de schéma dédié : on REFIGE la question elle-même. `onAnswer`
+             est neutralisé — l'arrêt sur image ne doit rien enregistrer — et
+             `revealAnswer` invite l'exercice à montrer sa solution s'il sait. */
+          <Component item={item} onAnswer={() => {}} revealAnswer givenAnswer={answer} />
+        )}
       </div>
       <div className="mt-4 flex shrink-0 items-center gap-3">
         <button

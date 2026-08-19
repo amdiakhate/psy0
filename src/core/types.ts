@@ -144,6 +144,15 @@ export interface ContinuousEvent {
 export interface ExerciseComponentProps<Q = unknown, A = unknown> {
   item: Item<Q>;
   onAnswer: (answer: A) => void;
+  /**
+   * Arrêt sur image : l'exercice est figé et doit MONTRER la solution sur
+   * lui-même — la bonne case, le bon emplacement. Les composants qui ne savent
+   * pas le faire ignorent simplement ce drapeau : le bandeau de correction
+   * porte de toute façon la réponse attendue.
+   */
+  revealAnswer?: boolean;
+  /** La réponse donnée, pour la matérialiser pendant l'arrêt sur image. */
+  givenAnswer?: A;
   /** Exercices `continuous` uniquement. */
   durationSec?: number;
   onContinuousEvent?: (e: ContinuousEvent) => void;

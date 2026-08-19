@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { exportAll, importAll, resetAll } from '../core/storage';
 import { discardCache, getEvents } from '../core/eventlog';
 import { getPrefs, savePrefs, arePrioritiesLocked, PRIORITIES_LOCKED_UNTIL } from '../core/prefs';
+import type { Prefs } from '../core/prefs';
 import { EXERCISES } from '../exercises';
 import { exportDayLog } from '../core/logs';
 import { parisMoment } from '../coach/daily-logic';
@@ -165,9 +166,8 @@ function ExplainSection() {
   const withExplain = EXERCISES.filter((e) => e.Explain);
   const withHint = EXERCISES.filter((e) => e.hint);
 
-  const toggle = () => {
-    const fresh = getPrefs();
-    const next = { ...fresh, explainOnError: !fresh.explainOnError };
+  const setPause = (value: Prefs['pauseAfterAnswer']) => {
+    const next = { ...getPrefs(), pauseAfterAnswer: value };
     setPrefs(next);
     savePrefs(next);
   };
@@ -189,22 +189,36 @@ function ExplainSection() {
   return (
     <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
       <h3 className="font-semibold text-zinc-300">Aide pendant l’entraînement</h3>
-      <label className="mt-3 flex items-start gap-3 text-sm">
-        <input
-          type="checkbox"
-          checked={prefs.explainOnError}
-          onChange={toggle}
-          className="mt-0.5 h-4 w-4 accent-sky-600"
-        />
-        <span>
-          <span className="font-medium text-zinc-200">Expliquer mes erreurs en image</span>
-          <span className="block text-zinc-500">
-            Après une erreur, la séance s'arrête et affiche le schéma qui montre pourquoi c'était
-            cette réponse-là. Le temps de lecture n'est pas décompté du chrono du bloc, et
-            l'explication ne s'affiche jamais en simulation — au test, personne ne t'explique rien.
-          </span>
-        </span>
-      </label>
+      <div className="mt-3 text-sm">
+        <p className="font-medium text-zinc-200">Arrêt sur image après une réponse</p>
+        <p className="mt-0.5 text-zinc-500">
+          La question reste à l'écran avec sa correction jusqu'à ce que tu enchaînes. Sans lui, la
+          question suivante est générée aussitôt et le verdict ne fait que survoler la NOUVELLE
+          question — on n'a jamais le temps de voir la solution de celle qu'on vient de rater.
+          Le temps de lecture n'est pas décompté, et rien ne s'arrête en simulation.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {(
+            [
+              ['erreurs', 'Sur mes erreurs'],
+              ['toujours', 'Sur chaque question'],
+              ['jamais', 'Jamais'],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => setPause(value)}
+              className={`rounded-lg border px-3 py-1.5 text-sm ${
+                prefs.pauseAfterAnswer === value
+                  ? 'border-sky-500 bg-sky-950/40 text-sky-200'
+                  : 'border-zinc-700 text-zinc-400 hover:border-zinc-500'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <label className="mt-4 flex items-start gap-3 border-t border-zinc-800 pt-4 text-sm">
         <input
           type="checkbox"

@@ -15,11 +15,19 @@ export interface Prefs {
    */
   phase1ReviewAt: number | null;
   /**
-   * Après une erreur, marquer une pause et MONTRER pourquoi c'était ça, quand
-   * l'exercice sait l'expliquer visuellement. Désactivé en simulation : au test
-   * personne ne t'explique rien, et s'y habituer fausserait la répétition.
+   * Arrêt sur image après une réponse : la question reste à l'écran avec sa
+   * correction jusqu'à ce qu'on enchaîne.
+   *
+   * Sans lui, l'item suivant est généré aussitôt et le verdict ne fait que
+   * survoler la NOUVELLE question — on n'a jamais le temps de voir la solution
+   * de celle qu'on vient de rater. C'est ce que fait Pilotest avec sa case
+   * « Afficher les corrections ».
+   *
+   * Par défaut sur les seules erreurs : sur une bonne réponse on connaît déjà
+   * la solution, et s'arrêter à chaque item ajoute un geste pour rien.
+   * Jamais en simulation, quel que soit ce réglage.
    */
-  explainOnError: boolean;
+  pauseAfterAnswer: 'toujours' | 'erreurs' | 'jamais';
   /**
    * Astuces à la volée pendant l'entraînement (touche H). Désactivées en
    * simulation : au test personne ne t'en donne, et s'y habituer fausserait la
@@ -41,7 +49,7 @@ const DEFAULT_PREFS: Prefs = {
   priorities: null,
   pilotestClass: {},
   phase1ReviewAt: null,
-  explainOnError: true,
+  pauseAfterAnswer: 'erreurs',
   hintsEnabled: true,
   itemTimeLimit: true,
   dev: { fastHalfway: false },
