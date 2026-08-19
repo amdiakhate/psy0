@@ -57,8 +57,64 @@ export interface Technique {
   targetMs: number;
   /** Le schéma qui rend la règle évidente. Sans lui, « les dizaines se complètent à 9 » n'est qu'une incantation. */
   diagram?: Diagram;
+  /** Mode de réponse : il décide de la part incompressible du temps cible. */
+  answerInput: 'typed' | 'keyed';
   generate(rng: Rng): MentalItem;
 }
+
+/* --------------------------------------------------------- temps cibles */
+
+/**
+ * Une cible n'est pas un temps de calcul : c'est un temps de BOUT EN BOUT.
+ *
+ * Elle doit couvrir la lecture de l'énoncé, la réflexion, la frappe et la
+ * validation. Une version antérieure posait 2,5 s sur les compléments — or lire
+ * « Complément de 83 à 100 », taper deux chiffres et appuyer sur Entrée consomme
+ * déjà l'essentiel de ce budget. Il ne restait presque rien pour penser.
+ *
+ * Le défaut ne se limitait pas à un chiffre trop serré. La maîtrise se juge en
+ * comparant le temps médian à cette cible : sous le plancher physique, elle ne
+ * distingue plus rien, et TOUTE technique reste « en cours » indéfiniment, y
+ * compris parfaitement acquise. Un seuil inatteignable ne mesure pas, il décourage.
+ *
+ * Le modèle est donc explicite : plancher d'entrée-sortie + réflexion. Et les
+ * temps de réflexion visent un adulte entraîné ORDINAIRE, pas un calculateur.
+ *
+ * CALAGE SUR LA LITTÉRATURE, pour que ces nombres ne soient pas au jugé. La
+ * tâche d'« alphabet arithmetic » (vérifier C + 2 = E) a été mesurée sur DOUZE
+ * sessions quotidiennes — soit précisément l'horizon de deux semaines visé ici :
+ *
+ *   · temps moyen de résolution, toutes sessions : 2023 ms (écart-type 1056) ;
+ *   · pente de 536 ms par cran en session 1, tombée à 180 ms par cran en
+ *     session 12. C'est l'apprentissage lui-même, chiffré.
+ *
+ *   Shams, Chevrier & Barrouillet, « Scrutinizing patterns of solution times in
+ *   alphabet-arithmetic tasks », Cognition (2020) — réplication de Logan &
+ *   Klapp (1991), J. Exp. Psychol. LMC.
+ *
+ * Deux corrections s'imposent avant de reprendre ces chiffres. L'expérience est
+ * une VÉRIFICATION à une touche sur un jeu restreint de lettres ; ici on PRODUIT
+ * la réponse au clavier, sur les vingt-six lettres et des pas variés. La
+ * production et la frappe ajoutent de l'ordre de 0,8 à 1,2 s, et un jeu ouvert
+ * empêche la mémorisation qui accélère les dernières sessions du laboratoire.
+ *
+ * Les cibles retenues sont donc franchement au-dessus des temps de session 12,
+ * et atteignables en une quinzaine de jours de drill régulier — pas au premier
+ * essai, et c'est voulu : une cible atteinte d'emblée ne mesure rien.
+ */
+
+/** Lire un énoncé court, taper la réponse, valider. Incompressible. */
+const READ_AND_TYPE_MS = 1600;
+/** Idem, mais la réponse tient en une touche (J ou F) : la frappe s'efface presque. */
+const READ_AND_PRESS_MS = 900;
+
+/** Cible d'une technique dont la réponse se tape. */
+const typed = (thinkMs: number) => READ_AND_TYPE_MS + thinkMs;
+/** Cible d'une technique qui se répond d'une touche. */
+const keyed = (thinkMs: number) => READ_AND_PRESS_MS + thinkMs;
+
+/** Exposés pour que les tests puissent vérifier qu'aucune cible ne passe sous le plancher. */
+export const IO_FLOOR = { typed: READ_AND_TYPE_MS, keyed: READ_AND_PRESS_MS };
 
 /* ------------------------------------------------------------------ outils */
 
@@ -120,7 +176,8 @@ const alphaLandmarks: Technique = {
     'Sur toute série de lettres, toute énigme où un nombre se lit sur un prénom, et chaque fois qu’un décalage alphabétique est en jeu. C’est la brique des trois autres techniques de cette famille.',
   psy0:
     'Les Séries logiques posent des lettres isolées, des groupes de deux, et des énigmes où le rang EST la réponse. Sans jalons, chacune de ces questions commence par cinq secondes perdues.',
-  targetMs: 3000,
+  targetMs: typed(1600),
+  answerInput: 'typed',
   diagram: {
     kind: 'face',
     rows: [
@@ -169,7 +226,8 @@ const alphaFromRank: Technique = {
     'À chaque fois qu’une série de lettres se termine — c’est le dernier geste avant de répondre. Aussi pour vérifier une option du QCM sans refaire tout le raisonnement.',
   psy0:
     'Les QCM des Séries logiques proposent des lettres, jamais des rangs. Convertir vite dans ce sens-là, c’est transformer un raisonnement juste en point marqué.',
-  targetMs: 3500,
+  targetMs: typed(1900),
+  answerInput: 'typed',
   diagram: {
     kind: 'face',
     rows: [
@@ -216,7 +274,8 @@ const alphaMirror: Technique = {
     'Dès qu’un énoncé parle d’ordre inverse ou « contralphabétique », et pour vérifier une symétrie dans une série. Le couple M↔N au centre est le repère : ce sont les rangs 13 et 14.',
   psy0:
     'Certaines séries se lisent à l’envers de l’alphabet. Reparcourir Z, Y, X à la main coûte le temps de la question ; la soustraction à 27 coûte une seconde.',
-  targetMs: 4500,
+  targetMs: typed(2600),
+  answerInput: 'typed',
   diagram: {
     kind: 'face',
     rows: [
@@ -261,7 +320,8 @@ const alphaShift: Technique = {
     'Sur toute série de lettres à pas constant, et particulièrement dès qu’un terme approche des extrémités de l’alphabet — c’est là que la boucle se déclenche.',
   psy0:
     'Un pas qui semble impossible est presque toujours un passage par la boucle. Reconnaître ça évite d’abandonner une série qu’on avait résolue.',
-  targetMs: 5000,
+  targetMs: typed(3000),
+  answerInput: 'typed',
   diagram: {
     kind: 'bonds',
     from: 21,
@@ -322,7 +382,8 @@ const complements: Technique = {
     'Dès qu’un nombre rond apparaît quelque part — 100, 1000, une dizaine. C’est la brique de toutes les autres techniques : arrondir-compenser et soustraire par la distance en dépendent entièrement.',
   psy0:
     'Aucun calcul de la grille ne se vérifie vite si les compléments hésitent. C’est le seul point du programme qui doit être un réflexe pur, sans aucune réflexion.',
-  targetMs: 2500,
+  targetMs: typed(1400),
+  answerInput: 'typed',
   diagram: {
     kind: 'bonds',
     from: 83,
@@ -394,7 +455,8 @@ const addLeft: Technique = {
     'Toute addition à deux ou trois chiffres. Si le second nombre est proche d’une dizaine (finit par 8 ou 9), préfère arrondir-compenser : c’est plus court.',
   psy0:
     'C’est la posture par défaut de toute la grille. Poser mentalement une addition en colonnes coûte trois fois le temps et fabrique les erreurs de retenue que le test glisse exprès.',
-  targetMs: 3500,
+  targetMs: typed(2200),
+  answerInput: 'typed',
   diagram: {
     kind: 'bonds',
     from: 47,
@@ -440,7 +502,8 @@ const roundCompensate: Technique = {
     'Dès qu’un nombre finit par 7, 8 ou 9 — ou par 1, 2, 3 en arrondissant vers le bas. Inutile pour 44 ou 45 : l’écart devient aussi coûteux que le calcul.',
   psy0:
     'Les grilles regorgent de « 47 + 39 » et « 68 − 29 ». Chacun se règle en une seconde par cette voie, contre cinq en posant.',
-  targetMs: 4000,
+  targetMs: typed(2400),
+  answerInput: 'typed',
   diagram: {
     kind: 'bonds',
     from: 47,
@@ -499,7 +562,8 @@ const subDistance: Technique = {
     'Chaque fois que le chiffre des unités du second est plus grand que celui du premier — c’est-à-dire chaque fois qu’une retenue menace.',
   psy0:
     'C’est la technique la plus rentable de tout l’atelier : elle supprime la faute la plus fréquente des Grilles, et celle qu’on commet en la VÉRIFIANT trop vite.',
-  targetMs: 4000,
+  targetMs: typed(2600),
+  answerInput: 'typed',
   diagram: {
     kind: 'bonds',
     from: 27,
@@ -550,7 +614,8 @@ const mul11: Technique = {
   when: 'Tout nombre à deux chiffres multiplié par 11. Fonctionne aussi pour 110, 1100.',
   psy0:
     'Le ×11 apparaît dans les grilles et dans les calculs du Psychomoteur. Sans la technique, on le pose ; avec elle, on le lit.',
-  targetMs: 4000,
+  targetMs: typed(2400),
+  answerInput: 'typed',
   diagram: {
     kind: 'decoupe',
     source: '34 × 11',
@@ -595,7 +660,8 @@ const mulRounds: Technique = {
   ],
   when: 'Dès qu’un facteur vaut 5, 25, 50, 500… Vaut aussi pour ÷5, qui est ×2 puis ÷10.',
   psy0: 'Les pourcentages du test tombent tous sur ces nombres : 25 % = ÷4, 50 % = ÷2. Une seule technique couvre les deux familles.',
-  targetMs: 4000,
+  targetMs: typed(2600),
+  answerInput: 'typed',
   diagram: {
     kind: 'decoupe',
     source: '48 × 25',
@@ -652,7 +718,8 @@ const mulNines: Technique = {
   when:
     'Pour 9, 19, 29, 99… et symétriquement pour 8 (×10 − deux fois). Au-delà de trois soustractions, la technique perd son avantage.',
   psy0: 'La table de 9 est celle où l’on hésite le plus. La supprimer, c’est supprimer l’hésitation.',
-  targetMs: 4500,
+  targetMs: typed(3000),
+  answerInput: 'typed',
   diagram: {
     kind: 'decoupe',
     source: '37 × 9',
@@ -696,7 +763,8 @@ const doubleHalve: Technique = {
     'Quand un facteur est un multiple de 4 et l’autre finit par 5 : le doublement le rend rond. À l’inverse, sur deux nombres impairs, la technique n’a aucune prise.',
   psy0:
     'Elle transforme les multiplications à deux chiffres — les plus coûteuses de la grille — en calculs de tête ordinaires.',
-  targetMs: 6000,
+  targetMs: typed(4000),
+  answerInput: 'typed',
   diagram: {
     kind: 'decoupe',
     source: '16 × 35',
@@ -735,7 +803,8 @@ const distribute: Technique = {
   when:
     'La technique par défaut d’un « deux chiffres × un chiffre » quand aucune autre ne s’applique. Coupe aussi en 25 + 3 ou 50 − 2 si ça tombe mieux.',
   psy0: 'C’est le filet de sécurité : elle marche toujours, même quand aucune astuce ne colle.',
-  targetMs: 5000,
+  targetMs: typed(3400),
+  answerInput: 'typed',
   diagram: {
     kind: 'decoupe',
     source: '23 × 7',
@@ -776,7 +845,8 @@ const square5: Technique = {
   steps: ['Prends le chiffre des dizaines, multiplie-le par le suivant : 3 × 4 = 12.', 'Colle 25 : 35² = 1225.'],
   when: 'Tout nombre finissant par 5, élevé au carré : 15, 25, 35… et aussi 105, 115.',
   psy0: 'Un résultat qui finit par 5 et n’est pas suivi de 25 est faux d’office : c’est un test d’une demi-seconde.',
-  targetMs: 4000,
+  targetMs: typed(2400),
+  answerInput: 'typed',
   diagram: {
     kind: 'decoupe',
     source: '35 × 35',
@@ -815,7 +885,8 @@ const diffSquares: Technique = {
   when:
     'Seulement si les deux facteurs sont SYMÉTRIQUES autour d’un rond. 47 × 52 ne s’y prête pas — chercher à forcer coûte plus que découper.',
   psy0: 'Le cas se présente peu, mais quand il tombe il fait gagner dix secondes pleines sur une grille serrée.',
-  targetMs: 6000,
+  targetMs: typed(4200),
+  answerInput: 'typed',
   diagram: {
     kind: 'decoupe',
     source: '48 × 52',
@@ -855,7 +926,8 @@ const percent10: Technique = {
   steps: ['10 % = le nombre divisé par 10.', '5 % = la moitié de 10 %. 20 % = le double. 30 % = trois fois.', 'Compose : 35 % = 30 % + 5 %.'],
   when: 'Tous les pourcentages. Si le pourcentage est 25, 50 ou 75, passe plutôt par les fractions : ÷4, ÷2, ÷4×3.',
   psy0: 'Les grilles mélangent pourcentages et fractions sur la même ligne. Une seule voie de calcul pour les deux évite de changer de méthode en cours de grille.',
-  targetMs: 4500,
+  targetMs: typed(3000),
+  answerInput: 'typed',
   diagram: {
     kind: 'decoupe',
     source: '35 % de 240',
@@ -911,7 +983,8 @@ const percentSwap: Technique = {
   when:
     'Quand l’un des deux nombres est un pourcentage confortable (10, 20, 25, 50). Sinon le retournement ne simplifie rien.',
   psy0: 'C’est le raccourci que les correcteurs attendent : il transforme une ligne « impossible en 5 s » en une lecture immédiate.',
-  targetMs: 5000,
+  targetMs: typed(3200),
+  answerInput: 'typed',
   diagram: {
     kind: 'face',
     rows: [
@@ -951,7 +1024,8 @@ const fractions: Technique = {
   when:
     'Toute fraction d’un nombre. Si la division ne tombe pas juste, inverse l’ordre : multiplie d’abord, divise ensuite.',
   psy0: 'Les fractions et les pourcentages occupent la même famille de cases dans les grilles. Les traiter par « une part d’abord » unifie les deux.',
-  targetMs: 5000,
+  targetMs: typed(3200),
+  answerInput: 'typed',
   diagram: {
     kind: 'decoupe',
     source: '3/8 de 240',
@@ -996,7 +1070,8 @@ const divideChain: Technique = {
   steps: ['Décompose : 8 = 2×2×2, 6 = 2×3, 12 = 4×3.', 'Divise étape par étape.', 'Commence par le facteur qui tombe le plus rond.'],
   when: 'Diviseur composé (4, 6, 8, 12, 16). Pour un diviseur premier (7, 11, 13), il n’y a pas de cascade : passe par la multiplication inverse.',
   psy0: 'Les divisions des grilles tombent toujours juste — la cascade les rend mécaniques au lieu de tâtonnantes.',
-  targetMs: 5000,
+  targetMs: typed(3200),
+  answerInput: 'typed',
   diagram: {
     kind: 'bonds',
     from: 0,
@@ -1040,7 +1115,8 @@ const unitsCheck: Technique = {
     'Première passe systématique sur une grille. Attention : le contrôle ne PROUVE rien quand il passe — il ne fait qu’éliminer.',
   psy0:
     'C’est la passe 1 des Grilles de calculs : elle attrape la moitié des erreurs en dix secondes, et c’est aussi le premier réflexe sur les calculs du Psychomoteur.',
-  targetMs: 5000,
+  targetMs: keyed(2500),
+  answerInput: 'keyed',
   diagram: {
     kind: 'face',
     rows: [
@@ -1089,7 +1165,8 @@ const castOutNines: Technique = {
     'Deuxième passe, sur ce que les unités ont laissé passer. Comme le contrôle des unités, elle ÉLIMINE mais ne valide pas : deux erreurs peuvent se compenser.',
   psy0:
     'Les faux du test sont plausibles — souvent à ±10 ou deux chiffres inversés. Les unités ne les voient pas ; la preuve par 9 les voit tous les deux.',
-  targetMs: 8000,
+  targetMs: keyed(5000),
+  answerInput: 'keyed',
   diagram: {
     kind: 'face',
     rows: [
@@ -1141,7 +1218,8 @@ const magnitude: Technique = {
     'Tout premier regard sur un gros produit ou une grande division. Inutile sur les faux plausibles à ±10, où l’ordre de grandeur est correct par construction.',
   psy0:
     'C’est la passe 2 des Grilles. Trois contrôles complémentaires — unités, ordre de grandeur, preuve par 9 — ne se recouvrent pas : chacun attrape ce que les autres laissent.',
-  targetMs: 6000,
+  targetMs: keyed(3500),
+  answerInput: 'keyed',
   diagram: {
     kind: 'face',
     rows: [
@@ -1185,7 +1263,8 @@ const divisibility: Technique = {
   when:
     'Pour trancher une division sans la faire, et pour simplifier une fraction avant de calculer. Sur une grille, c’est souvent plus rapide que de poser la division.',
   psy0: 'Un quotient proposé est faux dès que la divisibilité ne passe pas — pas besoin d’aller plus loin.',
-  targetMs: 7000,
+  targetMs: keyed(4200),
+  answerInput: 'keyed',
   diagram: {
     kind: 'face',
     rows: [

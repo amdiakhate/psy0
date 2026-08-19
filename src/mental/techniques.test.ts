@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../core/rng';
-import { TECHNIQUES, digitRoot, digitSum, techniqueById } from './techniques';
+import { IO_FLOOR, TECHNIQUES, digitRoot, digitSum, techniqueById } from './techniques';
 import type { MentalItem } from './techniques';
 
 /**
@@ -292,5 +292,39 @@ describe('schémas et exemples', () => {
         expect(item.prompt.length, `${t.id} / graine ${seed}`).toBeGreaterThan(0);
       }
     }
+  });
+});
+
+describe('temps cibles', () => {
+  /**
+   * Une cible couvre la lecture, la réflexion, la frappe et la validation.
+   * Descendue sous le plancher d'entrée-sortie, elle cesse de mesurer quoi que
+   * ce soit : aucune technique ne peut plus devenir « acquise », même
+   * parfaitement automatisée, et le suivi ne renvoie plus que du découragement.
+   */
+  it('laissent toujours du temps pour PENSER, pas seulement pour taper', () => {
+    for (const t of TECHNIQUES) {
+      const item = t.generate(mulberry32(1));
+      const plancher = item.kind === 'verdict' ? IO_FLOOR.keyed : IO_FLOOR.typed;
+      // Au moins une seconde de réflexion au-delà du plancher physique.
+      expect(t.targetMs - plancher, `${t.id} : ${t.targetMs} ms`).toBeGreaterThanOrEqual(1000);
+    }
+  });
+
+  it('restent atteignables : aucune ne dépasse dix secondes', () => {
+    // Une cible hors d'atteinte dans l'autre sens ne mesure rien non plus : elle
+    // déclarerait « acquise » une technique encore laborieuse.
+    for (const t of TECHNIQUES) {
+      expect(t.targetMs, t.id).toBeLessThanOrEqual(10000);
+    }
+  });
+
+  it('ordonnent les techniques par difficulté réelle', () => {
+    const of = (id: string) => TECHNIQUES.find((t) => t.id === id)!.targetMs;
+    // Un complément est un réflexe ; une preuve par 9 demande trois réductions.
+    expect(of('complements')).toBeLessThan(of('distribute'));
+    expect(of('distribute')).toBeLessThan(of('cast-out-nines'));
+    // Répondre d'une touche coûte moins que taper un nombre, à réflexion égale.
+    expect(of('units-check')).toBeLessThan(of('percent-swap'));
   });
 });

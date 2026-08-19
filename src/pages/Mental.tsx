@@ -6,6 +6,7 @@ import { assess, assessAll, loadProgress, statOf } from '../mental/progress';
 import { FAMILY_ORDER, TECHNIQUES, techniqueById, techniquesOf } from '../mental/techniques';
 import type { Technique } from '../mental/techniques';
 import { TechniqueDiagram } from '../mental/diagrams';
+import { IO_FLOOR } from '../mental/techniques';
 import { mulberry32 } from '../core/rng';
 
 /**
@@ -126,7 +127,12 @@ export default function Mental() {
             Drill {DRILL_COUNT} items
           </button>
           <p className="text-sm text-zinc-500">
-            Objectif : {(technique.targetMs / 1000).toFixed(1)} s par item.
+            Objectif : <span className="text-zinc-300">{(technique.targetMs / 1000).toFixed(1)} s</span> par
+            item, de bout en bout — dont environ{' '}
+            {(IO_FLOOR[technique.answerInput] / 1000).toFixed(1)} s pour lire l’énoncé et{' '}
+            {technique.answerInput === 'keyed' ? 'appuyer sur la touche' : 'taper la réponse'}. Il te
+            reste donc {((technique.targetMs - IO_FLOOR[technique.answerInput]) / 1000).toFixed(1)} s
+            pour réfléchir.
             {verdict.medianMs !== null && ` Tes derniers essais justes : ${(verdict.medianMs / 1000).toFixed(1)} s.`}
           </p>
         </div>
