@@ -116,3 +116,21 @@ export function assessAll(progress: MentalProgress): Array<{ technique: Techniqu
     verdict: assess(statOf(progress, technique.id), technique.targetMs),
   }));
 }
+
+/**
+ * Le mode de réponse effectif pour une technique.
+ *
+ * En « auto », on PRODUIT tant que la technique n'est pas acquise — taper la
+ * réponse interdit de deviner par élimination et impose une récupération
+ * complète, ce qui l'installe — puis on passe au QCM, qui est la posture réelle
+ * de l'épreuve et qui enchaîne plus vite. L'ordre compte : le QCM d'emblée
+ * laisserait éliminer sans jamais calculer, et produire indéfiniment
+ * entraînerait un geste que le PSY0 ne demande jamais.
+ */
+export function responseModeFor(
+  pref: 'auto' | 'produire' | 'qcm',
+  mastery: Mastery,
+): 'produire' | 'qcm' {
+  if (pref !== 'auto') return pref;
+  return mastery === 'acquis' ? 'qcm' : 'produire';
+}

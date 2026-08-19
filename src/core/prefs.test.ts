@@ -15,6 +15,7 @@ const prefs = (over: Partial<Prefs> = {}): Prefs => ({
   pauseAfterAnswer: 'erreurs',
   hintsEnabled: true,
   itemTimeLimit: true,
+  mentalResponse: 'auto',
   dev: { fastHalfway: false },
   ...over,
 });

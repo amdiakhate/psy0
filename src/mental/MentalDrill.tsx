@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { mulberry32, newSeed } from '../core/rng';
 import { useKeys } from '../hooks/useKeys';
-import { MASTERY_LABEL, assess, loadProgress, saveAttempt, statOf } from './progress';
+import { MASTERY_LABEL, assess, loadProgress, responseModeFor, saveAttempt, statOf } from './progress';
+import { choicesFor } from './choices';
+import { getPrefs } from '../core/prefs';
+import { targetFor } from './techniques';
 import type { MentalProgress } from './progress';
 import { techniqueById } from './techniques';
 import type { MentalItem } from './techniques';
@@ -48,8 +51,27 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
     [technique, seed],
   );
 
+  /**
+   * Le mode suit la maîtrise : on produit tant que la technique n'est pas
+   * acquise, puis on passe au QCM — le geste réel de l'épreuve, et le plus
+   * rapide à enchaîner.
+   */
+  const mode = useMemo(() => {
+    if (!technique) return 'produire' as const;
+    const verdict = assess(statOf(loadProgress(), technique.id), technique.targetMs);
+    return responseModeFor(getPrefs().mentalResponse, verdict.level);
+  }, [technique, index]);
+
+  const choices = useMemo(
+    () => (item && mode === 'qcm' ? choicesFor(item, mulberry32(seed ^ 0x5f5f)) : null),
+    [item, mode, seed],
+  );
+
+  /** Le calcul ne va pas plus vite en QCM : seule la sortie coûte moins. */
+  const target = technique ? targetFor(technique, mode) : 0;
+
   const last = answered[answered.length - 1];
-  const slow = phase === 'feedback' && technique !== null && last !== undefined && last.ms > technique.targetMs;
+  const slow = phase === 'feedback' && technique !== null && last !== undefined && last.ms > target;
   const showMethod = phase === 'feedback' && last !== undefined && (!last.ok || slow);
 
   const submit = useCallback(
@@ -57,7 +79,9 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
       if (!technique || !item || phase !== 'answer') return;
       const ms = Math.round(performance.now() - startedAt);
       const ok =
-        item.kind === 'value'
+        choices !== null
+          ? raw === choices.options[choices.correctIndex]
+          : item.kind === 'value'
           ? Number(raw.replace(',', '.')) === item.answer
           : item.kind === 'letter'
             ? raw.trim().toUpperCase() === item.answer
@@ -67,7 +91,7 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
       setAnswered((a) => [...a, { id: technique.id, ok, ms }]);
       setPhase('feedback');
     },
-    [technique, item, phase, startedAt],
+    [technique, item, phase, startedAt, choices],
   );
 
   const next = useCallback(() => {
@@ -89,6 +113,14 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
 
   useKeys((e) => {
     if (done) return;
+    if (phase === 'answer' && choices !== null) {
+      const n = Number(e.key);
+      if (n >= 1 && n <= 4) {
+        e.preventDefault();
+        submit(choices.options[n - 1]);
+        return;
+      }
+    }
     if (phase === 'feedback') {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -143,7 +175,32 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
       >
         <p className="font-mono text-4xl font-bold tracking-tight md:text-5xl">{item.prompt}</p>
 
-        {item.kind === 'value' || item.kind === 'letter' ? (
+        {choices !== null ? (
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {choices.options.map((o, i) => {
+              const isAnswer = i === choices.correctIndex;
+              const picked = given === o;
+              return (
+                <button
+                  key={i}
+                  onClick={() => phase === 'answer' && submit(o)}
+                  className={`rounded-lg border-2 px-3 py-3 font-mono text-2xl font-bold transition-colors ${
+                    phase === 'feedback'
+                      ? isAnswer
+                        ? 'border-green-500 bg-green-600/20 text-green-200'
+                        : picked
+                          ? 'border-red-500 bg-red-600/20 text-red-200'
+                          : 'border-zinc-800 text-zinc-600'
+                      : 'border-zinc-700 text-zinc-100 hover:border-sky-500'
+                  }`}
+                >
+                  <span className="mr-2 text-xs font-normal text-zinc-500">{i + 1}</span>
+                  {o}
+                </button>
+              );
+            })}
+          </div>
+        ) : item.kind === 'value' || item.kind === 'letter' ? (
           <input
             key={index}
             autoFocus
@@ -170,7 +227,9 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
 
         {phase === 'answer' && (
           <p className="mt-4 text-xs text-zinc-600">
-            {item.kind === 'value'
+            {choices !== null
+              ? 'Clique la bonne réponse, ou tape 1, 2, 3 ou 4.'
+              : item.kind === 'value'
               ? 'Tape le résultat, puis Entrée.'
               : item.kind === 'letter'
                 ? 'Tape la lettre, puis Entrée.'
@@ -185,7 +244,7 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
               !last?.ok &&
               ` — c’était ${item.answer}`}
             <span className="ml-2 font-normal text-zinc-500">
-              {((last?.ms ?? 0) / 1000).toFixed(1)} s · objectif {(technique.targetMs / 1000).toFixed(1)} s
+              {((last?.ms ?? 0) / 1000).toFixed(1)} s · objectif {(target / 1000).toFixed(1)} s
             </span>
           </p>
         )}

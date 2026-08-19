@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { MasteryChip, MentalDrill } from '../mental/MentalDrill';
 import { DRILL_COUNT, MELEE_COUNT, composeDrill, composeMelee } from '../mental/drill';
-import { assess, assessAll, loadProgress, statOf } from '../mental/progress';
+import { assess, assessAll, loadProgress, responseModeFor, statOf } from '../mental/progress';
+import { getPrefs } from '../core/prefs';
 import { FAMILY_ORDER, TECHNIQUES, techniqueById, techniquesOf } from '../mental/techniques';
 import type { Technique } from '../mental/techniques';
 import { TechniqueDiagram } from '../mental/diagrams';
@@ -51,7 +52,16 @@ export default function Mental() {
     setRunning({
       ids: composeDrill(technique.id, DRILL_COUNT),
       title: technique.name,
-      subtitle: `${DRILL_COUNT} items sur cette seule technique — objectif ${(technique.targetMs / 1000).toFixed(1)} s par item.`,
+      // L'objectif dépend du mode, qui dépend de la maîtrise : l'annoncer ici
+      // avec la valeur « produire » contredirait celui que le drill affiche.
+      subtitle: `${DRILL_COUNT} items sur cette seule technique. ${
+        responseModeFor(
+          getPrefs().mentalResponse,
+          assess(statOf(progress, technique.id), technique.targetMs).level,
+        ) === 'qcm'
+          ? 'Acquise : on passe au QCM, le geste réel de l’épreuve, pour gagner en vitesse.'
+          : 'Réponse à taper : produire interdit de deviner par élimination, et c’est ce qui installe la technique.'
+      }`,
     });
 
   const technique = id ? techniqueById(id) : null;

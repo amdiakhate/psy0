@@ -116,6 +116,18 @@ const keyed = (thinkMs: number) => READ_AND_PRESS_MS + thinkMs;
 /** Exposés pour que les tests puissent vérifier qu'aucune cible ne passe sous le plancher. */
 export const IO_FLOOR = { typed: READ_AND_TYPE_MS, keyed: READ_AND_PRESS_MS };
 
+/**
+ * La cible d'une technique selon le mode de réponse.
+ *
+ * Répondre en QCM ne rend pas le calcul plus rapide : seule la sortie change,
+ * une touche au lieu d'un nombre tapé. On retranche donc exactement l'écart des
+ * deux planchers — jamais du temps de réflexion, qui est le même.
+ */
+export function targetFor(t: Technique, mode: 'produire' | 'qcm'): number {
+  if (mode === 'produire' || t.answerInput === 'keyed') return t.targetMs;
+  return t.targetMs - (READ_AND_TYPE_MS - READ_AND_PRESS_MS);
+}
+
 /* ------------------------------------------------------------------ outils */
 
 /** Somme des chiffres, une passe. */

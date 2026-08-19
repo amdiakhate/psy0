@@ -41,6 +41,22 @@ export interface Prefs {
    * calme — un dépassement de chrono en phase d'apprentissage n'apprend rien.
    */
   itemTimeLimit: boolean;
+  /**
+   * Calcul mental : produire la réponse au clavier, ou la reconnaître en QCM.
+   *
+   * Les deux ont leur place, et « auto » les enchaîne dans le bon ordre.
+   *
+   * PRODUIRE tant que la technique n'est pas acquise. Taper la réponse interdit
+   * de deviner par élimination et impose une récupération complète — c'est ce
+   * qui installe la technique, et les formats à production engendrent des effets
+   * de test plus marqués que les formats à reconnaissance.
+   *
+   * QCM une fois acquise. C'est la posture RÉELLE de l'épreuve : au PSY0 on ne
+   * produit jamais un résultat, on clique les cases fausses ou on appuie sur F.
+   * Et l'enchaînement est plus rapide, donc plus de répétitions par minute — ce
+   * qu'on veut exactement quand il ne reste qu'à gagner en vitesse.
+   */
+  mentalResponse: 'auto' | 'produire' | 'qcm';
   /** Bascules de mise au point, à retirer avant le test. */
   dev: { fastHalfway: boolean };
 }
@@ -52,6 +68,7 @@ const DEFAULT_PREFS: Prefs = {
   pauseAfterAnswer: 'erreurs',
   hintsEnabled: true,
   itemTimeLimit: true,
+  mentalResponse: 'auto',
   dev: { fastHalfway: false },
 };
 

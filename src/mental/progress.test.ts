@@ -6,6 +6,7 @@ import {
   assess,
   median,
   record,
+  responseModeFor,
 } from './progress';
 import type { Attempt, TechniqueStat } from './progress';
 
@@ -89,5 +90,21 @@ describe('maîtrise', () => {
     const suite = Array.from({ length: RECENT_WINDOW }, () => ok(1000));
     expect(assess(build(debut), TARGET).level).toBe('fragile');
     expect(assess(build([...debut, ...suite]), TARGET).level).toBe('acquis');
+  });
+});
+
+describe('mode de réponse', () => {
+  it('fait produire tant que ce n’est pas acquis, puis passe au geste du test', () => {
+    for (const m of ['neuf', 'fragile', 'en-cours'] as const) {
+      expect(responseModeFor('auto', m), m).toBe('produire');
+    }
+    expect(responseModeFor('auto', 'acquis')).toBe('qcm');
+  });
+
+  it('respecte un choix explicite, quelle que soit la maîtrise', () => {
+    for (const m of ['neuf', 'fragile', 'en-cours', 'acquis'] as const) {
+      expect(responseModeFor('produire', m), m).toBe('produire');
+      expect(responseModeFor('qcm', m), m).toBe('qcm');
+    }
   });
 });
