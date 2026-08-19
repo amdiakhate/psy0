@@ -59,7 +59,9 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
       const ok =
         item.kind === 'value'
           ? Number(raw.replace(',', '.')) === item.answer
-          : (raw === 'F') === item.wrong;
+          : item.kind === 'letter'
+            ? raw.trim().toUpperCase() === item.answer
+            : (raw === 'F') === item.wrong;
       saveAttempt(technique.id, { ok, ms });
       setGiven(raw);
       setAnswered((a) => [...a, { id: technique.id, ok, ms }]);
@@ -141,7 +143,7 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
       >
         <p className="font-mono text-4xl font-bold tracking-tight md:text-5xl">{item.prompt}</p>
 
-        {item.kind === 'value' ? (
+        {item.kind === 'value' || item.kind === 'letter' ? (
           <input
             key={index}
             autoFocus
@@ -168,14 +170,20 @@ export function MentalDrill({ ids, title, subtitle, onExit }: DrillProps) {
 
         {phase === 'answer' && (
           <p className="mt-4 text-xs text-zinc-600">
-            {item.kind === 'value' ? 'Tape le résultat, puis Entrée.' : 'J si l’affirmation est juste, F si elle est fausse.'}
+            {item.kind === 'value'
+              ? 'Tape le résultat, puis Entrée.'
+              : item.kind === 'letter'
+                ? 'Tape la lettre, puis Entrée.'
+                : 'J si l’affirmation est juste, F si elle est fausse.'}
           </p>
         )}
 
         {phase === 'feedback' && (
           <p className={`mt-4 font-semibold ${last?.ok ? 'text-green-400' : 'text-red-400'}`}>
             {last?.ok ? 'Juste' : 'Faux'}
-            {item.kind === 'value' && !last?.ok && ` — c’était ${item.answer}`}
+            {(item.kind === 'value' || item.kind === 'letter') &&
+              !last?.ok &&
+              ` — c’était ${item.answer}`}
             <span className="ml-2 font-normal text-zinc-500">
               {((last?.ms ?? 0) / 1000).toFixed(1)} s · objectif {(technique.targetMs / 1000).toFixed(1)} s
             </span>

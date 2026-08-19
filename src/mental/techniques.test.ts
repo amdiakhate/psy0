@@ -38,6 +38,31 @@ function evalPrompt(prompt: string): number | null {
   m = /^(\d+)\/(\d+) de ([\d ]+)$/.exec(clean);
   if (m) return (Number(m[1]) * num(m[3])) / Number(m[2]);
 
+  // Rang alphabétique : on refait la conversion soi-même, sans réutiliser la
+  // table du générateur — c'est tout l'intérêt d'un recalcul indépendant.
+  m = /^Rang de la lettre ([A-Z])$/.exec(clean);
+  if (m) return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.indexOf(m[1]) + 1;
+
+  return null;
+}
+
+/** Réponse attendue d'un item dont la réponse est une LETTRE, recalculée à la main. */
+function expectedLetter(prompt: string): string | null {
+  const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const at = (r: number) => A[(((r - 1) % 26) + 26) % 26];
+  const clean = prompt.replace(/\s+/g, ' ').trim();
+
+  let m = /^La lettre de rang (\d+)$/.exec(clean);
+  if (m) return at(Number(m[1]));
+
+  m = /^Le miroir de ([A-Z]) dans l’alphabet$/.exec(clean);
+  if (m) return at(27 - (A.indexOf(m[1]) + 1));
+
+  m = /^([A-Z]) (avancée|reculée) de (\d+)$/.exec(clean);
+  if (m) {
+    const sign = m[2] === 'avancée' ? 1 : -1;
+    return at(A.indexOf(m[1]) + 1 + sign * Number(m[3]));
+  }
   return null;
 }
 
@@ -104,6 +129,35 @@ describe('générateurs', () => {
         expect(recomputed, `${t.id} : « ${item.prompt} »`).toBe(item.answer);
       }
     }
+  });
+
+  it('donnent la bonne LETTRE, recalculée depuis l’énoncé affiché', () => {
+    for (const t of TECHNIQUES) {
+      for (const seed of SEEDS) {
+        const item = t.generate(mulberry32(seed));
+        if (item.kind !== 'letter') continue;
+        expect(item.answer, `${t.id} : « ${item.prompt} »`).toMatch(/^[A-Z]$/);
+        const attendu = expectedLetter(item.prompt);
+        expect(attendu, `énoncé illisible : « ${item.prompt} » (${t.id})`).not.toBeNull();
+        expect(item.answer, `${t.id} : « ${item.prompt} »`).toBe(attendu);
+      }
+    }
+  });
+
+  it('font boucler l’alphabet dans les deux sens, pas seulement au-delà de Z', () => {
+    // Le bouclage est LE point qui fait perdre des séries : il faut donc que le
+    // drill le pose dans les deux sens, pas seulement quand on dépasse Z.
+    const t = TECHNIQUES.find((x) => x.id === 'alpha-shift')!;
+    let auDela = 0;
+    let enDessous = 0;
+    for (const seed of SEEDS) {
+      const item = t.generate(mulberry32(seed));
+      const w = item.walkthrough.join(' ');
+      if (w.includes('dépasse 26')) auDela++;
+      if (w.includes('tombe sous 1')) enDessous++;
+    }
+    expect(auDela).toBeGreaterThan(10);
+    expect(enDessous).toBeGreaterThan(10);
   });
 
   it('posent un verdict conforme au calcul réellement affiché', () => {
@@ -193,5 +247,50 @@ describe('outils de réduction', () => {
       expect(r % 9).toBe(n % 9);
     }
     expect(digitRoot(0)).toBe(0);
+  });
+});
+
+describe('schémas et exemples', () => {
+  it('chaque technique porte un schéma : sans lui, la règle reste une incantation', () => {
+    for (const t of TECHNIQUES) {
+      expect(t.diagram, t.id).toBeDefined();
+      expect(t.diagram!.caption.length, t.id).toBeGreaterThan(60);
+    }
+  });
+
+  it('les schémas de bonds partent bien d’avant pour arriver à la cible', () => {
+    for (const t of TECHNIQUES) {
+      if (t.diagram?.kind !== 'bonds') continue;
+      const stops = t.diagram.stops;
+      expect(stops.length, t.id).toBeGreaterThanOrEqual(2);
+      // Le dernier arrêt EST la cible : un schéma qui s'arrête avant ne montre
+      // pas le calcul en entier.
+      expect(stops[stops.length - 1].at, t.id).toBe(t.diagram.to);
+      for (const s of stops) expect(s.note.length, t.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('les découpes se recomposent : chaque morceau est étiqueté et le total est donné', () => {
+    for (const t of TECHNIQUES) {
+      if (t.diagram?.kind !== 'decoupe') continue;
+      expect(t.diagram.parts.length, t.id).toBeGreaterThanOrEqual(2);
+      for (const p of t.diagram.parts) {
+        expect(p.label.length, t.id).toBeGreaterThan(3);
+        expect(p.value.length, t.id).toBeGreaterThan(0);
+      }
+      expect(t.diagram.total.length, t.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('les exemples de la page technique sont ceux du générateur, jamais rédigés à part', () => {
+    // La page tire les graines 7, 23 et 61. Un exemple écrit à la main
+    // finirait par diverger de ce que le drill propose ; ici c'est impossible.
+    for (const t of TECHNIQUES) {
+      for (const seed of [7, 23, 61]) {
+        const item = t.generate(mulberry32(seed));
+        expect(item.walkthrough.length, `${t.id} / graine ${seed}`).toBeGreaterThanOrEqual(2);
+        expect(item.prompt.length, `${t.id} / graine ${seed}`).toBeGreaterThan(0);
+      }
+    }
   });
 });

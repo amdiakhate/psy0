@@ -5,6 +5,8 @@ import { DRILL_COUNT, MELEE_COUNT, composeDrill, composeMelee } from '../mental/
 import { assess, assessAll, loadProgress, statOf } from '../mental/progress';
 import { FAMILY_ORDER, TECHNIQUES, techniqueById, techniquesOf } from '../mental/techniques';
 import type { Technique } from '../mental/techniques';
+import { TechniqueDiagram } from '../mental/diagrams';
+import { mulberry32 } from '../core/rng';
 
 /**
  * Atelier de calcul mental.
@@ -82,6 +84,15 @@ export default function Mental() {
           {technique.rule}
         </p>
 
+        {/* Le schéma AVANT le texte : une règle comme « les dizaines se
+            complètent à 9 » n'est qu'une incantation tant qu'on ne voit pas
+            d'où sort le 9. */}
+        {technique.diagram && (
+          <div className="mt-4">
+            <TechniqueDiagram diagram={technique.diagram} />
+          </div>
+        )}
+
         <Section title="Pourquoi ça marche" accent="text-green-400">
           <p className="text-zinc-200">{technique.why}</p>
         </Section>
@@ -96,6 +107,8 @@ export default function Mental() {
             ))}
           </ol>
         </Section>
+
+        <WorkedExamples technique={technique} />
 
         <Section title="Quand l’utiliser" accent="text-amber-400">
           <p className="text-zinc-200">{technique.when}</p>
@@ -205,6 +218,53 @@ export default function Mental() {
           </div>
         </section>
       ))}
+    </div>
+  );
+}
+
+/**
+ * Trois exemples travaillés, tirés du VRAI générateur.
+ *
+ * Ils ne sont pas rédigés à la main : ce sont des items que le drill peut
+ * poser, avec le pas-à-pas que la correction afficherait. Un exemple écrit à
+ * part finirait par diverger de ce que l'exercice propose — ici c'est
+ * impossible par construction.
+ */
+function WorkedExamples({ technique }: { technique: Technique }) {
+  const examples = useMemo(
+    () => [7, 23, 61].map((seed) => technique.generate(mulberry32(seed))),
+    [technique],
+  );
+
+  return (
+    <div className="mt-5">
+      <p className="text-xs font-semibold uppercase tracking-widest text-violet-400">
+        Trois exemples, déroulés
+      </p>
+      <div className="mt-2 space-y-3">
+        {examples.map((item, i) => (
+          <div key={i} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+            <p className="font-mono text-xl font-bold text-zinc-100">
+              {item.prompt}
+              <span className="ml-3 text-base font-normal text-green-400">
+                {item.kind === 'value' || item.kind === 'letter'
+                  ? `= ${item.answer}`
+                  : item.wrong
+                    ? '→ FAUX'
+                    : '→ JUSTE'}
+              </span>
+            </p>
+            <ol className="mt-2 space-y-1">
+              {item.walkthrough.map((line, j) => (
+                <li key={j} className="flex gap-3 text-sm text-zinc-300">
+                  <span className="w-4 shrink-0 text-right font-mono text-zinc-600">{j + 1}</span>
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { pick, randInt } from '../core/rng';
 import type { Rng } from '../core/rng';
+import type { Diagram } from './diagrams';
 
 /**
  * Atelier de calcul mental — techniques nommées, drillées séparément.
@@ -16,10 +17,11 @@ import type { Rng } from '../core/rng';
  * exemple figé, on revoit la technique appliquée à ce qu'on vient de rater.
  */
 
-export type TechniqueFamily = 'Fondations' | 'Multiplication' | 'Proportions' | 'Vérification';
+export type TechniqueFamily = 'Fondations' | 'Alphabet' | 'Multiplication' | 'Proportions' | 'Vérification';
 
 export const FAMILY_ORDER: TechniqueFamily[] = [
   'Fondations',
+  'Alphabet',
   'Multiplication',
   'Proportions',
   'Vérification',
@@ -33,6 +35,8 @@ export const FAMILY_ORDER: TechniqueFamily[] = [
  */
 export type MentalItem =
   | { kind: 'value'; prompt: string; answer: number; walkthrough: string[] }
+  /** Réponse = une LETTRE. Les conversions alphabétiques se drillent dans les deux sens. */
+  | { kind: 'letter'; prompt: string; answer: string; walkthrough: string[] }
   | { kind: 'verdict'; prompt: string; wrong: boolean; walkthrough: string[] };
 
 export interface Technique {
@@ -51,6 +55,8 @@ export interface Technique {
   psy0: string;
   /** Temps cible par item. Au-delà, la technique est comprise mais pas automatisée. */
   targetMs: number;
+  /** Le schéma qui rend la règle évidente. Sans lui, « les dizaines se complètent à 9 » n'est qu'une incantation. */
+  diagram?: Diagram;
   generate(rng: Rng): MentalItem;
 }
 
@@ -76,25 +82,258 @@ export function fr(n: number): string {
   return n.toLocaleString('fr-FR').replace(/ | /g, ' ');
 }
 
+/* --------------------------------------------------------------- Alphabet */
+
+const ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+/** Jalons à connaître sans compter. Le reste se déduit du plus proche. */
+const LANDMARKS: Array<[string, number]> = [
+  ['A', 1],
+  ['E', 5],
+  ['J', 10],
+  ['O', 15],
+  ['T', 20],
+  ['Z', 26],
+];
+
+/** Le jalon le plus proche d'un rang, et l'écart signé qui l'en sépare. */
+function nearestLandmark(rank: number): { letter: string; at: number; delta: number } {
+  let best = LANDMARKS[0];
+  for (const l of LANDMARKS) if (Math.abs(l[1] - rank) < Math.abs(best[1] - rank)) best = l;
+  return { letter: best[0], at: best[1], delta: rank - best[1] };
+}
+
+const letterAt = (rank: number) => ALPHA[(((rank - 1) % 26) + 26) % 26];
+
+const alphaLandmarks: Technique = {
+  id: 'alpha-landmarks',
+  name: 'Rang d’une lettre',
+  family: 'Alphabet',
+  rule: 'Six jalons suffisent : A=1, E=5, J=10, O=15, T=20, Z=26. Tout le reste se déduit du plus proche.',
+  why:
+    'Compter depuis A coûte cinq secondes par lettre, et une série de lettres en demande quatre ou cinq — la conversion mange à elle seule le temps de la question. Avec six jalons espacés de cinq, aucune lettre n’est à plus de deux crans de l’un d’eux : R c’est O plus trois, donc 18. Deux crans à parcourir, jamais dix-sept.',
+  steps: [
+    'Apprends les six jalons comme une comptine : A-1, E-5, J-10, O-15, T-20, Z-26.',
+    'Pour une lettre quelconque, trouve le jalon le plus proche.',
+    'Compte les crans qui t’en séparent, en avant ou en arrière. R → O + 3 → 18. C → E − 2 → 3.',
+  ],
+  when:
+    'Sur toute série de lettres, toute énigme où un nombre se lit sur un prénom, et chaque fois qu’un décalage alphabétique est en jeu. C’est la brique des trois autres techniques de cette famille.',
+  psy0:
+    'Les Séries logiques posent des lettres isolées, des groupes de deux, et des énigmes où le rang EST la réponse. Sans jalons, chacune de ces questions commence par cinq secondes perdues.',
+  targetMs: 3000,
+  diagram: {
+    kind: 'face',
+    rows: [
+      { label: 'les six jalons', left: 'A-1 · E-5 · J-10', right: 'O-15 · T-20 · Z-26' },
+      { label: 'R ?', left: 'le plus proche est O (15)', right: 'O + 3 → 18', verdict: 'ok' },
+      { label: 'C ?', left: 'le plus proche est E (5)', right: 'E − 2 → 3', verdict: 'ok' },
+      { label: 'W ?', left: 'le plus proche est Z (26)', right: 'Z − 3 → 23', verdict: 'ok' },
+    ],
+    caption:
+      'Les jalons sont espacés de cinq : aucune lettre n’est donc à plus de deux ou trois crans de l’un d’eux. On ne compte jamais depuis A — on part du repère le plus proche, dans le sens qui arrange.',
+  },
+  generate(rng) {
+    const rank = randInt(rng, 1, 26);
+    const letter = letterAt(rank);
+    const { letter: near, at, delta } = nearestLandmark(rank);
+    return {
+      kind: 'value',
+      prompt: `Rang de la lettre ${letter}`,
+      answer: rank,
+      walkthrough:
+        delta === 0
+          ? [`${letter} est un jalon : ${rank}. Rien à compter.`]
+              .concat([`Les six à savoir : A-1, E-5, J-10, O-15, T-20, Z-26.`])
+          : [
+              `Le jalon le plus proche de ${letter}, c’est ${near} = ${at}.`,
+              `${letter} est ${Math.abs(delta)} cran${Math.abs(delta) > 1 ? 's' : ''} ${delta > 0 ? 'après' : 'avant'} ${near}.`,
+              `Donc ${at} ${delta > 0 ? '+' : '−'} ${Math.abs(delta)} = ${rank}.`,
+            ],
+    };
+  },
+};
+
+const alphaFromRank: Technique = {
+  id: 'alpha-from-rank',
+  name: 'Lettre d’un rang',
+  family: 'Alphabet',
+  rule: 'Même geste dans l’autre sens : pars du jalon le plus proche du NOMBRE, puis compte les crans.',
+  why:
+    'Une série de lettres se résout en rangs, mais la réponse attendue est une lettre : il faut savoir revenir. Sans le retour, on convertit à l’aller, on calcule, et on bloque au moment de répondre — le travail est fait et le point perdu.',
+  steps: [
+    'Repère le jalon dont le NOMBRE est le plus proche : 18 → 20, c’est T.',
+    'Compte les crans en arrière ou en avant : 18 = 20 − 2, donc deux lettres avant T.',
+    'Descends : T, S, R. Le rang 18 est R.',
+  ],
+  when:
+    'À chaque fois qu’une série de lettres se termine — c’est le dernier geste avant de répondre. Aussi pour vérifier une option du QCM sans refaire tout le raisonnement.',
+  psy0:
+    'Les QCM des Séries logiques proposent des lettres, jamais des rangs. Convertir vite dans ce sens-là, c’est transformer un raisonnement juste en point marqué.',
+  targetMs: 3500,
+  diagram: {
+    kind: 'face',
+    rows: [
+      { label: 'rang 18 ?', left: 'jalon le plus proche : T = 20', right: '18 = 20 − 2' },
+      { label: 'on descend', left: 'T (20), S (19), R (18)', right: 'R', verdict: 'ok' },
+      { label: 'rang 12 ?', left: 'jalon le plus proche : J = 10', right: '12 = 10 + 2' },
+      { label: 'on monte', left: 'J (10), K (11), L (12)', right: 'L', verdict: 'ok' },
+    ],
+    caption:
+      'Le retour rang → lettre demande exactement le même geste que l’aller. C’est lui qu’on néglige, et c’est lui qui bloque au moment de cocher une réponse pourtant trouvée.',
+  },
+  generate(rng) {
+    const rank = randInt(rng, 1, 26);
+    const { letter: near, at, delta } = nearestLandmark(rank);
+    return {
+      kind: 'letter',
+      prompt: `La lettre de rang ${rank}`,
+      answer: letterAt(rank),
+      walkthrough:
+        delta === 0
+          ? [`${rank} est un jalon : c’est ${near}.`, 'A-1, E-5, J-10, O-15, T-20, Z-26.']
+          : [
+              `Le jalon le plus proche de ${rank}, c’est ${near} = ${at}.`,
+              `${rank} = ${at} ${delta > 0 ? '+' : '−'} ${Math.abs(delta)}, donc ${Math.abs(delta)} lettre${Math.abs(delta) > 1 ? 's' : ''} ${delta > 0 ? 'après' : 'avant'} ${near}.`,
+              `→ ${letterAt(rank)}`,
+            ],
+    };
+  },
+};
+
+const alphaMirror: Technique = {
+  id: 'alpha-mirror',
+  name: 'Le miroir de l’alphabet',
+  family: 'Alphabet',
+  rule: 'Deux lettres symétriques ont des rangs qui totalisent 27. A↔Z, B↔Y, C↔X…',
+  why:
+    'Parce qu’il y a 26 lettres : la n-ième depuis le début est la (27−n)-ième depuis la fin. Le savoir évite de reparcourir l’alphabet à l’envers, ce que personne ne fait de façon fiable sous chrono — et l’ordre « contralphabétique » revient souvent dans les énoncés.',
+  steps: [
+    'Convertis la lettre en rang : D = 4.',
+    'Retire ce rang de 27 : 27 − 4 = 23.',
+    'Reviens à la lettre : 23 → W. Donc le miroir de D est W.',
+  ],
+  when:
+    'Dès qu’un énoncé parle d’ordre inverse ou « contralphabétique », et pour vérifier une symétrie dans une série. Le couple M↔N au centre est le repère : ce sont les rangs 13 et 14.',
+  psy0:
+    'Certaines séries se lisent à l’envers de l’alphabet. Reparcourir Z, Y, X à la main coûte le temps de la question ; la soustraction à 27 coûte une seconde.',
+  targetMs: 4500,
+  diagram: {
+    kind: 'face',
+    rows: [
+      { label: 'les extrêmes', left: 'A (1) ↔ Z (26)', right: '1 + 26 = 27', verdict: 'ok' },
+      { label: 'le centre', left: 'M (13) ↔ N (14)', right: '13 + 14 = 27', verdict: 'ok' },
+      { label: 'D ?', left: '27 − 4 = 23', right: 'W', verdict: 'ok' },
+    ],
+    caption:
+      'Il y a 26 lettres, donc la n-ième depuis le début est la (27−n)-ième depuis la fin. Le couple M↔N marque le milieu : c’est le repère qui évite de se tromper de sens.',
+  },
+  generate(rng) {
+    const rank = randInt(rng, 1, 26);
+    const letter = letterAt(rank);
+    const mirror = 27 - rank;
+    return {
+      kind: 'letter',
+      prompt: `Le miroir de ${letter} dans l’alphabet`,
+      answer: letterAt(mirror),
+      walkthrough: [
+        `${letter} a le rang ${rank}.`,
+        `Miroir : 27 − ${rank} = ${mirror}.`,
+        `Le rang ${mirror}, c’est ${letterAt(mirror)}.`,
+      ],
+    };
+  },
+};
+
+const alphaShift: Technique = {
+  id: 'alpha-shift',
+  name: 'Décaler en bouclant',
+  family: 'Alphabet',
+  rule: 'Au-delà de Z on retranche 26 ; en dessous de A on ajoute 26. Un pas ne « dépasse » jamais.',
+  why:
+    'C’est là que se perdent la plupart des points sur les séries de lettres. U + 7 fait 28, et 28 n’existe pas : on retranche 26 et on obtient 2, donc B. Le candidat qui croit le pas impossible abandonne une série parfaitement régulière.',
+  steps: [
+    'Convertis en rang, applique le pas : U = 21, plus 7 = 28.',
+    'Si le résultat dépasse 26, retranche 26 : 28 − 26 = 2.',
+    'S’il tombe à zéro ou en dessous, ajoute 26 : B − 5 donnerait −3, donc 23, soit W.',
+    'Reviens à la lettre : 2 → B.',
+  ],
+  when:
+    'Sur toute série de lettres à pas constant, et particulièrement dès qu’un terme approche des extrémités de l’alphabet — c’est là que la boucle se déclenche.',
+  psy0:
+    'Un pas qui semble impossible est presque toujours un passage par la boucle. Reconnaître ça évite d’abandonner une série qu’on avait résolue.',
+  targetMs: 5000,
+  diagram: {
+    kind: 'bonds',
+    from: 21,
+    to: 28,
+    stops: [
+      { at: 26, note: '+5 → Z' },
+      { at: 28, note: '+2 au-delà' },
+    ],
+    caption:
+      'U (21) avancée de 7 atteint 28 : on dépasse Z de deux crans, donc on repart de A et on avance de 2 → B. L’alphabet est un anneau, pas une règle graduée.',
+  },
+  generate(rng) {
+    // On force le bouclage la moitié du temps : c'est le seul cas qui pose problème.
+    const wrap = rng() < 0.6;
+    const step = pick(rng, [3, 5, 7, 9, -3, -5, -7]);
+    const rank = wrap
+      ? step > 0
+        ? randInt(rng, 27 - step, 26)
+        : randInt(rng, 1, -step)
+      : randInt(rng, Math.max(1, 1 - step), Math.min(26, 26 - step));
+    const letter = letterAt(rank);
+    const raw = rank + step;
+    const final = ((raw - 1) % 26 + 26) % 26 + 1;
+    return {
+      kind: 'letter',
+      prompt: `${letter} ${step > 0 ? 'avancée' : 'reculée'} de ${Math.abs(step)}`,
+      answer: letterAt(final),
+      walkthrough: [
+        `${letter} a le rang ${rank}.`,
+        `${rank} ${step > 0 ? '+' : '−'} ${Math.abs(step)} = ${raw}.`,
+        raw > 26
+          ? `${raw} dépasse 26 : on retranche 26 → ${final}.`
+          : raw < 1
+            ? `${raw} tombe sous 1 : on ajoute 26 → ${final}.`
+            : `${raw} tient dans l’alphabet, rien à corriger.`,
+        `→ ${letterAt(final)}`,
+      ],
+    };
+  },
+};
+
 /* ------------------------------------------------------------- Fondations */
 
 const complements: Technique = {
   id: 'complements',
   name: 'Compléments à 10 et 100',
   family: 'Fondations',
-  rule: 'Pour aller à 100 : les dizaines se complètent à 9, les unités à 10.',
+  rule: 'Combien manque-t-il pour atteindre le nombre rond ? Monte d’abord à la dizaine, puis jusqu’à 100.',
   why:
-    'Parce que 100 = 90 + 10. On ne « pose » donc jamais la soustraction : on lit deux compléments élémentaires, l’un après l’autre, de gauche à droite.',
+    'Aller de 83 à 100 en une fois demande une soustraction. En DEUX bonds, il n’y a plus rien à calculer : de 83 on monte à 90, ce qui coûte 7 — un simple complément à 10 —, puis de 90 à 100, ce qui coûte 10. Total 17. Les deux bonds sont des faits qu’on connaît déjà, pas des opérations.',
   steps: [
-    'Regarde le chiffre des dizaines : combien pour aller à 9 ?',
-    'Regarde le chiffre des unités : combien pour aller à 10 ?',
-    'Colle les deux. Cas particulier : si le nombre finit par 0, les dizaines vont à 10 et les unités restent à 0.',
+    'Premier bond : du nombre à la dizaine juste au-dessus. De 83 à 90, il faut 7 (parce que 3 + 7 = 10).',
+    'Second bond : de cette dizaine à 100. De 90 à 100, il faut 10.',
+    'Additionne les deux bonds : 7 + 10 = 17. Voilà le complément de 83 à 100.',
+    'Raccourci une fois le geste acquis : les DIZAINES se complètent à 9 et les UNITÉS à 10. Pour 83 : 8 va à 9 (donc 1), 3 va à 10 (donc 7), et on colle — 17. C’est le même calcul, écrit plus court.',
   ],
   when:
     'Dès qu’un nombre rond apparaît quelque part — 100, 1000, une dizaine. C’est la brique de toutes les autres techniques : arrondir-compenser et soustraire par la distance en dépendent entièrement.',
   psy0:
     'Aucun calcul de la grille ne se vérifie vite si les compléments hésitent. C’est le seul point du programme qui doit être un réflexe pur, sans aucune réflexion.',
   targetMs: 2500,
+  diagram: {
+    kind: 'bonds',
+    from: 83,
+    to: 100,
+    stops: [
+      { at: 90, note: '+7' },
+      { at: 100, note: '+10' },
+    ],
+    caption:
+      'Complément de 83 à 100 : deux bonds, 7 puis 10, donc 17. Le raccourci « dizaines à 9, unités à 10 » dit exactement la même chose — 8→9 donne 1, 3→10 donne 7, et 17 se lit d’un coup.',
+  },
   generate(rng) {
     const to = pick(rng, [100, 100, 100, 1000]);
     if (to === 1000) {
@@ -120,17 +359,20 @@ const complements: Technique = {
     const n = randInt(rng, 11, 98);
     const d = Math.floor(n / 10);
     const u = n % 10;
+    // Le pas-à-pas suit la MÉTHODE ENSEIGNÉE — les deux bonds — puis rappelle le
+    // raccourci. Montrer le seul raccourci laissait l'élève devant une règle
+    // sortie de nulle part, ce qui est précisément ce qui bloquait.
     const walkthrough =
       u === 0
         ? [
-            `${n} finit par 0 : les unités restent à 0.`,
-            `Les dizaines vont directement à 10 : ${d} + ${10 - d} = 10.`,
-            `→ ${100 - n}`,
+            `${n} finit déjà par 0 : un seul bond suffit.`,
+            `De ${n} à 100 : ${100 - n}.`,
           ]
         : [
-            `Dizaines à 9 : ${d} + ${9 - d} = 9.`,
-            `Unités à 10 : ${u} + ${10 - u} = 10.`,
-            `On colle : ${9 - d} puis ${10 - u} → ${100 - n}`,
+            `Premier bond, jusqu'à la dizaine : de ${n} à ${n - u + 10}, il faut ${10 - u}.`,
+            `Second bond, jusqu'à 100 : de ${n - u + 10} à 100, il faut ${90 - (n - u)}.`,
+            `Total : ${10 - u} + ${90 - (n - u)} = ${100 - n}.`,
+            `Raccourci : dizaines à 9 (${d} + ${9 - d}), unités à 10 (${u} + ${10 - u}) → ${100 - n}. Même calcul, écrit plus court.`,
           ];
     return { kind: 'value', prompt: `Complément de ${n} à 100`, answer: 100 - n, walkthrough };
   },
@@ -153,6 +395,17 @@ const addLeft: Technique = {
   psy0:
     'C’est la posture par défaut de toute la grille. Poser mentalement une addition en colonnes coûte trois fois le temps et fabrique les erreurs de retenue que le test glisse exprès.',
   targetMs: 3500,
+  diagram: {
+    kind: 'bonds',
+    from: 47,
+    to: 85,
+    stops: [
+      { at: 77, note: '+30' },
+      { at: 85, note: '+8' },
+    ],
+    caption:
+      '47 + 38 : les dizaines d’abord (+30), les unités ensuite (+8). Un seul nombre vit dans ta tête à chaque instant, et il n’y a aucune retenue à mémoriser.',
+  },
   generate(rng) {
     const a = randInt(rng, 24, 89);
     const b = randInt(rng, 23, 78);
@@ -188,6 +441,17 @@ const roundCompensate: Technique = {
   psy0:
     'Les grilles regorgent de « 47 + 39 » et « 68 − 29 ». Chacun se règle en une seconde par cette voie, contre cinq en posant.',
   targetMs: 4000,
+  diagram: {
+    kind: 'bonds',
+    from: 47,
+    to: 86,
+    stops: [
+      { at: 87, note: '+40' },
+      { at: 86, note: '−1' },
+    ],
+    caption:
+      '47 + 39 : on ajoute 40 (gratuit), on dépasse d’un, on le retire. Sur une SOUSTRACTION la correction s’inverse — on a trop retiré, donc on redonne.',
+  },
   generate(rng) {
     const round = randInt(rng, 2, 7) * 10;
     const gap = randInt(rng, 1, 3);
@@ -236,6 +500,17 @@ const subDistance: Technique = {
   psy0:
     'C’est la technique la plus rentable de tout l’atelier : elle supprime la faute la plus fréquente des Grilles, et celle qu’on commet en la VÉRIFIANT trop vite.',
   targetMs: 4000,
+  diagram: {
+    kind: 'bonds',
+    from: 27,
+    to: 63,
+    stops: [
+      { at: 30, note: '+3' },
+      { at: 63, note: '+33' },
+    ],
+    caption:
+      '63 − 27 : ne retire pas, REMONTE. De 27 à 30 il y a 3, de 30 à 63 il y a 33 : la distance vaut 36. Aucune retenue, donc aucune erreur de retenue.',
+  },
   generate(rng) {
     const aU = randInt(rng, 0, 4);
     const bU = randInt(rng, aU + 1, 9);
@@ -276,6 +551,18 @@ const mul11: Technique = {
   psy0:
     'Le ×11 apparaît dans les grilles et dans les calculs du Psychomoteur. Sans la technique, on le pose ; avec elle, on le lit.',
   targetMs: 4000,
+  diagram: {
+    kind: 'decoupe',
+    source: '34 × 11',
+    parts: [
+      { label: 'le 3 reste à gauche', value: '3' },
+      { label: '3 + 4 au milieu', value: '7' },
+      { label: 'le 4 reste à droite', value: '4' },
+    ],
+    total: '374',
+    caption:
+      '×11 écarte les deux chiffres et glisse leur somme au milieu. Si cette somme dépasse 9, elle déborde : 78 × 11 donne 7 | 15 | 8, donc 858.',
+  },
   generate(rng) {
     const n = randInt(rng, 13, 89);
     const d = Math.floor(n / 10);
@@ -309,6 +596,17 @@ const mulRounds: Technique = {
   when: 'Dès qu’un facteur vaut 5, 25, 50, 500… Vaut aussi pour ÷5, qui est ×2 puis ÷10.',
   psy0: 'Les pourcentages du test tombent tous sur ces nombres : 25 % = ÷4, 50 % = ÷2. Une seule technique couvre les deux familles.',
   targetMs: 4000,
+  diagram: {
+    kind: 'decoupe',
+    source: '48 × 25',
+    parts: [
+      { label: 'on décale : ×100', value: '4 800' },
+      { label: 'puis ÷4', value: '÷ 4' },
+    ],
+    total: '1 200',
+    caption:
+      '25 = 100 ÷ 4. On échange une multiplication difficile contre un décalage suivi d’une division facile. Décale TOUJOURS en premier : diviser d’abord fabrique des virgules inutiles.',
+  },
   generate(rng) {
     const mode = pick(rng, [5, 25, 50]);
     if (mode === 5) {
@@ -355,6 +653,17 @@ const mulNines: Technique = {
     'Pour 9, 19, 29, 99… et symétriquement pour 8 (×10 − deux fois). Au-delà de trois soustractions, la technique perd son avantage.',
   psy0: 'La table de 9 est celle où l’on hésite le plus. La supprimer, c’est supprimer l’hésitation.',
   targetMs: 4500,
+  diagram: {
+    kind: 'decoupe',
+    source: '37 × 9',
+    parts: [
+      { label: '37 × 10', value: '370' },
+      { label: 'on retire 37', value: '− 37' },
+    ],
+    total: '333',
+    caption:
+      '9 = 10 − 1. La table de 9 est celle où l’on hésite le plus : la supprimer, c’est supprimer l’hésitation. Même geste pour 99 (×100 − une fois) et pour 8 (×10 − deux fois).',
+  },
   generate(rng) {
     const m = pick(rng, [9, 9, 99]);
     const n = m === 9 ? randInt(rng, 13, 89) : randInt(rng, 12, 48);
@@ -388,6 +697,17 @@ const doubleHalve: Technique = {
   psy0:
     'Elle transforme les multiplications à deux chiffres — les plus coûteuses de la grille — en calculs de tête ordinaires.',
   targetMs: 6000,
+  diagram: {
+    kind: 'decoupe',
+    source: '16 × 35',
+    parts: [
+      { label: 'moitié × double', value: '8 × 70' },
+      { label: 'encore', value: '4 × 140' },
+    ],
+    total: '560',
+    caption:
+      'Diviser un facteur par 2 et doubler l’autre ne change pas le produit. On s’en sert pour faire GLISSER la difficulté jusqu’à ce qu’un des deux facteurs devienne trivial.',
+  },
   generate(rng) {
     const a = pick(rng, [12, 16, 24, 28, 32, 36, 48]);
     const b = pick(rng, [15, 25, 35, 45, 55]);
@@ -416,6 +736,17 @@ const distribute: Technique = {
     'La technique par défaut d’un « deux chiffres × un chiffre » quand aucune autre ne s’applique. Coupe aussi en 25 + 3 ou 50 − 2 si ça tombe mieux.',
   psy0: 'C’est le filet de sécurité : elle marche toujours, même quand aucune astuce ne colle.',
   targetMs: 5000,
+  diagram: {
+    kind: 'decoupe',
+    source: '23 × 7',
+    parts: [
+      { label: '20 × 7', value: '140' },
+      { label: '3 × 7', value: '21' },
+    ],
+    total: '161',
+    caption:
+      'Deux multiplications faciles remplacent une difficile, et l’ordre de grandeur est connu dès le premier morceau. C’est le filet de sécurité : elle marche toujours.',
+  },
   generate(rng) {
     const b = randInt(rng, 3, 9);
     const d = randInt(rng, 1, 4) * 10;
@@ -446,6 +777,17 @@ const square5: Technique = {
   when: 'Tout nombre finissant par 5, élevé au carré : 15, 25, 35… et aussi 105, 115.',
   psy0: 'Un résultat qui finit par 5 et n’est pas suivi de 25 est faux d’office : c’est un test d’une demi-seconde.',
   targetMs: 4000,
+  diagram: {
+    kind: 'decoupe',
+    source: '35 × 35',
+    parts: [
+      { label: '3 × son suivant, 4', value: '12' },
+      { label: 'toujours', value: '25' },
+    ],
+    total: '1 225',
+    caption:
+      'Les 25 finaux sont structurels, jamais un hasard : (10d + 5)² vaut 100 × d(d+1) + 25. Un résultat qui finit par 5 sans être suivi de 25 est donc faux d’office.',
+  },
   generate(rng) {
     const d = randInt(rng, 2, 9);
     const n = d * 10 + 5;
@@ -474,6 +816,17 @@ const diffSquares: Technique = {
     'Seulement si les deux facteurs sont SYMÉTRIQUES autour d’un rond. 47 × 52 ne s’y prête pas — chercher à forcer coûte plus que découper.',
   psy0: 'Le cas se présente peu, mais quand il tombe il fait gagner dix secondes pleines sur une grille serrée.',
   targetMs: 6000,
+  diagram: {
+    kind: 'decoupe',
+    source: '48 × 52',
+    parts: [
+      { label: 'le milieu au carré', value: '2 500' },
+      { label: 'moins l’écart au carré', value: '− 4' },
+    ],
+    total: '2 496',
+    caption:
+      '48 et 52 sont tous deux à 2 de 50 : (50−2)(50+2) = 50² − 2². N’essaie pas de forcer si les facteurs ne sont pas SYMÉTRIQUES autour d’un rond — découper coûte alors moins cher.',
+  },
   generate(rng) {
     const c = pick(rng, [20, 30, 40, 50, 60, 70, 80]);
     const d = randInt(rng, 1, 3);
@@ -503,6 +856,18 @@ const percent10: Technique = {
   when: 'Tous les pourcentages. Si le pourcentage est 25, 50 ou 75, passe plutôt par les fractions : ÷4, ÷2, ÷4×3.',
   psy0: 'Les grilles mélangent pourcentages et fractions sur la même ligne. Une seule voie de calcul pour les deux évite de changer de méthode en cours de grille.',
   targetMs: 4500,
+  diagram: {
+    kind: 'decoupe',
+    source: '35 % de 240',
+    parts: [
+      { label: '10 % (on décale)', value: '24' },
+      { label: '30 % = 3 fois', value: '72' },
+      { label: '5 % = la moitié de 10 %', value: '12' },
+    ],
+    total: '84',
+    caption:
+      '10 % est le seul pourcentage gratuit : c’est une division par 10. Tous les autres s’en déduisent par doublement, moitié ou addition — on ne fait donc jamais la multiplication.',
+  },
   generate(rng) {
     const p = pick(rng, [5, 15, 20, 30, 40, 60, 70, 80, 90]);
     if (p === 5 || p === 15) {
@@ -547,6 +912,16 @@ const percentSwap: Technique = {
     'Quand l’un des deux nombres est un pourcentage confortable (10, 20, 25, 50). Sinon le retournement ne simplifie rien.',
   psy0: 'C’est le raccourci que les correcteurs attendent : il transforme une ligne « impossible en 5 s » en une lecture immédiate.',
   targetMs: 5000,
+  diagram: {
+    kind: 'face',
+    rows: [
+      { label: 'ce qui est écrit', left: '16 % de 25', right: 'ça fait peur' },
+      { label: 'la même chose', left: '25 % de 16', right: 'le quart de 16', verdict: 'ok' },
+      { label: 'donc', left: '16 ÷ 4', right: '4', verdict: 'ok' },
+    ],
+    caption:
+      'Les deux valent a × b ÷ 100 : c’est la même multiplication, seule la lecture change. Retourne dès que l’un des deux nombres est un pourcentage confortable — 10, 20, 25, 50.',
+  },
   generate(rng) {
     const base = pick(rng, [20, 25, 50]);
     const p =
@@ -577,6 +952,17 @@ const fractions: Technique = {
     'Toute fraction d’un nombre. Si la division ne tombe pas juste, inverse l’ordre : multiplie d’abord, divise ensuite.',
   psy0: 'Les fractions et les pourcentages occupent la même famille de cases dans les grilles. Les traiter par « une part d’abord » unifie les deux.',
   targetMs: 5000,
+  diagram: {
+    kind: 'decoupe',
+    source: '3/8 de 240',
+    parts: [
+      { label: 'une part : 240 ÷ 8', value: '30' },
+      { label: 'trois parts', value: '× 3' },
+    ],
+    total: '90',
+    caption:
+      'Divise D’ABORD, multiplie ensuite : les nombres restent petits tout du long. Pour ÷8, enchaîne trois moitiés — 240 → 120 → 60 → 30.',
+  },
   generate(rng) {
     const options: Array<[number, number, string]> = [
       [1, 4, '1/4'],
@@ -611,6 +997,18 @@ const divideChain: Technique = {
   when: 'Diviseur composé (4, 6, 8, 12, 16). Pour un diviseur premier (7, 11, 13), il n’y a pas de cascade : passe par la multiplication inverse.',
   psy0: 'Les divisions des grilles tombent toujours juste — la cascade les rend mécaniques au lieu de tâtonnantes.',
   targetMs: 5000,
+  diagram: {
+    kind: 'bonds',
+    from: 0,
+    to: 3,
+    stops: [
+      { at: 1, note: '÷2 → 96' },
+      { at: 2, note: '÷2 → 48' },
+      { at: 3, note: '÷2 → 24' },
+    ],
+    caption:
+      '192 ÷ 8 : diviser par 8 d’un coup demande de chercher un quotient ; trois moitiés successives ne demandent rien. 8 = 2×2×2, 6 = 2×3, 12 = 4×3.',
+  },
   generate(rng) {
     const b = pick(rng, [4, 6, 8, 12]);
     const q = randInt(rng, 12, 40);
@@ -643,6 +1041,17 @@ const unitsCheck: Technique = {
   psy0:
     'C’est la passe 1 des Grilles de calculs : elle attrape la moitié des erreurs en dix secondes, et c’est aussi le premier réflexe sur les calculs du Psychomoteur.',
   targetMs: 5000,
+  diagram: {
+    kind: 'face',
+    rows: [
+      { label: 'le calcul', left: '47 × 6', right: '= 292 ?' },
+      { label: 'unités seules', left: '7 × 6 = 42', right: 'doit finir par 2', verdict: 'ok' },
+      { label: 'or on lit', left: '292', right: 'finit par 2 → rien à dire' },
+      { label: 'autre cas', left: '47 × 6 = 285', right: 'finit par 5 → FAUX', verdict: 'ko' },
+    ],
+    caption:
+      'Le chiffre des unités d’un résultat ne dépend QUE des unités des opérandes : aucune retenue ne remonte jusqu’à lui. Une opération à trois chiffres se contrôle donc par une opération à un chiffre.',
+  },
   generate(rng) {
     const wrong = rng() < 0.5;
     const mul = rng() < 0.6;
@@ -681,6 +1090,17 @@ const castOutNines: Technique = {
   psy0:
     'Les faux du test sont plausibles — souvent à ±10 ou deux chiffres inversés. Les unités ne les voient pas ; la preuve par 9 les voit tous les deux.',
   targetMs: 8000,
+  diagram: {
+    kind: 'face',
+    rows: [
+      { label: '47 se réduit à', left: '4 + 7 = 11 → 1 + 1', right: '2' },
+      { label: '6 se réduit à', left: '6', right: '6' },
+      { label: 'donc le produit', left: '2 × 6 = 12 → 1 + 2', right: '3' },
+      { label: 'on propose 292', left: '2 + 9 + 2 = 13 → 4', right: '4 ≠ 3 → FAUX', verdict: 'ko' },
+    ],
+    caption:
+      'Somme des chiffres et nombre ont le même reste modulo 9, parce que 10 ≡ 1. Un écart de 10 ou 20 — invisible aux unités — devient visible ici.',
+  },
   generate(rng) {
     const wrong = rng() < 0.5;
     const a = randInt(rng, 24, 89);
@@ -722,6 +1142,16 @@ const magnitude: Technique = {
   psy0:
     'C’est la passe 2 des Grilles. Trois contrôles complémentaires — unités, ordre de grandeur, preuve par 9 — ne se recouvrent pas : chacun attrape ce que les autres laissent.',
   targetMs: 6000,
+  diagram: {
+    kind: 'face',
+    rows: [
+      { label: 'on arrondit', left: '312 × 48', right: '≈ 300 × 50' },
+      { label: 'soit', left: '3 × 5 et 4 zéros', right: '≈ 15 000, 5 chiffres' },
+      { label: 'on propose', left: '1 497', right: '4 chiffres → FAUX', verdict: 'ko' },
+    ],
+    caption:
+      'Une erreur d’un facteur 10 ne se voit ni aux unités ni à la preuve par 9 : les deux portent sur les chiffres, pas sur la taille. Seul l’ordre de grandeur l’attrape.',
+  },
   generate(rng) {
     const wrong = rng() < 0.5;
     const a = randInt(rng, 180, 780);
@@ -756,6 +1186,16 @@ const divisibility: Technique = {
     'Pour trancher une division sans la faire, et pour simplifier une fraction avant de calculer. Sur une grille, c’est souvent plus rapide que de poser la division.',
   psy0: 'Un quotient proposé est faux dès que la divisibilité ne passe pas — pas besoin d’aller plus loin.',
   targetMs: 7000,
+  diagram: {
+    kind: 'face',
+    rows: [
+      { label: 'par 3 ou par 9', left: '1 458 → 1+4+5+8 = 18', right: '18 est un multiple de 9', verdict: 'ok' },
+      { label: 'par 4', left: '1 458 → les deux derniers : 58', right: '58 n’est pas multiple de 4', verdict: 'ko' },
+      { label: 'par 11', left: '1 458 → 1 − 4 + 5 − 8', right: '−6, non', verdict: 'ko' },
+    ],
+    caption:
+      'Ces règles ne sont pas trois recettes à retenir : elles viennent du reste des puissances de 10. 10 ≡ 1 (mod 9), 100 ≡ 0 (mod 4), 10 ≡ −1 (mod 11).',
+  },
   generate(rng) {
     const d = pick(rng, [3, 4, 9, 11]);
     const divisible = rng() < 0.5;
@@ -792,6 +1232,10 @@ const divisibility: Technique = {
 
 export const TECHNIQUES: Technique[] = [
   complements,
+  alphaLandmarks,
+  alphaFromRank,
+  alphaMirror,
+  alphaShift,
   addLeft,
   roundCompensate,
   subDistance,
