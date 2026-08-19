@@ -3,7 +3,8 @@ import { EXERCISES } from '../exercises';
 import { useSession } from '../app/SessionContext';
 import { ExercisePicker } from '../components/ExercisePicker';
 import { psychoRemainingTodaySec } from '../coach/daily';
-import type { ExerciseId } from '../core/types';
+import type { ExerciseId, Family } from '../core/types';
+import { FAMILIES } from '../core/types';
 
 const DURATIONS = [
   { label: '3 min', sec: 180 },
@@ -25,7 +26,11 @@ export default function Train() {
   return (
     <div>
       <h2 className="text-2xl font-bold">Entraînement libre</h2>
-      <p className="mt-1 text-zinc-400">Choisis un exercice, un niveau et une durée.</p>
+      <p className="mt-1 text-zinc-400">
+        Lance une famille entière, ou choisis un exercice précis plus bas.
+      </p>
+
+      <FamilyLauncher />
 
       <div className="mt-6">
         <ExercisePicker selected={selected} onSelect={(m) => setSelected(m.id)} showLevel />
@@ -86,6 +91,83 @@ function PsychoBudget() {
         ? 'Cap atteint : 12 min de Psychomoteur aujourd’hui. L’apprentissage moteur se consolide par doses courtes quotidiennes — en refaire maintenant n’apporte rien, reviens demain.'
         : `Budget Psychomoteur restant aujourd'hui : ${min} min (cap 12 min/jour — apprentissage moteur, doses courtes quotidiennes). Les blocs plus longs seront tronqués.`}
     </p>
+  );
+}
+
+/**
+ * Lancement par TYPE D'ACTIVITÉ : une famille entière, ses exercices enchaînés
+ * en blocs égaux et entrelacés.
+ *
+ * Choisir un exercice précis suppose de savoir lequel travailler ; travailler
+ * une aptitude — spatiale, numérique, verbale — est la demande courante, et
+ * rien ne la servait. Les exercices en flux sont exclus des mêlées courtes :
+ * une séquence de Psychomoteur dure 5 minutes à elle seule.
+ */
+function FamilyLauncher() {
+  const { start } = useSession();
+  const [family, setFamily] = useState<Family | null>(null);
+
+  const membersOf = (f: Family) =>
+    EXERCISES.filter((e) => e.families.includes(f) && e.timed !== 'continuous');
+
+  const launch = (f: Family, totalSec: number) => {
+    const members = membersOf(f);
+    if (members.length === 0) return;
+    const per = Math.max(120, Math.round(totalSec / members.length));
+    start({
+      mode: 'free',
+      blocks: members.map((m) => ({ exercise: m.id, level: 'adaptive' as const, durationSec: per })),
+      briefing: [
+        `Famille ${f} — ${members.length} exercices enchaînés.`,
+        'Niveau adaptatif sur chacun : le premier bloc te situe, les suivants ajustent.',
+        'Entraînement libre : rien n’est recompté dans le programme du jour.',
+      ],
+    });
+  };
+
+  return (
+    <div className="mt-5 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+      <p className="text-sm font-semibold uppercase tracking-widest text-zinc-500">
+        Par type d’activité
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {FAMILIES.map((f) => {
+          const n = membersOf(f).length;
+          if (n === 0) return null;
+          return (
+            <button
+              key={f}
+              onClick={() => setFamily(family === f ? null : f)}
+              className={`rounded-lg border px-3 py-1.5 text-sm ${
+                family === f
+                  ? 'border-sky-500 bg-sky-950/40 text-sky-200'
+                  : 'border-zinc-700 text-zinc-300 hover:border-zinc-500'
+              }`}
+            >
+              {f} <span className="text-zinc-500">· {n}</span>
+            </button>
+          );
+        })}
+      </div>
+      {family && (
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="text-sm text-zinc-400">
+            {membersOf(family).map((m) => m.name).join(' · ')}
+          </span>
+          <div className="flex gap-2">
+            {[600, 900, 1200].map((sec) => (
+              <button
+                key={sec}
+                onClick={() => launch(family, sec)}
+                className="rounded-lg bg-sky-600 px-4 py-1.5 text-sm font-semibold hover:bg-sky-500"
+              >
+                {sec / 60} min
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

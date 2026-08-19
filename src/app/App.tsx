@@ -8,14 +8,20 @@ import { SyncBar } from '../sync/SyncBar';
 interface NavItem {
   to: string;
   label: string;
-  /** Masqué en période cadrée : le libre est une fuite devant les priorités. */
+  /**
+   * Masqué en période cadrée. Plus utilisé : l'entraînement libre l'était, au
+   * motif qu'il détournerait des priorités. Le résultat était l'inverse — il
+   * n'existait plus aucun moyen de travailler une famille précise, et l'entrée
+   * disparaissait de la navigation sans rien dire. Le coach recommande ; il ne
+   * cache pas.
+   */
   hiddenWhenCadred?: boolean;
 }
 
 const NAV: NavItem[] = [
   { to: '/', label: "Aujourd'hui" },
   { to: '/dashboard', label: 'Dashboard' },
-  { to: '/train', label: 'Entraînement libre', hiddenWhenCadred: true },
+  { to: '/train', label: 'Entraînement libre' },
   { to: '/guided', label: 'Session guidée' },
   { to: '/simulation', label: 'Simulation PSY0' },
   { to: '/sprint', label: 'Psychomoteur quotidien' },
