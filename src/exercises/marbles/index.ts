@@ -2,6 +2,7 @@ import type { ExerciseModule } from '../../core/types';
 import { generate, validate } from './generator';
 import type { MarblesQuestion } from './generator';
 import { tips } from './tips';
+import { hint } from './hint';
 import { lesson } from './lesson';
 import { MarblesExercise } from './MarblesExercise';
 import { LEVELS } from './config';
@@ -35,5 +36,6 @@ export const marbles: ExerciseModule<MarblesQuestion, string> = {
     ],
   },
   lesson,
+  hint,
   Component: MarblesExercise,
 };

@@ -3,6 +3,7 @@ import { generate } from './generator';
 import type { StackingAnswer, StackingQuestion } from './generator';
 import { validate } from './validator';
 import { tips } from './tips';
+import { hint } from './hint';
 import { lesson } from './lesson';
 import { StackingExplain } from './Explain';
 import { StackingExercise } from './StackingExercise';
@@ -50,6 +51,7 @@ export const stacking: ExerciseModule<StackingQuestion, StackingAnswer> = {
     ],
   },
   lesson,
+  hint,
   Explain: StackingExplain,
   Component: StackingExercise,
   TipsIllustration: Stacking3DTip,

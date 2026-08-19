@@ -2,6 +2,7 @@ import type { ExerciseModule } from '../../core/types';
 import { generate, validate } from './generator';
 import type { CalcQuestion } from './generator';
 import { tips } from './tips';
+import { hint } from './hint';
 import { CalcGridExercise } from './CalcGridExercise';
 import { lesson } from './lesson';
 import { LEVELS } from './config';
@@ -38,5 +39,6 @@ export const calcGrid: ExerciseModule<CalcQuestion, number[]> = {
     ],
   },
   lesson,
+  hint,
   Component: CalcGridExercise,
 };

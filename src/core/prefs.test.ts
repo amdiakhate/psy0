@@ -13,6 +13,7 @@ const prefs = (over: Partial<Prefs> = {}): Prefs => ({
   pilotestClass: {},
   phase1ReviewAt: null,
   explainOnError: true,
+  hintsEnabled: true,
   dev: { fastHalfway: false },
   ...over,
 });

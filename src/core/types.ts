@@ -160,6 +160,21 @@ export interface ExplainProps<Q = unknown, A = unknown> {
   answer: A;
 }
 
+/**
+ * Astuce calculée sur l'item COURANT, révélée en cours de partie.
+ *
+ * Règle absolue : une astuce désigne la MÉTHODE, jamais la réponse. `where` dit
+ * où regarder sans rien calculer ; `step` applique le premier geste de la
+ * méthode à cet item précis et s'arrête là. Donner la réponse remplacerait
+ * l'entraînement au lieu de le servir — et fausserait le niveau mesuré.
+ */
+export interface Hint {
+  /** Où regarder. Coûte zéro calcul, ne révèle rien. */
+  where: string;
+  /** Le premier geste de la méthode, appliqué à cet item. S'arrête avant la réponse. */
+  step?: string;
+}
+
 export interface ExerciseModule<Q = unknown, A = unknown> {
   id: ExerciseId;
   name: string;
@@ -186,6 +201,14 @@ export interface ExerciseModule<Q = unknown, A = unknown> {
    * attendue suffit.
    */
   Explain?: React.FC<ExplainProps<Q, A>>;
+  /**
+   * Astuce à la volée sur l'item courant. `null` quand cet item ne se prête à
+   * aucun raccourci — mieux vaut ne rien dire qu'une banalité.
+   *
+   * Absente sur les exercices en flux (Psychomoteur, M2 Back, Formes et
+   * couleurs) : à 0,5 s par stimulus, lire une astuce coûte l'item suivant.
+   */
+  hint?: (item: Item<Q>) => Hint | null;
 }
 
 /** Un event par item répondu — la source unique du moteur d'analyse. */

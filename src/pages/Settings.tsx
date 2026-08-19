@@ -163,6 +163,7 @@ function FreeTrainingSection() {
 function ExplainSection() {
   const [prefs, setPrefs] = useState(getPrefs);
   const withExplain = EXERCISES.filter((e) => e.Explain);
+  const withHint = EXERCISES.filter((e) => e.hint);
 
   const toggle = () => {
     const fresh = getPrefs();
@@ -171,9 +172,16 @@ function ExplainSection() {
     savePrefs(next);
   };
 
+  const toggleHints = () => {
+    const fresh = getPrefs();
+    const next = { ...fresh, hintsEnabled: !fresh.hintsEnabled };
+    setPrefs(next);
+    savePrefs(next);
+  };
+
   return (
     <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
-      <h3 className="font-semibold text-zinc-300">Correction</h3>
+      <h3 className="font-semibold text-zinc-300">Aide pendant l’entraînement</h3>
       <label className="mt-3 flex items-start gap-3 text-sm">
         <input
           type="checkbox"
@@ -190,10 +198,30 @@ function ExplainSection() {
           </span>
         </span>
       </label>
+      <label className="mt-4 flex items-start gap-3 border-t border-zinc-800 pt-4 text-sm">
+        <input
+          type="checkbox"
+          checked={prefs.hintsEnabled}
+          onChange={toggleHints}
+          className="mt-0.5 h-4 w-4 accent-amber-600"
+        />
+        <span>
+          <span className="font-medium text-zinc-200">Astuces à la volée (touche H)</span>
+          <span className="block text-zinc-500">
+            Pendant un item, H révèle d'abord OÙ regarder, puis le premier geste de la méthode
+            appliqué à cet item. Jamais la réponse. Un item résolu avec astuce est marqué comme tel
+            dans ton historique, sinon ton niveau mesuré serait faussé — et comme la correction,
+            les astuces ne s'affichent pas en simulation.
+          </span>
+        </span>
+      </label>
       <p className="mt-3 text-sm text-zinc-500">
+        {withHint.length > 0 && (
+          <span className="block">Astuces sur : {withHint.map((e) => e.name).join(', ')}.</span>
+        )}
         {withExplain.length === 0
           ? 'Aucun exercice ne sait encore se démontrer en image.'
-          : `Disponible sur : ${withExplain.map((e) => e.name).join(', ')}.`}
+          : `Schéma d'explication sur : ${withExplain.map((e) => e.name).join(', ')}.`}
       </p>
     </section>
   );

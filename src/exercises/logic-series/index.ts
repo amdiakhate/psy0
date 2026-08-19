@@ -3,6 +3,7 @@ import { generate } from './generator';
 import type { LogicAnswer, LogicQuestion } from './generator';
 import { expectedLabel, validate } from './validator';
 import { tips } from './tips';
+import { hint } from './hint';
 import { lesson } from './lesson';
 import { LogicSeriesExercise } from './LogicSeriesExercise';
 import { NUMERIC_RULES } from './config';
@@ -22,5 +23,6 @@ export const logicSeries: ExerciseModule<LogicQuestion, LogicAnswer> = {
   expectedToString: (item) => expectedLabel(item.question),
   tips,
   lesson,
+  hint,
   Component: LogicSeriesExercise,
 };

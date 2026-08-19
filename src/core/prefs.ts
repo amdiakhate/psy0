@@ -20,6 +20,12 @@ export interface Prefs {
    * personne ne t'explique rien, et s'y habituer fausserait la répétition.
    */
   explainOnError: boolean;
+  /**
+   * Astuces à la volée pendant l'entraînement (touche H). Désactivées en
+   * simulation : au test personne ne t'en donne, et s'y habituer fausserait la
+   * répétition — comme pour la correction visuelle.
+   */
+  hintsEnabled: boolean;
   /** Bascules de mise au point, à retirer avant le test. */
   dev: { fastHalfway: boolean };
 }
@@ -29,6 +35,7 @@ const DEFAULT_PREFS: Prefs = {
   pilotestClass: {},
   phase1ReviewAt: null,
   explainOnError: true,
+  hintsEnabled: true,
   dev: { fastHalfway: false },
 };
 

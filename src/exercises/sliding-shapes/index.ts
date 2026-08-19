@@ -3,6 +3,7 @@ import { generate, placementsToString } from './generator';
 import type { SlidingAnswer, SlidingQuestion } from './generator';
 import { validate } from './validator';
 import { tips } from './tips';
+import { hint } from './hint';
 import { lesson } from './lesson';
 import { SlidingShapesExercise } from './SlidingShapesExercise';
 import { LEVELS } from './config';
@@ -49,5 +50,6 @@ export const slidingShapes: ExerciseModule<SlidingQuestion, SlidingAnswer> = {
     ],
   },
   lesson,
+  hint,
   Component: SlidingShapesExercise,
 };

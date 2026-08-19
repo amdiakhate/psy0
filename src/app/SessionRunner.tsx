@@ -394,6 +394,15 @@ function BlockRunner({
   // explication ne doit pas manger le temps d'entraînement que le coach a prévu.
   const explainedMs = useRef(0);
   const reviewStart = useRef(0);
+  /**
+   * Palier d'astuce révélé pour l'item courant : 0 = rien, 1 = où regarder,
+   * 2 = le premier geste. Deux paliers plutôt qu'un seul bloc, pour qu'on
+   * puisse s'arrêter au premier — c'est souvent tout ce qui manquait.
+   */
+  const [hintLevel, setHintLevel] = useState(0);
+  // Un item résolu AVEC astuce ne mesure pas le même niveau qu'un item résolu
+  // seul. Sans cette marque, le tableau de bord surestimerait la progression.
+  const usedHintRef = useRef(false);
   const stats = useRef<BlockStats>({ items: 0, correct: 0, rtSum: 0 });
   const blockStart = useRef(Date.now());
   const itemShownAt = useRef(Date.now());
@@ -483,7 +492,7 @@ function BlockRunner({
       const rtMs = Date.now() - itemShownAt.current;
       const correct = module_.validate(item, answer);
       logEvent({
-        tags: item.tags,
+        tags: usedHintRef.current ? [...item.tags, 'hint-used'] : item.tags,
         correct,
         rtMs,
         given: module_.answerToString(answer),
@@ -516,6 +525,8 @@ function BlockRunner({
       }
       setItem(module_.generate(newSeed(), next.level, block.tagFilter));
       itemShownAt.current = Date.now();
+      setHintLevel(0);
+      usedHintRef.current = false;
     },
     [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, plan.mode],
   );
@@ -535,7 +546,38 @@ function BlockRunner({
     const next = adaptiveRef.current;
     setItem(module_.generate(newSeed(), next.level, block.tagFilter));
     itemShownAt.current = Date.now();
+    setHintLevel(0);
+    usedHintRef.current = false;
   }, [module_, block.itemCount, block.durationSec, block.tagFilter]);
+
+  // L'astuce se calcule sur l'item courant, pas sur une table figée : elle
+  // désigne la méthode qui s'applique ICI.
+  const hint = useMemo(
+    () =>
+      module_.hint && getPrefs().hintsEnabled && plan.mode !== 'simulation'
+        ? module_.hint(item)
+        : null,
+    [module_, item, plan.mode],
+  );
+
+  /** H révèle le palier suivant. Deux paliers, puis plus rien de plus. */
+  const revealHint = useCallback(() => {
+    if (!hint) return;
+    setHintLevel((l) => {
+      const max = hint.step ? 2 : 1;
+      if (l >= max) return l;
+      usedHintRef.current = true;
+      return l + 1;
+    });
+  }, [hint]);
+
+  useKeys((e) => {
+    if (review !== null) return;
+    if (e.key === 'h' || e.key === 'H') {
+      e.preventDefault();
+      revealHint();
+    }
+  });
 
   // Exercices continus : compteurs par séquence pour adapter le niveau ENTRE les
   // séquences (l'adaptation par item serait bien trop rapide sur des fenêtres d'1 s).
@@ -651,6 +693,36 @@ function BlockRunner({
                 <span className="font-normal opacity-90">{'\u2192'} {feedback.expected}</span>
               )}
             </div>
+          </div>
+        )}
+        {hint !== null && review === null && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 flex justify-center p-3">
+            <button
+              onClick={revealHint}
+              className={`pointer-events-auto max-w-2xl rounded-xl border px-4 py-2 text-left text-sm transition-colors ${
+                hintLevel === 0
+                  ? 'border-zinc-700 text-zinc-500 hover:border-amber-600 hover:text-amber-400'
+                  : 'border-amber-800/60 bg-amber-950/30 text-amber-200'
+              }`}
+            >
+              {hintLevel === 0 ? (
+                <span>
+                  Astuce · touche <kbd className="rounded bg-zinc-800 px-1 text-zinc-300">H</kbd>
+                </span>
+              ) : (
+                <>
+                  <p>{hint.where}</p>
+                  {hintLevel >= 2 && hint.step && (
+                    <p className="mt-1 border-t border-amber-800/40 pt-1 text-amber-100">{hint.step}</p>
+                  )}
+                  {hintLevel === 1 && hint.step && (
+                    <p className="mt-1 text-xs text-amber-500/70">
+                      Encore <kbd className="rounded bg-zinc-800 px-1">H</kbd> pour le premier geste
+                    </p>
+                  )}
+                </>
+              )}
+            </button>
           </div>
         )}
         {review !== null && module_.Explain ? (
