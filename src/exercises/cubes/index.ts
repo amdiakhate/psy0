@@ -15,6 +15,8 @@ export const cubes: ExerciseModule<CubesQuestion, CubesAnswer> = {
   families: ['Spatiale'],
   levels: LEVELS.length,
   defaultItemSeconds: 60,
+  /** Pilotest : 10 questions, 60 s chacune. */
+  itemLimitSec: 60,
   timed: 'per-item',
   generate,
   validate,

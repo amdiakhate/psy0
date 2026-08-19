@@ -16,6 +16,8 @@ export const slidingShapes: ExerciseModule<SlidingQuestion, SlidingAnswer> = {
   families: ['Spatiale', 'Intellectuelle'],
   levels: LEVELS.length,
   defaultItemSeconds: 60, // Pilotest : 10 questions, 60 s maximum chacune
+  /** Pilotest : 10 questions, 60 s maximum. */
+  itemLimitSec: 60,
   timed: 'per-item',
   generate,
   validate,

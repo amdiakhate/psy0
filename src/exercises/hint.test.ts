@@ -86,3 +86,51 @@ describe('astuces à la volée', () => {
 // Garde-fou du garde-fou : `newSeed` reste utilisé ailleurs, on s'assure juste
 // que l'import ne casse pas la compilation du fichier de test.
 void newSeed;
+
+describe('limites officielles par question', () => {
+  /**
+   * Ce que ces contrôles protègent : s'entraîner sans la contrainte du test
+   * donne un niveau qu'on ne retrouvera pas le jour J. Et à l'inverse, imposer
+   * un chrono là où Pilotest n'en met pas inventerait une difficulté.
+   */
+  it('reprennent exactement les durées relevées chez Pilotest', () => {
+    const officiel: Record<string, number> = {
+      stacking: 10,
+      'objects-3d': 10,
+      english: 15,
+      'logic-series': 30,
+      marbles: 40,
+      'calc-grid': 45,
+      'star-words': 50,
+      cubes: 60,
+      'sliding-shapes': 60,
+    };
+    for (const [id, sec] of Object.entries(officiel)) {
+      const module_ = EXERCISES.find((e) => e.id === id);
+      expect(module_, id).toBeDefined();
+      expect(module_!.itemLimitSec, id).toBe(sec);
+    }
+  });
+
+  it('n’en imposent AUCUNE là où le test se joue par séries', () => {
+    // « Un mot sur deux », « Pair ou impair » et « Boîtes à mots » se jouent au
+    // rythme du candidat, série par série. Un chrono par item y serait une
+    // contrainte inventée.
+    for (const id of ['word-skip', 'odd-even', 'word-boxes']) {
+      expect(EXERCISES.find((e) => e.id === id)?.itemLimitSec, id).toBeUndefined();
+    }
+  });
+
+  it('n’en imposent aucune sur les exercices en flux, qui portent leur propre horloge', () => {
+    for (const module_ of EXERCISES.filter((e) => e.timed === 'continuous')) {
+      expect(module_.itemLimitSec, module_.id).toBeUndefined();
+    }
+  });
+
+  it('laissent toujours le temps d’une réponse : jamais sous la seconde', () => {
+    for (const module_ of EXERCISES) {
+      if (module_.itemLimitSec === undefined) continue;
+      expect(module_.itemLimitSec, module_.id).toBeGreaterThanOrEqual(5);
+    }
+  });
+});

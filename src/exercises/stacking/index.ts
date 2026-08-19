@@ -18,6 +18,8 @@ export const stacking: ExerciseModule<StackingQuestion, StackingAnswer> = {
   families: ['Spatiale'],
   levels: LEVELS.length,
   defaultItemSeconds: 10,
+  /** Pilotest : 20 questions, 10 s chacune. */
+  itemLimitSec: 10,
   timed: 'per-item',
   generate,
   validate,

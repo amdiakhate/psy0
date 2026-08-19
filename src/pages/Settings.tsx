@@ -172,6 +172,13 @@ function ExplainSection() {
     savePrefs(next);
   };
 
+  const toggleLimit = () => {
+    const fresh = getPrefs();
+    const next = { ...fresh, itemTimeLimit: !fresh.itemTimeLimit };
+    setPrefs(next);
+    savePrefs(next);
+  };
+
   const toggleHints = () => {
     const fresh = getPrefs();
     const next = { ...fresh, hintsEnabled: !fresh.hintsEnabled };
@@ -195,6 +202,23 @@ function ExplainSection() {
             Après une erreur, la séance s'arrête et affiche le schéma qui montre pourquoi c'était
             cette réponse-là. Le temps de lecture n'est pas décompté du chrono du bloc, et
             l'explication ne s'affiche jamais en simulation — au test, personne ne t'explique rien.
+          </span>
+        </span>
+      </label>
+      <label className="mt-4 flex items-start gap-3 border-t border-zinc-800 pt-4 text-sm">
+        <input
+          type="checkbox"
+          checked={prefs.itemTimeLimit}
+          onChange={toggleLimit}
+          className="mt-0.5 h-4 w-4 accent-red-600"
+        />
+        <span>
+          <span className="font-medium text-zinc-200">Limite officielle par question</span>
+          <span className="block text-zinc-500">
+            Chaque question expire au temps du test — 10 s sur les Empilements, 40 s sur les Billes,
+            60 s sur les Cubes — et l'exercice enchaîne. Une question perdue au chrono est
+            enregistrée comme telle et non comme une erreur : manquer de temps et se tromper sont
+            deux défauts différents. Toujours imposée en simulation, quoi qu'il en soit ici.
           </span>
         </span>
       </label>

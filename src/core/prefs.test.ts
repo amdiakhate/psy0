@@ -14,6 +14,7 @@ const prefs = (over: Partial<Prefs> = {}): Prefs => ({
   phase1ReviewAt: null,
   explainOnError: true,
   hintsEnabled: true,
+  itemTimeLimit: true,
   dev: { fastHalfway: false },
   ...over,
 });

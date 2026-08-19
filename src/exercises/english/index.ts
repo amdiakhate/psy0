@@ -15,6 +15,8 @@ export const english: ExerciseModule<EnglishQuestion, EnglishAnswer> = {
   families: ['Anglais'],
   levels: LEVELS.length,
   defaultItemSeconds: 15, // Pilotest : 30 QCM en 7 min 30 = 15 s par question
+  /** Pilotest : 30 QCM en 7 min 30, soit 15 s par question. */
+  itemLimitSec: 15,
   timed: 'per-item',
   generate,
   validate,

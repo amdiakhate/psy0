@@ -15,6 +15,8 @@ export const marbles: ExerciseModule<MarblesQuestion, string> = {
   families: ['Spatiale', 'Intellectuelle'],
   levels: LEVELS.length,
   defaultItemSeconds: 40,
+  /** Pilotest : 20 questions, 40 s chacune. */
+  itemLimitSec: 40,
   timed: 'per-item',
   generate,
   validate,

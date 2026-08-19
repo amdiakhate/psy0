@@ -400,6 +400,15 @@ function BlockRunner({
    * puisse s'arrêter au premier — c'est souvent tout ce qui manquait.
    */
   const [hintLevel, setHintLevel] = useState(0);
+  /**
+   * Limite officielle par question. En simulation elle s'impose toujours : une
+   * simulation sans les contraintes du test ne simule rien.
+   */
+  const itemLimitSec =
+    module_.itemLimitSec !== undefined && (getPrefs().itemTimeLimit || plan.mode === 'simulation')
+      ? module_.itemLimitSec
+      : null;
+  const [itemLeft, setItemLeft] = useState<number | null>(itemLimitSec);
   // Un item résolu AVEC astuce ne mesure pas le même niveau qu'un item résolu
   // seul. Sans cette marque, le tableau de bord surestimerait la progression.
   const usedHintRef = useRef(false);
@@ -527,6 +536,7 @@ function BlockRunner({
       itemShownAt.current = Date.now();
       setHintLevel(0);
       usedHintRef.current = false;
+      setItemLeft(itemLimitSec);
     },
     [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, plan.mode],
   );
@@ -548,7 +558,8 @@ function BlockRunner({
     itemShownAt.current = Date.now();
     setHintLevel(0);
     usedHintRef.current = false;
-  }, [module_, block.itemCount, block.durationSec, block.tagFilter]);
+    setItemLeft(itemLimitSec);
+  }, [module_, block.itemCount, block.durationSec, block.tagFilter, itemLimitSec]);
 
   // L'astuce se calcule sur l'item courant, pas sur une table figée : elle
   // désigne la méthode qui s'applique ICI.
@@ -559,6 +570,62 @@ function BlockRunner({
         : null,
     [module_, item, plan.mode],
   );
+
+  /**
+   * Question perdue au chrono. On l'enregistre comme une NON-RÉPONSE et non
+   * comme une erreur ordinaire : manquer de temps et se tromper sont deux
+   * défauts différents, et les confondre empêcherait le coach de voir lequel
+   * des deux te coûte des points.
+   */
+  const handleTimeout = useCallback(() => {
+    logEvent({
+      tags: [...item.tags, 'timeout', ...(usedHintRef.current ? ['hint-used'] : [])],
+      correct: false,
+      rtMs: Math.round((itemLimitSec ?? 0) * 1000),
+      given: 'temps écoulé',
+      expected: module_.expectedToString(item),
+      level: item.level,
+      seed: item.seed,
+    });
+    setFeedback({ n: stats.current.items, ok: false, expected: module_.expectedToString(item) });
+
+    const elapsed = (Date.now() - blockStart.current - explainedMs.current) / 1000;
+    const doneByCount = block.itemCount !== undefined && stats.current.items >= block.itemCount;
+    const doneByTime = block.durationSec !== undefined && elapsed >= block.durationSec;
+    if (doneByCount || doneByTime) {
+      endBlockRef.current();
+      return;
+    }
+    // Le niveau baisse comme sur une erreur : ne pas finir dans les temps est
+    // un signal aussi net que se tromper.
+    const next = adaptiveStep(adaptiveRef.current, false, Math.round((itemLimitSec ?? 0) * 1000));
+    setAdaptive(next);
+    setItem(module_.generate(newSeed(), next.level, block.tagFilter));
+    itemShownAt.current = Date.now();
+    setHintLevel(0);
+    usedHintRef.current = false;
+    setItemLeft(itemLimitSec);
+  }, [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, itemLimitSec]);
+
+  const timeoutRef = useRef(handleTimeout);
+  timeoutRef.current = handleTimeout;
+
+  // Décompte de la question courante. Suspendu pendant une correction : le
+  // chrono d'une question ne doit pas courir pendant qu'on lit pourquoi on a
+  // raté la précédente.
+  useEffect(() => {
+    if (itemLimitSec === null || review !== null) return;
+    const id = window.setInterval(() => {
+      const left = itemLimitSec - (Date.now() - itemShownAt.current) / 1000;
+      if (left <= 0) {
+        setItemLeft(0);
+        timeoutRef.current();
+      } else {
+        setItemLeft(left);
+      }
+    }, 200);
+    return () => window.clearInterval(id);
+  }, [itemLimitSec, review, item.seed]);
 
   /** H révèle le palier suivant. Deux paliers, puis plus rien de plus. */
   const revealHint = useCallback(() => {
@@ -648,6 +715,20 @@ function BlockRunner({
           <span title="bonnes réponses / questions jouées">
             ✓ {stats.current.correct}/{stats.current.items}
           </span>
+          {itemLeft !== null && (
+            <span
+              className={`rounded px-2 py-0.5 font-mono tabular-nums ${
+                itemLeft <= 3
+                  ? 'bg-red-950/60 text-red-300'
+                  : itemLeft <= 8
+                    ? 'bg-amber-950/50 text-amber-300'
+                    : 'text-zinc-400'
+              }`}
+              title="Limite officielle par question"
+            >
+              {Math.ceil(itemLeft)} s
+            </span>
+          )}
           {block.itemCount !== undefined && (
             <span className="text-sky-300">
               Question {Math.min(stats.current.items + 1, block.itemCount)}/{block.itemCount}
@@ -676,7 +757,7 @@ function BlockRunner({
         key={feedback?.n ?? -1}
         className={`relative flex-1 overflow-auto rounded-b-xl p-6 ${
           feedback === null ? '' : feedback.ok ? 'flash-correct' : 'flash-wrong'
-        }`}
+        } ${hint !== null && review === null ? 'pb-20' : ''}`}
       >
         {feedback !== null && (
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center p-3">

@@ -26,6 +26,13 @@ export interface Prefs {
    * répétition — comme pour la correction visuelle.
    */
   hintsEnabled: boolean;
+  /**
+   * Imposer la limite officielle par question. Actif par défaut : c'est la
+   * contrainte du test, et s'entraîner sans elle donne un niveau qu'on ne
+   * retrouvera pas le jour J. Désactivable pour travailler une méthode au
+   * calme — un dépassement de chrono en phase d'apprentissage n'apprend rien.
+   */
+  itemTimeLimit: boolean;
   /** Bascules de mise au point, à retirer avant le test. */
   dev: { fastHalfway: boolean };
 }
@@ -36,6 +43,7 @@ const DEFAULT_PREFS: Prefs = {
   phase1ReviewAt: null,
   explainOnError: true,
   hintsEnabled: true,
+  itemTimeLimit: true,
   dev: { fastHalfway: false },
 };
 

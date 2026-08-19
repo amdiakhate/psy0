@@ -183,6 +183,16 @@ export interface ExerciseModule<Q = unknown, A = unknown> {
   levels: number;
   /** Durée moyenne estimée d'un item, pour composer les sessions. */
   defaultItemSeconds: number;
+  /**
+   * Limite OFFICIELLE par question, en secondes. Passé ce délai la question est
+   * perdue et l'exercice enchaîne, exactement comme au test.
+   *
+   * Absente là où Pilotest n'en impose pas : « Un mot sur deux », « Pair ou
+   * impair » et « Boîtes à mots » se jouent par SÉRIES, au rythme du candidat —
+   * y mettre un chrono par item inventerait une contrainte qui n'existe pas.
+   * Absente aussi des exercices en flux, qui portent leur propre horloge.
+   */
+  itemLimitSec?: number;
   timed: 'per-item' | 'continuous';
   /** Pur et déterministe : même (seed, level) → même item. forceTag oriente le sous-type. */
   generate(seed: number, level: number, forceTag?: string): Item<Q>;

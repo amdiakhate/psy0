@@ -16,6 +16,8 @@ export const logicSeries: ExerciseModule<LogicQuestion, LogicAnswer> = {
   families: ['Intellectuelle'],
   levels: NUMERIC_RULES.length,
   defaultItemSeconds: 30,
+  /** Pilotest : 15 questions, 30 s chacune. */
+  itemLimitSec: 30,
   timed: 'per-item',
   generate,
   validate,

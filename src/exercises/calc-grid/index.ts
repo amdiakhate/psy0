@@ -15,6 +15,8 @@ export const calcGrid: ExerciseModule<CalcQuestion, number[]> = {
   families: ['Numérique'],
   levels: LEVELS.length,
   defaultItemSeconds: 45,
+  /** Pilotest : 10 grilles, 45 s chacune. */
+  itemLimitSec: 45,
   timed: 'per-item',
   generate,
   validate,

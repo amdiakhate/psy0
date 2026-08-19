@@ -16,6 +16,8 @@ export const starWords: ExerciseModule<StarQuestion, StarAnswer> = {
   families: ['Verbale'],
   levels: LEVELS.length,
   defaultItemSeconds: 50,
+  /** Pilotest : 10 questions, 50 s chacune. */
+  itemLimitSec: 50,
   timed: 'per-item',
   generate,
   validate,
