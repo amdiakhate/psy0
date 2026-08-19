@@ -30,6 +30,47 @@ Statut au 17/08 : les 16 exercices sont conformes, vérifiés en jeu, et dispose
 | 15 | Mots en étoile | `mots_en_etoile` | Liste de **9 mots de 7 lettres**. En **sélectionner 6** et les placer sur une **étoile** de sorte que les **cases communes à deux mots** portent une seule et même lettre. Plusieurs solutions possibles. | 10 questions, **50 s** | ✅ |
 | 16 | Anglais | `english` | **30 QCM**, réponse à l'automatisme plus qu'à la réflexion. Distingue bilingues et bons non-bilingues. | **7 min 30** pour 30 questions (15 s/question) | ✅ |
 
+## Timings officiels — relevés page par page le 19/08/2026
+
+Section « Timing » de chaque page `pilotest.com/fr/tests/<slug>`, citée telle quelle.
+
+| Exercice | Timing officiel | Limite par question |
+|---|---|---|
+| Un mot sur deux | « 10 séries de mots le plus rapidement possible » | aucune |
+| Pair ou impair | « 10 séries de nombres le plus rapidement possible » | aucune |
+| M2 Back | « les séries contiennent 42 chiffres » | flux |
+| Formes et couleurs | « 30 formes qui défilent toutes les 3 s, affichée 0,5 s » | flux |
+| Airways | « 10 séries successives » | aucune |
+| Psychomoteur | « ce test dure 5 minutes » | flux |
+| Empilements | « 20 questions en 10 secondes chacune » | **10 s** |
+| Objets 3D | « 20 questions, chacune en 10 secondes » | **10 s** |
+| Billes | « 20 questions en 40 secondes chacune » | **40 s** |
+| Formes glissées - II | « 10 questions, maximum 60 secondes chacune » | **60 s** |
+| Cubes 2D/3D | « 10 questions, maximum 60 secondes chacune » | **60 s** |
+| Grilles de calculs | « 10 grilles de 9 calculs, chacune en 45 s maximum » | **45 s** |
+| Séries logiques | « 15 questions chacune en 30 sec » | **30 s** |
+| Boîtes à mots | « 5 séries en commettant le minimum d'erreurs » | aucune |
+| Mots en étoile | « 10 questions, maximum 50 secondes » | **50 s** |
+| Anglais | « **7 min 30 pour faire 30 questions** » | aucune — voir ci-dessous |
+
+**L'anglais n'a pas de limite par question.** Son budget est GLOBAL : 7 min 30
+pour 30 questions. Les 15 s souvent citées sont une moyenne, pas une règle.
+Imposer 15 s à chaque question serait plus dur que le test et interdirait
+justement l'arbitrage qu'il récompense — expédier une question sue en trois
+secondes pour en donner trente à une autre.
+
+**Grilles de calculs, précision opérationnelle** : « pensez bien à Valider après
+chaque grille. Si le chrono vous fait passer à la grille suivante sans que vous
+ayez validé, vos bonnes réponses ne sont pas prises en compte. » Le chrono par
+question reproduit donc exactement cette perte.
+
+**Billes** : « la correction permet de visualiser de façon animée le passage de
+la configuration de départ à la configuration d'arrivée étape par étape ».
+
+**Variantes Air France** relevées sur les pages : Cubes, 4 questions en 2020 ;
+Formes glissées, 3 grilles en 2020 ; Mots en étoile, 3 grilles en 2022 — chaque
+fois « dans un timing légèrement plus large ».
+
 ## Séries logiques — où vit la loi (relevé du 18/08/2026)
 
 Le piège de conception n'est pas la difficulté des lois mais l'endroit où on les

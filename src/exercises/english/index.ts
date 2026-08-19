@@ -14,9 +14,12 @@ export const english: ExerciseModule<EnglishQuestion, EnglishAnswer> = {
     'QCM d\'anglais type présélection : grammaire, vocabulaire courant, vocabulaire aviation et compréhension de phrases.',
   families: ['Anglais'],
   levels: LEVELS.length,
-  defaultItemSeconds: 15, // Pilotest : 30 QCM en 7 min 30 = 15 s par question
-  /** Pilotest : 30 QCM en 7 min 30, soit 15 s par question. */
-  itemLimitSec: 15,
+  // 15 s est la MOYENNE (7 min 30 pour 30 questions), pas une limite par
+  // question : le budget officiel est GLOBAL. On peut donc expédier une
+  // question sue en trois secondes et en donner trente à une autre — imposer
+  // 15 s à chacune serait une contrainte plus dure que le test, et
+  // interdirait justement l'arbitrage que l'épreuve récompense.
+  defaultItemSeconds: 15,
   timed: 'per-item',
   generate,
   validate,

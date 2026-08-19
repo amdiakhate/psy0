@@ -97,7 +97,6 @@ describe('limites officielles par question', () => {
     const officiel: Record<string, number> = {
       stacking: 10,
       'objects-3d': 10,
-      english: 15,
       'logic-series': 30,
       marbles: 40,
       'calc-grid': 45,
@@ -116,7 +115,10 @@ describe('limites officielles par question', () => {
     // « Un mot sur deux », « Pair ou impair » et « Boîtes à mots » se jouent au
     // rythme du candidat, série par série. Un chrono par item y serait une
     // contrainte inventée.
-    for (const id of ['word-skip', 'odd-even', 'word-boxes']) {
+    // L'anglais figure ici et non parmi les durées : son budget de 7 min 30
+    // est GLOBAL pour 30 questions. Les 15 s souvent citées sont la moyenne,
+    // et l'épreuve récompense précisément l'arbitrage entre questions.
+    for (const id of ['word-skip', 'odd-even', 'word-boxes', 'english']) {
       expect(EXERCISES.find((e) => e.id === id)?.itemLimitSec, id).toBeUndefined();
     }
   });
