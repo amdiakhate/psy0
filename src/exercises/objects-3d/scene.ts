@@ -47,13 +47,21 @@ export const OBJECT_LABELS: Record<ObjectKind, string> = {
   antenne: 'antenne',
 };
 
+/**
+ * TOUS les objets partagent le même violet, comme chez Pilotest.
+ *
+ * Une palette par type rendait l'exercice bien plus facile que le test : la
+ * couleur suffisait à apparier un objet entre la photo et la vue aérienne, sans
+ * jamais avoir à le reconnaître à sa forme. Or c'est exactement la lecture que
+ * l'épreuve mesure — et la vue aérienne, désormais fidèle, n'en donne aucune.
+ */
 export const OBJECT_COLORS: Record<ObjectKind, string> = {
-  pyramide: '#e0b155',
-  tour: '#cbd5e1',
-  cube: '#60a5fa',
-  cactus: '#4ade80',
-  rocher: '#a8a29e',
-  antenne: '#f472b6',
+  pyramide: '#a021a0',
+  tour: '#a021a0',
+  cube: '#a021a0',
+  cactus: '#a021a0',
+  rocher: '#a021a0',
+  antenne: '#a021a0',
 };
 
 /**
