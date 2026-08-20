@@ -75,6 +75,15 @@
 
   /* Accents : mêmes teintes, luminosités inversées pour rester lisibles. */
   --color-sky-50: oklch(0.293 0.066 243.157);
+  /*
+   * Ces deux-là manquaient, et le trou se voyait : `text-sky-100` sur un
+   * `bg-sky-950` — l'encart bleu de l'atelier de calcul mental, celui de la
+   * culture aéro, les repères des leçons — laissait un texte à 95 % de clarté
+   * sur un fond à 98 %. Illisible en thème clair, alors que le même encart est
+   * parfait en sombre. Inversion habituelle : 100 ↔ 900, 200 ↔ 800.
+   */
+  --color-sky-100: oklch(0.391 0.09 240.876);
+  --color-sky-200: oklch(0.443 0.11 240.79);
   --color-sky-300: oklch(0.5 0.134 242.749);
   --color-sky-400: oklch(0.443 0.11 240.79);
   --color-sky-500: oklch(0.5 0.134 242.749);

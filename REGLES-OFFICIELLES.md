@@ -162,6 +162,45 @@ cachent d'autres à la projection, si bien que deux orientations très éloigné
 voire un empilement et son miroir — peuvent se dessiner presque pareil. L'item
 serait alors indécidable, et le candidat chercherait une différence inexistante.
 
+## Culture aéronautique — l'épreuve hors des 16 (relevé du 20/08/2026)
+
+Source : l'article Pilotest <https://blog.pilotest.com/culture-aeronautique-cadets/> et les
+**annales** qu'il met en téléchargement — les questions réellement remontées par les candidats
+des sessions de **mars 2018** et **janvier 2019**.
+
+Format, cité depuis les annales de janvier 2019 :
+
+> « Ce test est noté avec des points négatifs (bonne réponse +3 / mauvaise réponse -1) et la
+> réponse "je ne sais pas" est possible. »
+
+- **20 questions**, **4 propositions**, une seule bonne réponse.
+- **+3** si juste, **−1** si faux, **0** pour « je ne sais pas ».
+- Environ **15 s par question**.
+- En janvier 2019, les questions étaient posées **alternativement en français ET en anglais**.
+
+**Conséquence stratégique, à ne pas se tromper dessus.** L'espérance d'une réponse au hasard sur
+`n` propositions plausibles vaut `(3 − (n−1)) / n`, soit :
+
+| propositions restantes | 4 | 3 | 2 | 1 |
+|---|---|---|---|---|
+| espérance | 0 | +0,33 | +1 | +3 |
+
+Répondre au hasard sur quatre propositions rapporte **exactement autant** que « je ne sais pas » :
+zéro. Dès qu'une seule proposition est éliminée, répondre devient gagnant. **Aucune question ne
+doit rester vide.** Le calcul est implémenté et testé dans `src/culture/quiz.ts`
+(`expectedValue`) : si le barème changeait, le conseil deviendrait faux et le test le signalerait.
+
+**Ce n'est pas un dix-septième exercice PSY0.** C'est une épreuve de savoir, pas d'aptitude :
+elle vit dans `src/culture/`, hors du registre des 16, hors des rotations, hors de la stanine —
+même traitement que l'atelier de calcul mental. La banque est révisée par **répétition espacée**
+(boîtes de Leitner), parce que 356 questions ne s'apprennent pas en relisant.
+
+Thèmes relevés dans les annales : mécanique du vol, motorisation, instruments, météo, navigation
+et vent effectif, histoire de l'aviation, Air France et son groupe, géographie aérienne,
+aéronefs et constructeurs, littérature et films. Niveau annoncé : **BIA ou PPL**.
+
+**Les candidats PRO ne passent ni l'anglais ni la culture aéronautique.**
+
 ## Vérifier le projet (piège à éviter)
 
 `npx tsc --noEmit` **ne vérifie RIEN** dans ce projet : le `tsconfig.json` racine est un fichier

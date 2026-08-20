@@ -16,6 +16,7 @@ import Learn from './pages/Learn';
 import Settings from './pages/Settings';
 import Bilan from './pages/Bilan';
 import Mental from './pages/Mental';
+import Culture from './pages/Culture';
 
 const router = createBrowserRouter([
   {
@@ -34,6 +35,7 @@ const router = createBrowserRouter([
       { path: 'tips/:id', element: <Tips /> },
       { path: 'mental', element: <Mental /> },
       { path: 'mental/:id', element: <Mental /> },
+      { path: 'culture', element: <Culture /> },
       { path: 'learn', element: <Learn /> },
       { path: 'learn/:id', element: <Learn /> },
       { path: 'settings', element: <Settings /> },
