@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import './index.css';
 import App from './app/App';
+import { CrashScreen } from './app/CrashScreen';
 import { applyTheme, readPreference } from './core/theme';
 import Today from './pages/Today';
 import Dashboard from './pages/Dashboard';
@@ -20,6 +21,8 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
+    // Un plantage ne doit jamais donner l'impression d'avoir tout perdu.
+    errorElement: <CrashScreen />,
     children: [
       { index: true, element: <Today /> },
       { path: 'dashboard', element: <Dashboard /> },

@@ -17,7 +17,7 @@ import { buildDebrief } from '../coach/debriefing';
 import { familyReport } from '../coach/simulation';
 import { onDailyCompleted } from '../coach/daily';
 import { parisMoment } from '../coach/daily-logic';
-import { saveSuspended } from '../coach/suspended';
+import { clearSuspended, saveSuspended } from '../coach/suspended';
 import { getPrefs } from '../core/prefs';
 import { markDirty } from '../sync/sync';
 import { exportDayLog } from '../core/logs';
@@ -95,22 +95,61 @@ export function SessionRunner({
     setPhase(plan.meta?.requiresLog && played ? 'log' : 'debrief');
   }, [plan, sessionId, sessionStart]);
 
+  /**
+   * Sauvegarde de reprise, posée à chaque fin de bloc.
+   *
+   * Les items joués partaient déjà dans le journal, mais la POSITION dans la
+   * séance, elle, ne survivait à rien : un onglet fermé ou un plantage et il
+   * fallait tout reprendre au premier bloc. Dix minutes perdues pour une erreur
+   * de rendu, c'est le genre de punition qui décourage de s'entraîner.
+   *
+   * On réutilise le mécanisme de la coupure de mi-parcours : mêmes données,
+   * même écran de reprise sur l'accueil. La sauvegarde est effacée dès que la
+   * séance se termine normalement, pour ne pas proposer de reprendre ce qui est
+   * déjà fini.
+   */
+  const autosave = useCallback(
+    (nextIndex: number) => {
+      const rest = plan.blocks.slice(nextIndex);
+      if (rest.length === 0) return;
+      saveSuspended({
+        savedAt: Date.now(),
+        dayKey: parisMoment(new Date()).dayKey,
+        title: planTitle(plan),
+        doneMin: Math.round((Date.now() - sessionStart) / 60_000),
+        plan: {
+          ...plan,
+          blocks: rest,
+          briefing: undefined,
+          meta: { ...plan.meta, halfwayIndex: undefined, resumed: true },
+        },
+      });
+    },
+    [plan, sessionStart],
+  );
+
   const finishBlock = useCallback(
     (result: BlockResult) => {
       partialCollector.current = null; // le bloc est comptabilisé, pas de double collecte sur Échap
       blockResults.current.push(result);
       saveLevel(result.exercise, result.endLevel);
+      // Le journal des items part avec : sans ça, une reprise repartirait avec
+      // des compteurs à jour mais un historique amputé du dernier bloc.
+      flushNow();
       if (blockIndex + 1 < plan.blocks.length) {
+        autosave(blockIndex + 1);
         setBlockIndex(blockIndex + 1);
         // Bascule de mise au point : déclenche la coupure dès le premier bloc,
         // pour valider l'écran sans jouer 45 minutes.
         const cutAt = fastHalfway && plan.meta?.halfwayIndex !== undefined ? 1 : plan.meta?.halfwayIndex;
         setPhase(cutAt === blockIndex + 1 ? 'halfway' : 'interstitial');
       } else {
+        // Séance terminée : plus rien à reprendre.
+        clearSuspended();
         finishSession();
       }
     },
-    [blockIndex, plan.blocks.length, plan.meta?.halfwayIndex, fastHalfway, finishSession],
+    [blockIndex, plan.blocks.length, plan.meta?.halfwayIndex, fastHalfway, finishSession, autosave],
   );
 
   /**

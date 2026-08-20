@@ -207,3 +207,33 @@ describe('word-boxes model (attribution libre puis rappel)', () => {
     expect(res.state.contents[1]).toEqual([second.word]);
   });
 });
+
+describe('régression : le nombre de boîtes change avec le niveau', () => {
+  /**
+   * C'est ce changement qui faisait planter la séance en plein jeu. L'état des
+   * boîtes était figé sur la PREMIÈRE série ; quand le niveau montait, la série
+   * suivante en demandait cinq ou six alors que l'état n'en contenait que
+   * quatre, et le rendu lisait une case inexistante.
+   *
+   * Le composant remet donc son état à zéro PENDANT le rendu, et non dans un
+   * effet qui s'exécute après. Ce test garde la raison d'être de ce choix : si
+   * tous les niveaux avaient le même nombre de boîtes, on ne comprendrait plus
+   * pourquoi le code est écrit ainsi.
+   */
+  it('un passage de niveau modifie réellement le nombre de boîtes', () => {
+    const counts = LEVELS.map((l) => l.boxes);
+    expect(new Set(counts).size).toBeGreaterThan(1);
+    // Et le générateur le répercute bien sur la question.
+    for (let level = 1; level <= LEVELS.length; level++) {
+      const q = generate(1234, level).question;
+      expect(q.boxCount, `niveau ${level}`).toBe(LEVELS[level - 1].boxes);
+    }
+  });
+
+  it('l’état initial a toujours autant de boîtes que la question', () => {
+    for (let level = 1; level <= LEVELS.length; level++) {
+      const q = generate(99, level).question;
+      expect(initialState(q.boxCount).contents).toHaveLength(q.boxCount);
+    }
+  });
+});

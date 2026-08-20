@@ -25,15 +25,28 @@ export function WordBoxesExercise({
   const shownAt = useRef(Date.now());
   const answeredRef = useRef(false);
 
-  // Nouvelle série : on repart de boîtes vides.
-  useEffect(() => {
+  /**
+   * Remise à zéro PENDANT LE RENDU, et non dans un effet.
+   *
+   * `useState` fige le nombre de boîtes de la PREMIÈRE série. Quand le niveau
+   * monte, la série suivante en demande cinq ou six alors que l'état n'en
+   * contient que quatre — et un effet s'exécute APRÈS le rendu. React affichait
+   * donc une image où `contents[4]` n'existe pas, ce qui faisait planter toute
+   * la séance en pleine partie.
+   *
+   * Ajuster l'état pendant le rendu est le remède documenté par React pour un
+   * état dérivé des props : aucune image incohérente n'est jamais produite.
+   */
+  const [renderedFor, setRenderedFor] = useState(`${item.seed}:${q.boxCount}`);
+  if (renderedFor !== `${item.seed}:${q.boxCount}`) {
+    setRenderedFor(`${item.seed}:${q.boxCount}`);
     setIndex(0);
     setState(initialState(q.boxCount));
     setPhase('visible');
     setFlash(null);
     answeredRef.current = false;
     shownAt.current = Date.now();
-  }, [item.seed, q.boxCount]);
+  }
 
   const step = q.steps[index];
 
@@ -104,7 +117,9 @@ export function WordBoxesExercise({
         style={{ gridTemplateColumns: `repeat(${Math.min(q.boxCount, 3)}, minmax(0, 1fr))` }}
       >
         {Array.from({ length: q.boxCount }, (_, i) => {
-          const words = state.contents[i];
+          // Filet : même remis à zéro pendant le rendu, on ne lit jamais une
+          // case absente. Une boîte vide vaut infiniment mieux qu'un crash.
+          const words = state.contents[i] ?? [];
           const highlighted = flash?.box === i;
           return (
             <button
