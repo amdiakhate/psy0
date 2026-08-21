@@ -10,6 +10,8 @@ import { getPrefs, missingPilotestClasses } from '../core/prefs';
 import { daysUntil, TEST_DATE, isCadredPhase } from '../core/config';
 import { EXERCISES, getExercise } from '../exercises';
 import { useKeys } from '../hooks/useKeys';
+import { ExternalSessionForm } from '../app/ExternalSessionForm';
+import { ROLE_LABEL } from '../coach/external-session';
 
 /**
  * Écran d'accueil : zéro décision. Un bouton, la bonne session.
@@ -20,8 +22,11 @@ export default function Today() {
   // 60 min reste le format du protocole : monter à 1 h 30 ou 2 h est une
   // décision consciente du matin, pas un réglage qui se règle une fois.
   const [morningMin, setMorningMin] = useState<MorningDuration>(60);
+  // L'offre est mémoïsée : après une saisie externe il faut la recalculer,
+  // sinon la carte continue de proposer la séance entière.
+  const [version, setVersion] = useState(0);
   // Recalculé à chaque affichage (la page est légère, l'offre dépend de l'heure).
-  const offer = useMemo(() => getDailyOffer(new Date(), morningMin), [morningMin]);
+  const offer = useMemo(() => getDailyOffer(new Date(), morningMin), [morningMin, version]);
   const prefs = getPrefs();
   const bedtime = isAfterBedtime(offer.moment);
   const days = daysUntil(TEST_DATE);
@@ -29,6 +34,8 @@ export default function Today() {
   const isLocked = offer.decision.kind === 'locked';
   const [overrideUnlocked, setOverrideUnlocked] = useState(false);
   const [suspended, setSuspended] = useState(() => resumableToday(offer.moment.dayKey));
+  const [loggingExternal, setLoggingExternal] = useState(false);
+  const [externalNotice, setExternalNotice] = useState<string | null>(null);
 
   // Le bilan reste proposé tant qu'il n'a pas été validé : c'est lui qui
   // apporte les classes Pilotest et les priorités, que rien d'autre ne fournit.
@@ -130,7 +137,9 @@ export default function Today() {
                 onClick={() => start(offer.plan!)}
                 className="rounded-xl bg-sky-600 px-8 py-3 text-lg font-semibold hover:bg-sky-500"
               >
-                Lancer ma session
+                {offer.decision.kind === 'external-partial'
+                  ? 'Compléter ma séance'
+                  : 'Lancer ma session'}
               </button>
               {offer.optional && (
                 <span className="text-sm text-zinc-500">Optionnelle — passer n'est pas un échec.</span>
@@ -152,6 +161,45 @@ export default function Today() {
           </div>
         ) : null}
       </div>
+
+      {(offer.decision.kind === 'buildup-morning' ||
+        offer.decision.kind === 'external-partial') && (
+        <div className="mt-3">
+          {loggingExternal ? (
+            <ExternalSessionForm
+              morningMin={morningMin}
+              onCancel={() => setLoggingExternal(false)}
+              onSaved={(r) => {
+                setLoggingExternal(false);
+                setVersion((v) => v + 1);
+                setExternalNotice(
+                  r.complete
+                    ? 'Séance complète consignée. La rotation a avancé.'
+                    : `Séance partielle consignée. Il reste : ${r.missing
+                        .map((m) => ROLE_LABEL[m])
+                        .join(', ')}.` +
+                        (r.rotationAdvanced
+                          ? ' La passe priorité étant faite, la rotation a avancé.'
+                          : ' La passe priorité n’a pas été travaillée : la rotation reste sur la même priorité.'),
+                );
+              }}
+            />
+          ) : (
+            <button
+              onClick={() => setLoggingExternal(true)}
+              className="text-sm text-zinc-500 underline-offset-4 hover:text-sky-400 hover:underline"
+            >
+              Séance faite ailleurs → la consigner
+            </button>
+          )}
+        </div>
+      )}
+
+      {externalNotice && (
+        <p className="mt-3 rounded-xl border border-sky-800/60 bg-sky-950/20 p-4 text-sm text-sky-200">
+          {externalNotice}
+        </p>
+      )}
 
       {offer.decision.kind === 'buildup-morning' && prefs.priorities === null && (
         <p className="mt-4 rounded-xl border border-amber-800/60 bg-amber-950/20 p-4 text-sm text-amber-300">

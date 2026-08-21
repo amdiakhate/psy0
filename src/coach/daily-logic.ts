@@ -1,4 +1,5 @@
 import type { ExerciseId, SessionBlock } from '../core/types';
+import type { ProtocolRole } from './external-session';
 
 /**
  * Logique PURE de la « Session du jour » : aucune lecture de storage, aucune
@@ -72,6 +73,15 @@ export interface DailyState {
   lastEveningExercise: ExerciseId | null;
   /** Jour (dayKey Paris) où la session du matin a été complétée — anti double-avance. */
   lastMorningDoneDay: string | null;
+  /**
+   * Jour où le curseur de priorité a déjà bougé.
+   *
+   * Distinct de `lastMorningDoneDay` : une séance faite ailleurs peut faire
+   * avancer la rotation (la passe priorité a été travaillée) sans pour autant
+   * clore la journée (il manque le psychomoteur). Confondre les deux ferait
+   * disparaître la carte « séance partielle » au moment précis où elle sert.
+   */
+  lastPriorityAdvanceDay: string | null;
 }
 
 export const INITIAL_DAILY_STATE: DailyState = {
@@ -79,6 +89,7 @@ export const INITIAL_DAILY_STATE: DailyState = {
   groupCursor: 0,
   lastEveningExercise: null,
   lastMorningDoneDay: null,
+  lastPriorityAdvanceDay: null,
 };
 
 export type DailyDecision =
@@ -106,7 +117,14 @@ export type DailyDecision =
    * offerte : elle permet de reproposer exactement le même programme en
    * entraînement libre, sans avoir à deviner ce qu'il contenait.
    */
-  | { kind: 'done-today'; replay: DailyDecision };
+  | { kind: 'done-today'; replay: DailyDecision }
+  /** Séance du matin faite ailleurs, et complète : rien à ajouter aujourd'hui. */
+  | { kind: 'external-done'; replay: DailyDecision }
+  /**
+   * Séance du matin faite ailleurs, mais incomplète. `missing` liste les rôles
+   * du protocole qui restent à faire — l'app ne propose QUE ceux-là.
+   */
+  | { kind: 'external-partial'; missing: ProtocolRole[]; replay: DailyDecision };
 
 /** Nombre de passes de priorité d'une séance du matin — donc de créneaux à répartir. */
 export const PRIORITY_PASSES = 3;
@@ -172,6 +190,11 @@ export interface DecideArgs {
   priorities: ExerciseId[] | null;
   /** Exercices du plus faible au plus fort (fallback priorité + suggestions du soir). */
   weakestOrder: ExerciseId[];
+  /**
+   * Couverture de la séance du matin faite ailleurs aujourd'hui, si elle existe.
+   * `null` quand rien n'a été consigné.
+   */
+  externalToday?: { missing: ProtocolRole[]; complete: boolean } | null;
 }
 
 export function decideDaily(args: DecideArgs): DailyDecision {
@@ -218,6 +241,14 @@ export function decideDaily(args: DecideArgs): DailyDecision {
       groupIndex: groupForMorning(state.groupCursor, list),
       degraded,
     };
+    // Une séance consignée comme faite ailleurs prime sur tout le reste : c'est
+    // la seule information dont l'app dispose sur ce qui a RÉELLEMENT été fait.
+    const external = args.externalToday;
+    if (external) {
+      return external.complete
+        ? { kind: 'external-done', replay: morning }
+        : { kind: 'external-partial', missing: external.missing, replay: morning };
+    }
     return morningDone ? { kind: 'done-today', replay: morning } : morning;
   }
   const suggestion = weakestOrder.filter((e) => e !== 'psychomotor' && e !== state.lastEveningExercise)[0] ?? null;
@@ -227,11 +258,31 @@ export function decideDaily(args: DecideArgs): DailyDecision {
 /** Avance les rotations après complétion d'une session du matin. Idempotent par jour. */
 export function advanceAfterMorning(state: DailyState, usedGroup: number | undefined, dayKey: string): DailyState {
   if (state.lastMorningDoneDay === dayKey) return state;
+  // Le curseur de priorité a pu déjà bouger via une séance externe : on ne le
+  // fait pas avancer deux fois, mais on clôt bien la journée.
+  const already = state.lastPriorityAdvanceDay === dayKey;
+  return {
+    ...state,
+    priorityCursor: already ? state.priorityCursor : (state.priorityCursor + 1) % PRIORITY_PASSES,
+    groupCursor: usedGroup !== undefined ? (usedGroup + 1) % GROUPS.length : state.groupCursor,
+    lastMorningDoneDay: dayKey,
+    lastPriorityAdvanceDay: dayKey,
+  };
+}
+
+/**
+ * Avance la SEULE rotation de priorité, sans clore la journée.
+ *
+ * C'est le cas d'une séance externe partielle où la passe priorité a bien été
+ * travaillée : la cible du jour a bougé, mais il reste des blocs à faire et la
+ * carte doit continuer de le dire.
+ */
+export function advancePriorityOnly(state: DailyState, dayKey: string): DailyState {
+  if (state.lastPriorityAdvanceDay === dayKey) return state;
   return {
     ...state,
     priorityCursor: (state.priorityCursor + 1) % PRIORITY_PASSES,
-    groupCursor: usedGroup !== undefined ? (usedGroup + 1) % GROUPS.length : state.groupCursor,
-    lastMorningDoneDay: dayKey,
+    lastPriorityAdvanceDay: dayKey,
   };
 }
 

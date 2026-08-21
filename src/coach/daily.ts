@@ -8,7 +8,19 @@ import { weakestTagOf } from '../analysis/errorTaxonomy';
 import { composeSimulation } from './simulation';
 import { composeGuided } from './composer';
 import { markExternalPlan } from './external';
+import {
+  ROLE_LABEL,
+  advancesRotation,
+  coverageOf,
+  externalOf,
+  externalPsychoSec,
+  putExternal,
+} from './external-session';
+import type { ExternalBlockEntry, ExternalSession, ProtocolRole } from './external-session';
 import { computeHalfwayIndex } from './composer-logic';
+import { saveLogEntries } from '../core/logs';
+import { markDirty } from '../sync/sync';
+import type { Feeling } from '../core/logs';
 import { LOG_RESERVE_SEC, composeMorningBlocks, prioritySecondsOf } from './morning-logic';
 import type { MorningDuration, MorningPriority } from './morning-logic';
 import { mulberry32, newSeed, shuffle } from '../core/rng';
@@ -17,8 +29,10 @@ import {
   INITIAL_DAILY_STATE,
   PSYCHO_DAILY_CAP_SEC,
   advanceAfterMorning,
+  advancePriorityOnly,
   clampPsychomotor,
   decideDaily,
+  morningPriorities,
   parisMoment,
   psychoUsedSec,
   recordEvening,
@@ -35,8 +49,17 @@ function saveDailyState(state: DailyState): void {
   saveJson('daily', state);
 }
 
+/**
+ * Le cap quotidien de psychomoteur, minutes faites AILLEURS comprises.
+ *
+ * Sans cette addition, une séance externe rechargerait le compteur à neuf :
+ * l'app proposerait douze minutes de plus alors que le quota est déjà
+ * consommé. Le cap existe parce que l'apprentissage moteur se dégrade au-delà —
+ * il ne connaît pas la frontière entre l'app et Pilotest.
+ */
 export function psychoRemainingTodaySec(now: Date = new Date()): number {
-  const used = psychoUsedSec(getEvents(), parisMoment(now).dayKey);
+  const day = parisMoment(now).dayKey;
+  const used = psychoUsedSec(getEvents(), day) + externalPsychoSec(day);
   return Math.max(0, PSYCHO_DAILY_CAP_SEC - used);
 }
 
@@ -76,6 +99,7 @@ export function getDailyOffer(now: Date = new Date(), morningMin: MorningDuratio
   const prefs = getPrefs();
   const weakestOrder = rankWeakest().map((s) => s.exercise);
 
+  const today = externalOf(moment.dayKey);
   const decision = decideDaily({
     moment,
     state,
@@ -83,6 +107,7 @@ export function getDailyOffer(now: Date = new Date(), morningMin: MorningDuratio
     allExercises: EXERCISES.map((e) => e.id),
     priorities: prefs.priorities,
     weakestOrder,
+    externalToday: today ? coverageOf(today.blocks) : null,
   });
 
   return buildOffer(decision, moment, morningMin);
@@ -134,6 +159,58 @@ function buildOffer(
         subtitle: replay
           ? 'Reviens après 12 h pour la session du soir (optionnelle). Tu peux aussi refaire le programme du matin — il ne comptera pas une seconde fois.'
           : 'Reviens après 12 h pour la session du soir (optionnelle).',
+      };
+    }
+    case 'external-done': {
+      const original = buildOffer(decision.replay, moment, morningMin);
+      return {
+        decision, moment, plan: null, optional: false,
+        replay: original.plan
+          ? { ...original.plan, meta: { ...original.plan.meta, daily: undefined, requiresLog: false } }
+          : undefined,
+        title: 'Séance du jour : faite (externe) ✓',
+        subtitle:
+          'Tu l’as consignée comme faite ailleurs, et elle couvre tout le protocole. La rotation a suivi. Tu peux refaire le programme ici — il ne comptera pas une seconde fois.',
+      };
+    }
+    case 'external-partial': {
+      // On recompose la séance COMPLÈTE, puis on ne garde que les rôles
+      // manquants : durées et enchaînement du protocole sont préservés, on
+      // n'invente pas un minutage de rattrapage.
+      const original = buildOffer(decision.replay, moment, morningMin);
+      const kept = (original.plan?.blocks ?? []).filter(
+        (b) => b.role !== undefined && decision.missing.includes(b.role as ProtocolRole),
+      );
+      const labels = decision.missing.map((r) => ROLE_LABEL[r]).join(', ');
+      if (kept.length === 0) {
+        return {
+          decision, moment, plan: null, optional: false,
+          title: 'Séance partielle consignée',
+          subtitle: `Il reste : ${labels} — mais rien à lancer ici pour ces blocs. Fais-les où tu voudras, puis complète ta saisie.`,
+        };
+      }
+      const guarded = finalizePlan({
+        mode: morningMin === 60 ? 'guided60' : 'guided90',
+        blocks: kept,
+        briefing: [
+          `Complément de séance : ${labels}.`,
+          'Le reste a été fait ailleurs et consigné — on ne le rejoue pas.',
+          'Minutage normal du protocole : ces blocs durent ce qu’ils auraient duré dans la séance entière.',
+        ],
+        meta: {
+          daily: 'morning',
+          requiresLog: true,
+          usedGroup: decision.replay.kind === 'buildup-morning' ? decision.replay.groupIndex : undefined,
+        },
+      });
+      return {
+        decision, moment, plan: guarded.plan, optional: false, note: guarded.note,
+        title: `Séance partielle — il reste : ${labels}`,
+        subtitle: guarded.plan
+          ? `${guarded.plan.blocks.map(blockLabel).join(' → ')} · ${Math.round(
+              guarded.plan.blocks.reduce((t, b) => t + (b.durationSec ?? 0), 0) / 60,
+            )} min`
+          : '',
       };
     }
     case 'discovery-morning': {
@@ -407,12 +484,132 @@ export function guardPsycho(plan: SessionPlan): { plan: SessionPlan | null; note
   };
 }
 
+/**
+ * L'exercice que le protocole aurait mis dans chaque rôle aujourd'hui.
+ *
+ * Sert à pré-remplir la saisie d'une séance externe : dans l'immense majorité
+ * des cas le candidat a fait ce que le coach prévoyait, ailleurs. Lui faire
+ * ressaisir les mêmes exercices à la main est le meilleur moyen qu'il ne
+ * consigne rien.
+ */
+export function morningRoleDefaults(
+  now: Date = new Date(),
+  morningMin: MorningDuration = 60,
+): Partial<Record<ProtocolRole, ExerciseId>> {
+  const offer = getDailyOffer(now, morningMin);
+  const source =
+    offer.plan ??
+    (offer.decision.kind === 'external-done' || offer.decision.kind === 'external-partial'
+      ? buildOffer(offer.decision.replay, offer.moment, morningMin).plan
+      : null);
+  const out: Partial<Record<ProtocolRole, ExerciseId>> = {};
+  for (const b of source?.blocks ?? []) {
+    const role = b.role as ProtocolRole | undefined;
+    if (role && out[role] === undefined) out[role] = b.exercise;
+  }
+  return out;
+}
+
+/**
+ * Consigne une séance du matin faite AILLEURS.
+ *
+ * Trois effets, et ils sont indissociables : la couverture décide de ce que
+ * l'app proposera encore, la passe priorité décide de la rotation, et les
+ * blocs partent dans le journal du jour marqués « externe ». Oublier le
+ * journal reviendrait à effacer la séance de l'historique — c'est-à-dire à
+ * refaire exactement le tort qu'on répare.
+ */
+export function recordExternalSession(args: {
+  blocks: ExternalBlockEntry[];
+  psychoMin: number;
+  feeling?: Feeling;
+  now?: Date;
+}): { complete: boolean; missing: ProtocolRole[]; rotationAdvanced: boolean } {
+  const now = args.now ?? new Date();
+  const moment = parisMoment(now);
+  const prefs = getPrefs();
+  const weakestOrder = rankWeakest().map((s) => s.exercise);
+  const state = getDailyState();
+
+  const { list } = morningPriorities({
+    priorities: prefs.priorities,
+    priorityCursor: state.priorityCursor,
+    weakestOrder,
+    allExercises: EXERCISES.map((e) => e.id),
+  });
+
+  const coverage = coverageOf(args.blocks);
+  const advance = advancesRotation(args.blocks, list);
+
+  const session: ExternalSession = {
+    dayKey: moment.dayKey,
+    savedAt: now.getTime(),
+    blocks: args.blocks,
+    psychoMin: args.psychoMin,
+    feeling: args.feeling,
+    advanced: advance,
+  };
+  putExternal(session);
+
+  if (advance) {
+    // Une séance externe COMPLÈTE clôt la journée ; une partielle fait bouger
+    // la cible sans prétendre que le travail est fini.
+    saveDailyState(
+      coverage.complete
+        ? advanceAfterMorning(state, undefined, moment.dayKey)
+        : advancePriorityOnly(state, moment.dayKey),
+    );
+  }
+
+  saveLogEntries(
+    args.blocks.map((b) => ({
+      day: moment.dayKey,
+      ts: now.getTime(),
+      exercise: b.exercise,
+      level: b.pilotestClass ?? 0,
+      errPct: b.successPct === undefined ? 0 : Math.round(100 - b.successPct),
+      feeling: args.feeling,
+      role: b.role,
+      passes: 1,
+      external: true,
+      pilotestClass: b.pilotestClass,
+    })),
+  );
+  markDirty();
+
+  return { complete: coverage.complete, missing: coverage.missing, rotationAdvanced: advance };
+}
+
+/**
+ * Une séance externe partielle vient d'être complétée ICI : on ajoute les rôles
+ * réellement joués à la saisie, pour que la carte cesse d'annoncer un reste qui
+ * n'existe plus.
+ */
+function closeExternalDay(dayKey: string, plan: SessionPlan): void {
+  const existing = externalOf(dayKey);
+  if (!existing) return;
+  const done = new Set(existing.blocks.map((b) => b.role));
+  const added: ExternalBlockEntry[] = [];
+  for (const b of plan.blocks) {
+    const role = b.role as ProtocolRole | undefined;
+    if (!role || done.has(role)) continue;
+    done.add(role);
+    added.push({ role, exercise: b.exercise });
+  }
+  if (added.length === 0) return;
+  putExternal({ ...existing, blocks: [...existing.blocks, ...added] });
+}
+
 /** À appeler quand une session « du jour » se termine : avance les rotations. */
 export function onDailyCompleted(plan: SessionPlan, now: Date = new Date()): void {
   const moment = parisMoment(now);
   const state = getDailyState();
   if (plan.meta?.daily === 'morning') {
     saveDailyState(advanceAfterMorning(state, plan.meta.usedGroup, moment.dayKey));
+    // Complément d'une séance consignée comme faite ailleurs : la saisie doit
+    // refléter la journée entière, sinon la carte réclamerait encore les blocs
+    // qu'on vient de jouer.
+    closeExternalDay(moment.dayKey, plan);
   } else if (plan.meta?.daily === 'evening' && plan.blocks.length > 0) {
     saveDailyState(recordEvening(state, plan.blocks[0].exercise));
   }

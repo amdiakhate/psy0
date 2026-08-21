@@ -18,7 +18,12 @@ export interface DayLogEntry {
   level: number;
   /** % d'erreurs, auto-rempli depuis les données de la session. */
   errPct: number;
-  feeling: Feeling;
+  /**
+   * Facultatif : une séance consignée après coup n'a pas toujours de ressenti
+   * associé. Mieux vaut une ligne sans ressenti qu'un ressenti inventé — c'est
+   * lui qui pilote les prochaines sessions.
+   */
+  feeling?: Feeling;
   /** Note libre, 140 caractères max. */
   note?: string;
   /** Rôle tenu dans la séance — permet de grouper l'export par fonction. */
@@ -106,7 +111,8 @@ export function formatDayLog(ctx: DayLogContext): string {
     if (subs && subs.length > 0) {
       parts.push(`sous-types : ${subs.map((s) => `${s.tag} ${Math.round(s.errorRate * 100)}%`).join(', ')}`);
     }
-    parts.push(e.feeling);
+    if (e.external) parts.push('(externe)');
+    if (e.feeling) parts.push(e.feeling);
     if (e.note?.trim()) parts.push(e.note.trim());
     lines.push(parts.join(' · '));
   }
