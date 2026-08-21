@@ -1,127 +1,200 @@
 import { describe, expect, it } from 'vitest';
-import { generate, inGreyZone, isOnBoard, minimalRemovals, planeCol, violationAt } from './generator';
-import { COLS, GROUPS, LEVELS, LINES_PER_GROUP, MAX_BLUE, MAX_TOTAL } from './config';
+import { MAX_BLUE, MAX_TOTAL, SERIES_PER_PASSATION } from './config';
+import {
+  channelOf,
+  generate,
+  isDiverted,
+  makeChannel,
+  minimalClosures,
+  occupancyAt,
+  parClosures,
+  violationAt,
+  zoneEntryTick,
+} from './generator';
+import type { Closures, Plane, PlaneColor, Series } from './generator';
 
-describe('airways — critères et plateau conformes au test', () => {
-  it('reprend les critères officiels : max 4 avions, max 2 bleus, 2 blocs de 6 lignes', () => {
+const COLS = 34;
+const ZONE = { start: 15, end: 19, lineFrom: 0, lineTo: 5 };
+
+/**
+ * Une série fabriquée à la main : tous les avions atteignent la bande grise au
+ * MÊME pas, ce qui rend les seuils vérifiables à l'unité près.
+ *
+ * Un violet part de la colonne 0 et avance d'une case par pas : il entre dans
+ * la bande au pas `start`. Un bleu part de `cols-1` : il y entre au pas
+ * `cols-1-end`. On décale donc les spawns pour aligner les arrivées.
+ */
+function seriesWith(colors: PlaneColor[], opts: { line?: (i: number) => number } = {}): Series {
+  const arriveAt = 20;
+  const planes: Plane[] = colors.map((color, i) => ({
+    id: i,
+    group: 0,
+    line: opts.line ? opts.line(i) : i % 6,
+    color,
+    spawnTick: arriveAt - (color === 'purple' ? ZONE.start : COLS - 1 - ZONE.end),
+    speed: 1,
+  }));
+  return {
+    index: 0,
+    zones: [ZONE, ZONE],
+    planes,
+    cols: COLS,
+    tickMs: 800,
+    durationTicks: 60,
+    par: 0,
+  };
+}
+
+const NONE: Closures = new Map();
+
+describe('seuils d’accident', () => {
+  it('aligne bien les arrivées (préalable des tests de seuil)', () => {
+    const s = seriesWith(['purple', 'blue']);
+    expect(zoneEntryTick(s.planes[0], ZONE, COLS)).toBe(20);
+    expect(zoneEntryTick(s.planes[1], ZONE, COLS)).toBe(20);
+  });
+
+  it('4 avions dans la bande : pas d’accident', () => {
+    const s = seriesWith(['purple', 'purple', 'purple', 'purple']);
+    expect(occupancyAt(s, 0, 20, NONE)).toEqual({ total: 4, blue: 0 });
+    expect(violationAt(s, 20, NONE)).toBeNull();
+  });
+
+  it('5 avions dans la bande : accident au total', () => {
+    const s = seriesWith(['purple', 'purple', 'purple', 'purple', 'purple']);
+    expect(occupancyAt(s, 0, 20, NONE).total).toBe(5);
+    expect(violationAt(s, 20, NONE)).toEqual({ group: 0, reason: 'flow-total' });
+  });
+
+  it('2 bleus : pas d’accident', () => {
+    const s = seriesWith(['blue', 'blue']);
+    expect(occupancyAt(s, 0, 20, NONE)).toEqual({ total: 2, blue: 2 });
+    expect(violationAt(s, 20, NONE)).toBeNull();
+  });
+
+  it('3 bleus : accident bleu, même si le total tient', () => {
+    const s = seriesWith(['blue', 'blue', 'blue']);
+    const occ = occupancyAt(s, 0, 20, NONE);
+    expect(occ).toEqual({ total: 3, blue: 3 });
+    expect(occ.total).toBeLessThanOrEqual(MAX_TOTAL);
+    expect(violationAt(s, 20, NONE)).toEqual({ group: 0, reason: 'flow-blue' });
+  });
+
+  it('les seuils sont bien 4 et 2', () => {
     expect(MAX_TOTAL).toBe(4);
     expect(MAX_BLUE).toBe(2);
-    expect(GROUPS).toBe(2);
-    expect(LINES_PER_GROUP).toBe(6);
-    const q = generate(1, 3).question;
-    expect(q.maxTotal).toBe(MAX_TOTAL);
-    expect(q.maxBlue).toBe(MAX_BLUE);
-    expect(q.zones).toHaveLength(2);
-    q.zones.forEach((z) => expect(z.perLine).toHaveLength(6));
   });
 
-  it('est déterministe : même seed → même trafic', () => {
-    for (let level = 1; level <= LEVELS.length; level++) {
-      for (let seed = 0; seed < 40; seed++) {
-        expect(generate(seed, level)).toEqual(generate(seed, level));
+  /** Une ligne hors de la bande ne compte jamais : fermer sa voie est du gaspillage. */
+  it('ignore les avions des lignes que la bande ne couvre pas', () => {
+    const s = seriesWith(['purple', 'purple', 'purple', 'purple', 'purple'], { line: (i) => i });
+    s.zones = [{ ...ZONE, lineFrom: 0, lineTo: 3 }, ZONE];
+    expect(occupancyAt(s, 0, 20, NONE).total).toBe(4);
+    expect(violationAt(s, 20, NONE)).toBeNull();
+  });
+});
+
+describe('fermeture de voie', () => {
+  it('emporte les avions qui n’ont pas encore atteint la bande', () => {
+    const s = seriesWith(['purple', 'purple', 'purple', 'purple', 'purple']);
+    const closed: Closures = new Map([[channelOf(s.planes[4]), 0]]);
+    expect(isDiverted(s.planes[4], s, closed)).toBe(true);
+    expect(occupancyAt(s, 0, 20, closed).total).toBe(4);
+    expect(violationAt(s, 20, closed)).toBeNull();
+  });
+
+  /**
+   * Le cœur de l'exercice : quand le compteur affiche déjà la limite, il est
+   * trop tard. Fermer une voie ne fait pas faire demi-tour à un avion engagé —
+   * c'est ce qui oblige à anticiper au lieu de réagir.
+   */
+  it('ne fait pas demi-tour à un avion déjà dans la bande', () => {
+    const s = seriesWith(['purple', 'purple', 'purple', 'purple', 'purple']);
+    const tooLate: Closures = new Map([[channelOf(s.planes[4]), 21]]);
+    expect(isDiverted(s.planes[4], s, tooLate)).toBe(false);
+    expect(violationAt(s, 20, tooLate)).toEqual({ group: 0, reason: 'flow-total' });
+  });
+
+  /** Définitive : elle vaut pour les avions à venir, pas seulement ceux du moment. */
+  it('vaut aussi pour les avions qui n’ont pas encore décollé', () => {
+    const s = seriesWith(['purple', 'purple']);
+    const late: Plane = { id: 99, group: 0, line: 0, color: 'purple', spawnTick: 40, speed: 1 };
+    s.planes.push(late);
+    const closed: Closures = new Map([[makeChannel(0, 0, 'purple'), 5]]);
+    expect(isDiverted(late, s, closed)).toBe(true);
+  });
+
+  it('ne touche ni à l’autre couleur, ni à l’autre ligne, ni à l’autre groupe', () => {
+    const s = seriesWith(['purple', 'blue']);
+    const closed: Closures = new Map([[makeChannel(0, 0, 'purple'), 0]]);
+    expect(isDiverted(s.planes[0], s, closed)).toBe(true); // ligne 0, violet
+    expect(isDiverted(s.planes[1], s, closed)).toBe(false); // ligne 1, bleu
+    expect(isDiverted({ ...s.planes[0], group: 1 }, s, closed)).toBe(false);
+    expect(isDiverted({ ...s.planes[0], line: 3 }, s, closed)).toBe(false);
+    expect(isDiverted({ ...s.planes[0], color: 'blue' }, s, closed)).toBe(false);
+  });
+});
+
+describe('vitesses hétérogènes', () => {
+  it('un avion rapide atteint la bande deux fois plus tôt', () => {
+    const slow: Plane = { id: 0, group: 0, line: 0, color: 'purple', spawnTick: 0, speed: 1 };
+    const fast: Plane = { ...slow, id: 1, speed: 2 };
+    expect(zoneEntryTick(slow, ZONE, COLS)).toBe(ZONE.start);
+    expect(zoneEntryTick(fast, ZONE, COLS)).toBe(Math.ceil(ZONE.start / 2));
+  });
+});
+
+describe('passation générée', () => {
+  const item = generate(4242, 3);
+
+  it('compte dix séries', () => {
+    expect(item.question.series).toHaveLength(SERIES_PER_PASSATION);
+    expect(SERIES_PER_PASSATION).toBe(10);
+  });
+
+  it('est déterministe à graine égale', () => {
+    const a = JSON.stringify(generate(7, 2).question);
+    const b = JSON.stringify(generate(7, 2).question);
+    expect(a).toBe(b);
+  });
+
+  /** Une série sans rien à fermer ne se joue pas : elle se regarde. */
+  it('force une décision dans chaque série', () => {
+    for (const s of item.question.series) {
+      expect(s.par, `série ${s.index}`).toBeGreaterThan(0);
+    }
+  });
+
+  it('densifie au fil des séries', () => {
+    const s = item.question.series;
+    const early = s.slice(0, 3).reduce((n, x) => n + x.planes.length, 0);
+    const late = s.slice(-3).reduce((n, x) => n + x.planes.length, 0);
+    expect(late).toBeGreaterThan(early);
+  });
+
+  /**
+   * Le `par` doit être une stratégie qui TIENT : sans cette vérification, on
+   * noterait le candidat contre une référence injouable.
+   */
+  it('la référence de fermetures évite tout accident, sur chaque série', () => {
+    for (const s of item.question.series) {
+      const closures = parClosures(s);
+      for (let t = 0; t <= s.durationTicks; t++) {
+        expect(violationAt(s, t, closures), `série ${s.index}, pas ${t}`).toBeNull();
       }
     }
   });
 
-  it('les zones grises tiennent dans le plateau et forment des paliers (escalier)', () => {
-    for (let level = 1; level <= LEVELS.length; level++) {
-      for (let seed = 0; seed < 60; seed++) {
-        const q = generate(seed, level).question;
-        for (const zone of q.zones) {
-          for (const span of zone.perLine) {
-            expect(span.start).toBeGreaterThan(0);
-            expect(span.end).toBeLessThan(COLS);
-            expect(span.end).toBeGreaterThan(span.start);
-          }
-          // Paliers : lignes 0-2 identiques, lignes 3-5 identiques.
-          expect(zone.perLine[0]).toEqual(zone.perLine[1]);
-          expect(zone.perLine[1]).toEqual(zone.perLine[2]);
-          expect(zone.perLine[3]).toEqual(zone.perLine[4]);
-          expect(zone.perLine[4]).toEqual(zone.perLine[5]);
-        }
-      }
+  it('ne ferme jamais plus de voies qu’il n’en existe', () => {
+    for (const s of item.question.series) {
+      expect(minimalClosures(s).length).toBeLessThanOrEqual(6 * 2 * 2);
     }
   });
 
-  it('le trafic est valide et contient les deux couleurs', () => {
-    for (let level = 1; level <= LEVELS.length; level++) {
-      for (let seed = 0; seed < 40; seed++) {
-        const q = generate(seed, level).question;
-        for (const p of q.planes) {
-          expect(p.line).toBeGreaterThanOrEqual(0);
-          expect(p.line).toBeLessThan(LINES_PER_GROUP);
-          expect(p.group).toBeLessThan(GROUPS);
-          expect(p.spawnTick).toBeGreaterThanOrEqual(0);
-          expect(p.spawnTick).toBeLessThan(q.durationTicks);
-        }
-        expect(q.planes.some((p) => p.color === 'blue')).toBe(true);
-        expect(q.planes.some((p) => p.color === 'purple')).toBe(true);
-      }
-    }
-  });
-
-  it('les bleus vont vers la gauche, les violets vers la droite', () => {
-    const q = generate(3, 3).question;
-    const blue = q.planes.find((p) => p.color === 'blue')!;
-    const purple = q.planes.find((p) => p.color === 'purple')!;
-    expect(planeCol(blue, blue.spawnTick, q.cols)).toBe(q.cols - 1);
-    expect(planeCol(blue, blue.spawnTick + 1, q.cols)).toBe(q.cols - 2);
-    expect(planeCol(purple, purple.spawnTick, q.cols)).toBe(0);
-    expect(planeCol(purple, purple.spawnTick + 1, q.cols)).toBe(1);
-  });
-
-  it('deux avions ne se superposent jamais sur une même trajectoire', () => {
-    for (let seed = 0; seed < 30; seed++) {
-      const q = generate(seed, 5).question;
-      for (let t = 0; t <= q.durationTicks; t++) {
-        const seen = new Set<string>();
-        for (const p of q.planes) {
-          if (!isOnBoard(p, t, q.cols)) continue;
-          const key = `${p.group}:${p.line}:${planeCol(p, t, q.cols)}:${p.color}`;
-          expect(seen.has(key)).toBe(false);
-          seen.add(key);
-        }
-      }
-    }
-  });
-
-  it("L'INVARIANT : la série est gagnable — les déroutages de référence (par) évitent tout accident", () => {
-    for (let level = 1; level <= LEVELS.length; level++) {
-      for (let seed = 0; seed < 60; seed++) {
-        const q = generate(seed, level).question;
-        const removed = new Set(minimalRemovals(q));
-        expect(removed.size).toBe(q.par);
-        for (let t = 0; t <= q.durationTicks; t++) {
-          expect(violationAt(q, t, removed)).toBeNull();
-        }
-      }
-    }
-  });
-
-  it('le par n’est pas gratuit : ne rien dérouter provoque bien un accident', () => {
-    let checked = 0;
-    for (let seed = 0; seed < 100 && checked < 20; seed++) {
-      const q = generate(seed, 4).question;
-      if (q.par === 0) continue;
-      checked++;
-      const none = new Set<number>();
-      let violated = false;
-      for (let t = 0; t <= q.durationTicks && !violated; t++) {
-        if (violationAt(q, t, none)) violated = true;
-      }
-      expect(violated).toBe(true);
-    }
-    expect(checked).toBeGreaterThan(0);
-  });
-
-  it('inGreyZone respecte la zone PROPRE À LA LIGNE (escalier)', () => {
-    const q = generate(9, 4).question;
-    for (const p of q.planes.slice(0, 40)) {
-      for (let t = p.spawnTick; t < p.spawnTick + q.cols; t += 2) {
-        const col = planeCol(p, t, q.cols);
-        const span = q.zones[p.group].perLine[p.line];
-        expect(inGreyZone(p, t, q)).toBe(col >= span.start && col <= span.end);
-      }
-    }
+  it('produit des avions dans les deux groupes et des deux couleurs', () => {
+    const all = item.question.series.flatMap((s) => s.planes);
+    expect(new Set(all.map((p) => p.group)).size).toBe(2);
+    expect(new Set(all.map((p) => p.color)).size).toBe(2);
+    expect(all.some((p) => p.speed === 2)).toBe(true);
   });
 });

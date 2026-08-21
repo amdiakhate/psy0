@@ -13,7 +13,7 @@ export const airways: ExerciseModule<AirwaysQuestion, string> = {
   pilotestUrl: 'https://www.pilotest.com/fr/tests/airways',
   name: 'Airways',
   description:
-    'Gestion de flux : les bleus vont à gauche, les violets à droite. Déroute le moins d’avions possible sans jamais dépasser 4 avions (dont 2 bleus max) dans la zone grise de chaque groupe — sinon accident.',
+    'Optimisation de flux, 10 séries. Les bleus vont à gauche, les violets à droite. Ferme le moins de voies possible sans jamais dépasser 4 avions (dont 2 bleus) dans la bande grise d’un groupe — sinon accident. Chaque fermeture coûte des points.',
   families: ['Attention', 'Intellectuelle'],
   levels: LEVELS.length,
   defaultItemSeconds: 45,

@@ -162,6 +162,85 @@ cachent d'autres à la projection, si bien que deux orientations très éloigné
 voire un empilement et son miroir — peuvent se dessiner presque pareil. L'item
 serait alors indécidable, et le candidat chercherait une différence inexistante.
 
+## Airways — règles officielles (source `pilotest.com/fr/tests/airways`)
+
+Test **remanié le 17/12/2019**, **calibration du 10/11/2022**. Cette section fait autorité :
+l'implémentation doit s'y conformer point par point.
+
+**Airways n'est pas un jeu d'esquive, c'est un problème d'optimisation de flux.** Le candidat ne
+pilote aucun avion et n'en écarte aucun individuellement : il **ferme des voies**, et il paie
+pour ça.
+
+### Plateau
+
+- **2 groupes de 6 lignes horizontales** (airways). Chaque avion est un triangle qui avance seul
+  sur sa ligne.
+- Les **BLEUS vont vers la GAUCHE**, les **VIOLETS vers la DROITE**.
+- **Vitesses hétérogènes** : simple chevron = normal, **double chevron = rapide**.
+- Chaque groupe possède une **zone grise** — une bande centrale couvrant plusieurs lignes — et
+  **deux compteurs affichés à l'EXTÉRIEUR du groupe** :
+  - total d'avions dans la zone grise, **max 4** ;
+  - avions **bleus** dans la zone grise, **max 2**.
+
+### Accident
+
+À l'instant où un compteur dépasse sa limite — **5 avions au total**, ou **3 bleus** — les avions
+du groupe sont **stoppés** et **un accident est compté pour la série**.
+
+### Actions
+
+- Des **boutons de couleur en extrémité de ligne** déroutent les avions de **cette couleur** sur
+  les lignes concernées. **Pas de clic sur les avions individuels.**
+- Un **déroutement est DÉFINITIF** : les avions de cette couleur n'arrivent plus sur ces lignes.
+- Un **bouton global** déroute les **6 lignes d'un groupe** d'un coup.
+
+### Objectif et barème
+
+Zéro accident avec le **minimum d'avions déroutés**. Le score pénalise chaque déroutement
+(référence candidats : **le bouton global coûte ~5 points par usage**) et **sanctionne lourdement
+l'accident**.
+
+Une passation = **10 SÉRIES** successives. De nouvelles **vagues** d'avions apparaissent en cours
+de série : le plateau n'est pas entièrement lisible au départ.
+
+### Notation
+
+Pourcentage de réussite **global sur la passation**, mappé sur la stanine officielle :
+
+| % | 25 | 35 | 50 | 65 | 80 | 90 | 95 | 100 |
+|---|----|----|----|----|----|----|----|-----|
+| classe | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |
+
+Afficher **% et classe**. Le **100 % doit être pratiquement inatteignable** : les séries doivent
+parfois FORCER des déroutements — c'est documenté, on ne peut pas tout laisser passer.
+
+### Générateur
+
+Séries **seedées**, **densité croissante** au fil des 10 séries, et des situations où **l'inaction
+produit un dépassement certain** — pour entraîner l'anticipation des compteurs, pas le réflexe.
+
+### Mécaniques RETIRÉES de l'app (elles n'existent pas dans l'officiel)
+
+- le clic sur un avion individuel ;
+- les sorties fermées « ✕ » en bout de ligne ;
+- la lecture des zones comme des obstacles à éviter ;
+- la zone grise « en escalier », décalée entre les lignes 1-3 et 4-6.
+
+### Deux points que la source ne tranche pas — choix assumés
+
+1. **Un avion déjà DANS la bande grise n'est pas emporté par la fermeture de sa voie.** La source
+   dit que le déroutement vaut pour les arrivées ; elle ne dit rien des avions engagés. On retient
+   qu'ils poursuivent : sans cela, on rattraperait un compteur au rouge par un simple clic, et le
+   test récompenserait le réflexe alors qu'il est explicitement conçu pour entraîner
+   **l'anticipation des compteurs**.
+2. **Un accident ne gèle que son groupe** ; l'autre continue jusqu'au terme de la série. C'est la
+   lecture littérale de « les avions **du groupe** sont stoppés ». L'accident reste compté **une
+   fois** pour la série, quel que soit le nombre de groupes touchés.
+
+Barème implémenté (`src/exercises/airways/scoring.ts`, testé) : 100 points par série, **−1 par voie
+fermée**, **−5 par appui sur le bouton global**, **−50 en cas d'accident**. Le global vaut donc
+exactement cinq fermetures : perdant à quatre, à l'équilibre à cinq, gagnant à six.
+
 ## Culture aéronautique — l'épreuve hors des 16 (relevé du 20/08/2026)
 
 Source : l'article Pilotest <https://blog.pilotest.com/culture-aeronautique-cadets/> et les
@@ -216,7 +295,7 @@ npm run verify
 ## Notes transverses
 
 - Notation en **classes Stanine 1-9** ; viser la classe 7 sur chaque test.
-- Airways a été **remanié le 17/12/2019** pour tenir compte de la **stratégie** (nombre d'avions déroutés), pas seulement de la survie. Un candidat rapporte un **demi-point** pour une série sauvée avec la grosse croix (3 avions déroutés au lieu d'un).
+- Airways a été **remanié le 17/12/2019** pour tenir compte de la **stratégie** (nombre de voies fermées), pas seulement de la survie — voir la section Airways ci-dessus, qui fait autorité.
 - Air France modifie légèrement le programme d'une session à l'autre : en janvier 2020, 85 % des tests étaient identiques à ceux de 2019 ; les **formes glissées** et les **cubes à plier-déplier** ont été ajoutés cette année-là.
 - Les candidats **PRO** passent les mêmes tests, sans l'anglais ni la culture générale aéronautique.
 

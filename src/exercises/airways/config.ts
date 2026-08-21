@@ -1,44 +1,60 @@
+/**
+ * Airways — le test tel qu'il est, pas tel qu'on l'imagine.
+ *
+ * L'erreur de la version précédente était de modèle, pas de réglage : elle
+ * traitait la zone grise comme un obstacle à éviter et le joueur comme un
+ * pilote qui écarte les avions un par un. Airways n'est pas un jeu d'esquive,
+ * c'est un problème d'optimisation de flux. On ne clique pas sur un avion ; on
+ * FERME une voie, définitivement, et on paie pour ça. Le score ne récompense
+ * pas la survie, il récompense la survie au moindre coût.
+ *
+ * Source : pilotest.com/fr/tests/airways (test remanié le 17/12/2019,
+ * calibration du 10/11/2022). Voir REGLES-OFFICIELLES.md.
+ */
+
 export interface AirwaysLevel {
-  /** Durée d'un pas de simulation (ms) — les avions avancent d'une case par pas. */
+  /** Durée d'un pas de simulation (ms). */
   tickMs: number;
   /** Durée d'une série en pas. */
   durationTicks: number;
-  /** Probabilité d'apparition d'un avion par ligne et par pas. */
+  /** Probabilité d'apparition par ligne et par pas, à la PREMIÈRE série. */
   spawnRate: number;
-  /** Décalage possible de la zone grise entre les lignes 0-2 et 3-5 (effet escalier). */
-  maxStagger: number;
+  /** Part d'avions rapides (double chevron). */
+  fastShare: number;
 }
 
 /** Largeur du plateau en cases. */
 export const COLS = 34;
-/** Deux blocs de 6 lignes, comme au test. */
+/** Deux groupes de 6 lignes, comme au test. */
 export const GROUPS = 2;
 export const LINES_PER_GROUP = 6;
-/** Critères de fluidité du test : dans la zone grise d'un bloc, jamais plus de… */
+
+/** Compteurs affichés à l'extérieur du groupe : au-delà, accident. */
 export const MAX_TOTAL = 4;
 export const MAX_BLUE = 2;
 
+/** Une passation = 10 séries successives. C'est l'unité de score. */
+export const SERIES_PER_PASSATION = 10;
+
 /**
- * Densité calibrée sur Pilotest, où le plateau est nettement plus chargé.
- *
- * L'ancienne échelle démarrait à 0,045 : une douzaine d'avions simultanés sur
- * douze lignes, soit un par ligne, et 0,9 déroutage nécessaire par série. Il n'y
- * avait donc quasiment rien à décider — or c'est la DÉCISION que le test note
- * depuis 2019, pas la survie.
- *
- * La borne haute n'est pas libre : la série doit rester gagnable. C'est un test
- * qui le vérifie, en rejouant les déroutages de référence sur chaque pas.
- *
- * Contrepartie mesurée, et inévitable : le « par » — le minimum de déroutages
- * pour survivre — monte avec la densité, de 0,9 à 3,7 au niveau 1. C'est de la
- * géométrie, pas un réglage : plus d'avions convergent vers la zone grise, plus
- * il faut en écarter. Un plateau chargé où presque rien ne serait à dérouter
- * n'existe pas.
+ * Densité croissante d'une série à l'autre : la dixième doit être infaisable
+ * sans fermer plusieurs voies. C'est ce qui rend le 100 % — donc la classe 9 —
+ * pratiquement inatteignable, comme au test.
  */
+export const DENSITY_RAMP = 0.055;
+
+/**
+ * Vitesses hétérogènes : un avion rapide traverse la zone en deux fois moins de
+ * temps. Ce n'est pas cosmétique — c'est ce qui interdit de compter les avions
+ * et force à lire les TEMPS d'arrivée.
+ */
+export const FAST_SPEED = 2;
+export const NORMAL_SPEED = 1;
+
 export const LEVELS: AirwaysLevel[] = [
-  { tickMs: 850, durationTicks: 60, spawnRate: 0.07, maxStagger: 0 },
-  { tickMs: 760, durationTicks: 65, spawnRate: 0.08, maxStagger: 3 },
-  { tickMs: 680, durationTicks: 70, spawnRate: 0.09, maxStagger: 3 },
-  { tickMs: 600, durationTicks: 75, spawnRate: 0.1, maxStagger: 4 },
-  { tickMs: 520, durationTicks: 80, spawnRate: 0.11, maxStagger: 4 },
+  { tickMs: 820, durationTicks: 34, spawnRate: 0.055, fastShare: 0.15 },
+  { tickMs: 740, durationTicks: 36, spawnRate: 0.065, fastShare: 0.22 },
+  { tickMs: 660, durationTicks: 38, spawnRate: 0.075, fastShare: 0.3 },
+  { tickMs: 580, durationTicks: 40, spawnRate: 0.085, fastShare: 0.36 },
+  { tickMs: 520, durationTicks: 42, spawnRate: 0.095, fastShare: 0.42 },
 ];
