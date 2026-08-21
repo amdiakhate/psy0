@@ -10,6 +10,7 @@ import { LEVELS } from './config';
 
 export const objects3d: ExerciseModule<Objects3dQuestion, Objects3dAnswer> = {
   id: 'objects-3d',
+  pilotestUrl: 'https://www.pilotest.com/fr/tests/objets3d',
   name: 'Objets 3D',
   description:
     'Une scène d’objets posés dans le désert : retrouve lequel des 8 points de vue disposés en cercle l’a produite.',

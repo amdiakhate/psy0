@@ -9,6 +9,7 @@ import { LEVELS } from './config';
 
 export const cubes: ExerciseModule<CubesQuestion, CubesAnswer> = {
   id: 'cubes',
+  pilotestUrl: 'https://www.pilotest.com/fr/tests/pliage',
   name: 'Cubes 2D/3D',
   description:
     'Un patron de cube complet à gauche, un patron à faces manquantes à droite : glisse les bonnes faces et tourne-les d’un quart de tour pour reconstituer le même cube.',

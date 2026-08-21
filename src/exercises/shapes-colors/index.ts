@@ -10,6 +10,7 @@ import { LEVELS } from './config';
 
 export const shapesColors: ExerciseModule<ShapesColorsQuestion, ShapesColorsAnswer> = {
   id: 'shapes-colors',
+  pilotestUrl: 'https://www.pilotest.com/fr/tests/formes',
   name: 'Formes et couleurs',
   description:
     'Deux règles en cascade annoncées avant la série : le remplissage (vide/rempli) décide quel critère — couleur ou forme — commande la touche N ou X. 30 formes défilent, chacune visible 0,5 s seulement : tu réponds sur l’écran vide.',

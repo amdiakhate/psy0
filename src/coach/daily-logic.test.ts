@@ -1,16 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  GROUPS,
-  INITIAL_DAILY_STATE,
-  PSYCHO_DAILY_CAP_SEC,
-  advanceAfterMorning,
-  clampPsychomotor,
-  decideDaily,
-  isAfterBedtime,
-  parisMoment,
-  psychoUsedSec,
-  recordEvening,
-} from './daily-logic';
+import { GROUPS, INITIAL_DAILY_STATE, PSYCHO_DAILY_CAP_SEC, advanceAfterMorning, clampPsychomotor, decideDaily, isAfterBedtime, parisMoment, psychoUsedSec, recordEvening, morningPriorities, groupForMorning } from './daily-logic';
 import type { DailyState } from './daily-logic';
 import type { ExerciseId, SessionBlock } from '../core/types';
 
@@ -116,7 +105,7 @@ describe('decideDaily — montée en charge et rotation', () => {
         priorities,
         state: { ...INITIAL_DAILY_STATE, priorityCursor: cursor },
       });
-      if (d.kind === 'buildup-morning') expect(d.priority).toBe(expected);
+      if (d.kind === 'buildup-morning') expect(d.priorities).toEqual([expected]);
       else expect.unreachable();
     }
   });
@@ -128,16 +117,20 @@ describe('decideDaily — montée en charge et rotation', () => {
       state: { ...INITIAL_DAILY_STATE, priorityCursor: 0, groupCursor: 1 },
     });
     if (d.kind === 'buildup-morning') {
-      expect(d.priority).toBe('cubes');
+      expect(d.priorities).toEqual(['cubes']);
       expect(d.groupIndex).toBe(2);
       expect(GROUPS[d.groupIndex].members).not.toContain('cubes');
     } else expect.unreachable();
   });
 
-  it('sans priorités configurées, retombe sur le plus faible', () => {
-    const d = decide('2026-08-19T09:00:00', { weakestOrder: ['star-words', ...ALL] });
-    if (d.kind === 'buildup-morning') expect(d.priority).toBe('star-words');
-    else expect.unreachable();
+  it('sans priorités configurées, répartit sur les trois plus faibles', () => {
+    const d = decide('2026-08-19T09:00:00', {
+      weakestOrder: ['star-words', 'airways', 'marbles', ...ALL],
+    });
+    if (d.kind === 'buildup-morning') {
+      expect(d.priorities).toEqual(['star-words', 'airways', 'marbles']);
+      expect(d.degraded).toBe(true);
+    } else expect.unreachable();
   });
 
   it('matin déjà complété → done-today (pas de double session)', () => {
@@ -244,5 +237,81 @@ describe('refaire la séance du jour', () => {
     expect(apresPremier.priorityCursor).toBe(2);
     // Rejouer la séance le même jour ne doit rien décaler.
     expect(advanceAfterMorning(apresPremier, 2, day)).toEqual(apresPremier);
+  });
+});
+
+describe('priorités du matin — mode dégradé', () => {
+  const ALL_IDS: ExerciseId[] = [...ALL];
+
+  it('une seule priorité quand P1/P2/P3 sont saisies', () => {
+    const out = morningPriorities({
+      priorities: ['cubes', 'n-back', 'calc-grid'],
+      priorityCursor: 1,
+      weakestOrder: ['star-words', 'airways', 'marbles'],
+      allExercises: ALL_IDS,
+    });
+    expect(out).toEqual({ list: ['n-back'], degraded: false });
+  });
+
+  /**
+   * Le cœur du correctif : sans consigne, on ne mise pas 24 minutes sur un
+   * classement établi parfois sur un seul essai à froid. Trois exercices, une
+   * passe chacun — le pire cas devient « un tiers mal ciblé ».
+   */
+  it('répartit sur les trois plus faibles quand rien n’est saisi', () => {
+    const out = morningPriorities({
+      priorities: null,
+      priorityCursor: 0,
+      weakestOrder: ['airways', 'star-words', 'marbles', 'cubes'],
+      allExercises: ALL_IDS,
+    });
+    expect(out.list).toEqual(['airways', 'star-words', 'marbles']);
+    expect(out.degraded).toBe(true);
+  });
+
+  it('ne concentre jamais les trois passes sur un seul exercice en dégradé', () => {
+    for (const cursor of [0, 1, 2, 3]) {
+      const out = morningPriorities({
+        priorities: null,
+        priorityCursor: cursor,
+        weakestOrder: ['airways', 'star-words', 'marbles', 'cubes'],
+        allExercises: ALL_IDS,
+      });
+      expect(new Set(out.list).size, `curseur ${cursor}`).toBe(3);
+    }
+  });
+
+  it('n’envoie jamais le Psychomoteur en priorité (il a son quota dédié)', () => {
+    const out = morningPriorities({
+      priorities: null,
+      priorityCursor: 0,
+      weakestOrder: ['psychomotor', 'airways', 'star-words', 'marbles'],
+      allExercises: ALL_IDS,
+    });
+    expect(out.list).not.toContain('psychomotor');
+    expect(out.list).toHaveLength(3);
+  });
+
+  it('complète avec le registre quand le classement est incomplet', () => {
+    const out = morningPriorities({
+      priorities: null,
+      priorityCursor: 0,
+      weakestOrder: ['airways'],
+      allExercises: ALL_IDS,
+    });
+    expect(out.list).toHaveLength(3);
+    expect(out.list[0]).toBe('airways');
+    expect(new Set(out.list).size).toBe(3);
+  });
+
+  it('choisit un groupe de rotation qui ne recoupe aucune priorité', () => {
+    // cubes ∈ G2, marbles ∈ G3, airways ∈ G4 : le premier libre depuis G2 est G5.
+    const g = groupForMorning(1, ['cubes', 'marbles', 'airways']);
+    expect(GROUPS[g].members.some((m) => ['cubes', 'marbles', 'airways'].includes(m))).toBe(false);
+  });
+
+  it('rend le curseur plutôt que rien si tous les groupes recoupent', () => {
+    const everywhere = GROUPS.flatMap((g) => g.members);
+    expect(groupForMorning(2, everywhere)).toBe(2);
   });
 });

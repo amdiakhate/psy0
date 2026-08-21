@@ -25,6 +25,15 @@ export interface DayLogEntry {
   role?: BlockRole;
   /** Nombre de blocs joués sur cet exercice (les priorités en ont plusieurs). */
   passes?: number;
+  /**
+   * Créneau fait sur Pilotest et saisi à la main. À distinguer d'une mesure
+   * locale : les deux n'ont ni la même échelle ni la même fiabilité, et les
+   * confondre dans l'export reviendrait à comparer un chiffre déclaré à un
+   * chiffre mesuré sans le dire.
+   */
+  external?: boolean;
+  /** Classe Pilotest (1-9) relevée sur un créneau externe. */
+  pilotestClass?: number;
 }
 
 export function getLogs(): DayLogEntry[] {
@@ -86,7 +95,10 @@ export function formatDayLog(ctx: DayLogContext): string {
     const parts = [
       e.role ? ROLE_LABEL[e.role] : 'SÉANCE',
       name,
-      `niveau ${e.level}`,
+      // Un créneau externe porte une classe officielle, pas un niveau local.
+      // Le préfixe le dit, pour qu'on ne lise pas « niveau 1 » là où il y a
+      // « classe 1 » — un chiffre identique qui ne veut pas dire la même chose.
+      e.external ? `PILOTEST classe ${e.pilotestClass ?? e.level}` : `niveau ${e.level}`,
       `${e.errPct}% err`,
     ];
     if (e.passes !== undefined && e.passes > 1) parts.push(`${e.passes} passes`);

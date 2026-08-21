@@ -1,6 +1,6 @@
 import { createContext, useContext, useState } from 'react';
 import type { SessionPlan } from '../core/types';
-import { guardPsycho } from '../coach/daily';
+import { finalizePlan } from '../coach/daily';
 
 interface SessionCtx {
   active: SessionPlan | null;
@@ -23,10 +23,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [active, setActive] = useState<SessionPlan | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Tout lancement passe par le garde-fou : cap dur Psychomoteur 12 min/jour,
-  // quel que soit le mode (libre, sprint, guidée, simulation, session du jour).
+  // Tout lancement passe par le garde-fou : cap dur Psychomoteur 12 min/jour et
+  // marquage des créneaux non calibrés, quel que soit le mode (libre, sprint,
+  // guidée, simulation, session du jour). C'est le seul point de passage — un
+  // plan composé ailleurs y arrive quand même.
   const start = (plan: SessionPlan) => {
-    const guarded = guardPsycho(plan);
+    const guarded = finalizePlan(plan);
     if (guarded.plan === null) {
       setNotice(guarded.note ?? 'Session refusée.');
       return;

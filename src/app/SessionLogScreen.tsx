@@ -3,17 +3,10 @@ import type { SessionPlan, SessionRecord } from '../core/types';
 import type { BlockRole, ExerciseId } from '../core/types';
 import { FEELINGS, saveLogEntries } from '../core/logs';
 import type { Feeling } from '../core/logs';
+import { buildLogRows } from '../core/log-rows';
+import type { ExternalEntry } from '../coach/external';
 import { getExercise } from '../exercises';
 import { parisMoment } from '../coach/daily-logic';
-
-interface Row {
-  exercise: ExerciseId;
-  level: number;
-  errPct: number;
-  /** Rôle tenu dans la séance, repris tel quel dans l'export du log. */
-  role?: BlockRole;
-  passes: number;
-}
 
 const ROLE_BADGE: Record<BlockRole, string> = {
   warmup: 'échauffement',
@@ -29,39 +22,26 @@ const ROLE_BADGE: Record<BlockRole, string> = {
 export function SessionLogScreen({
   record,
   plan,
+  externals = [],
   onDone,
 }: {
   record: SessionRecord;
   plan: SessionPlan;
+  /** Créneaux faits sur Pilotest et saisis à la main pendant la séance. */
+  externals?: ExternalEntry[];
   onDone: () => void;
 }) {
-  const rows = useMemo<Row[]>(() => {
-    // Le rôle vient du PLAN (ce qui était prévu), les passes du RECORD
-    // (ce qui a réellement été joué — une séance coupée en a moins).
-    const roleOf = new Map<ExerciseId, BlockRole>();
-    for (const b of plan.blocks) if (b.role) roleOf.set(b.exercise, b.role);
-
-    const byExercise = new Map<ExerciseId, { items: number; correct: number; level: number; passes: number }>();
-    for (const b of record.blocks) {
-      if (b.items === 0) continue;
-      const s = byExercise.get(b.exercise) ?? { items: 0, correct: 0, level: 1, passes: 0 };
-      s.items += b.items;
-      s.correct += b.correct;
-      s.level = Math.max(s.level, b.endLevel);
-      s.passes += 1;
-      byExercise.set(b.exercise, s);
-    }
-    return [...byExercise.entries()].map(([exercise, s]) => ({
-      exercise,
-      level: s.level,
-      errPct: Math.round(100 * (1 - s.correct / s.items)),
-      role: roleOf.get(exercise),
-      passes: s.passes,
-    }));
-  }, [record, plan]);
+  const rows = useMemo(
+    () => buildLogRows({ played: record.blocks, planBlocks: plan.blocks, externals }),
+    [record, plan, externals],
+  );
 
   const [feelings, setFeelings] = useState<Partial<Record<ExerciseId, Feeling>>>({});
-  const [notes, setNotes] = useState<Partial<Record<ExerciseId, string>>>({});
+  // Les notes des créneaux externes sont déjà saisies : on les pré-remplit
+  // plutôt que de demander deux fois la même chose.
+  const [notes, setNotes] = useState<Partial<Record<ExerciseId, string>>>(() =>
+    Object.fromEntries(externals.filter((e) => e.note).map((e) => [e.exercise, e.note!])),
+  );
 
   const complete = rows.every((r) => feelings[r.exercise] !== undefined);
 
@@ -79,6 +59,8 @@ export function SessionLogScreen({
         note: notes[r.exercise]?.trim() || undefined,
         role: r.role,
         passes: r.passes,
+        external: r.external,
+        pilotestClass: r.pilotestClass,
       })),
     );
     onDone();
@@ -105,7 +87,12 @@ export function SessionLogScreen({
                   )}
                 </p>
                 <p className="text-sm text-zinc-500">
-                  niveau {r.level} · <span className={r.errPct > 30 ? 'text-red-400' : 'text-zinc-400'}>{r.errPct}% err</span>
+                  {r.external ? (
+                    <span className="text-amber-400">Pilotest · classe {r.pilotestClass}</span>
+                  ) : (
+                    `niveau ${r.level}`
+                  )}{' '}
+                  · <span className={r.errPct > 30 ? 'text-red-400' : 'text-zinc-400'}>{r.errPct}% err</span>
                 </p>
               </div>
               <div className="mt-2 flex flex-wrap gap-2">

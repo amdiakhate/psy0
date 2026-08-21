@@ -10,6 +10,7 @@ import { LEVELS } from './config';
 
 export const airways: ExerciseModule<AirwaysQuestion, string> = {
   id: 'airways',
+  pilotestUrl: 'https://www.pilotest.com/fr/tests/airways',
   name: 'Airways',
   description:
     'Gestion de flux : les bleus vont à gauche, les violets à droite. Déroute le moins d’avions possible sans jamais dépasser 4 avions (dont 2 bleus max) dans la zone grise de chaque groupe — sinon accident.',

@@ -12,6 +12,7 @@ import { LEVELS } from './config';
 
 export const stacking: ExerciseModule<StackingQuestion, StackingAnswer> = {
   id: 'stacking',
+  pilotestUrl: 'https://www.pilotest.com/fr/tests/empilements',
   name: 'Empilements',
   description:
     'Trois empilements de cubes : deux sont identiques à une rotation près, le troisième a subi une symétrie. Trouve le symétrique.',

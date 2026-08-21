@@ -22,6 +22,8 @@ import { getPrefs } from '../core/prefs';
 import { markDirty } from '../sync/sync';
 import { exportDayLog } from '../core/logs';
 import { SessionLogScreen } from './SessionLogScreen';
+import { ExternalBlock } from './ExternalBlock';
+import type { ExternalEntry } from '../coach/external';
 
 type Phase = 'briefing' | 'interstitial' | 'halfway' | 'running' | 'log' | 'debrief';
 
@@ -66,6 +68,8 @@ export function SessionRunner({
   const posInSession = useRef(0);
   /** Posé par le BlockRunner actif : permet de récupérer les stats partielles sur Échap. */
   const partialCollector = useRef<(() => BlockResult) | null>(null);
+  /** Créneaux faits sur Pilotest et saisis à la main pendant la séance. */
+  const externals = useRef<ExternalEntry[]>([]);
 
   const block = plan.blocks[blockIndex];
   const module_ = block ? getExercise(block.exercise) : null;
@@ -91,7 +95,10 @@ export function SessionRunner({
     markDirty();
     setRecord(rec);
     // Sessions du matin : log obligatoire avant le débriefing.
-    const played = rec.blocks.some((b) => b.items > 0);
+    // Une séance entièrement externe n'a joué aucun item ici — mais elle a
+    // produit des mesures. Sans cette seconde condition, la saisie manuelle
+    // partait à la poubelle au moment précis où elle est la seule donnée fiable.
+    const played = rec.blocks.some((b) => b.items > 0) || externals.current.length > 0;
     setPhase(plan.meta?.requiresLog && played ? 'log' : 'debrief');
   }, [plan, sessionId, sessionStart]);
 
@@ -128,28 +135,46 @@ export function SessionRunner({
     [plan, sessionStart],
   );
 
+  /**
+   * Passe au bloc suivant, ou clôt la séance. Partagé par les blocs joués ici
+   * et par les créneaux faits sur Pilotest : ces derniers ne produisent pas de
+   * `BlockResult`, mais ils occupent une place dans le plan et doivent faire
+   * avancer la séance exactement pareil — autosave comprise.
+   */
+  const advanceBlock = useCallback(() => {
+    // Le journal des items part avec : sans ça, une reprise repartirait avec
+    // des compteurs à jour mais un historique amputé du dernier bloc.
+    flushNow();
+    if (blockIndex + 1 < plan.blocks.length) {
+      autosave(blockIndex + 1);
+      setBlockIndex(blockIndex + 1);
+      // Bascule de mise au point : déclenche la coupure dès le premier bloc,
+      // pour valider l'écran sans jouer 45 minutes.
+      const cutAt = fastHalfway && plan.meta?.halfwayIndex !== undefined ? 1 : plan.meta?.halfwayIndex;
+      setPhase(cutAt === blockIndex + 1 ? 'halfway' : 'interstitial');
+    } else {
+      // Séance terminée : plus rien à reprendre.
+      clearSuspended();
+      finishSession();
+    }
+  }, [blockIndex, plan.blocks.length, plan.meta?.halfwayIndex, fastHalfway, finishSession, autosave]);
+
   const finishBlock = useCallback(
     (result: BlockResult) => {
       partialCollector.current = null; // le bloc est comptabilisé, pas de double collecte sur Échap
       blockResults.current.push(result);
       saveLevel(result.exercise, result.endLevel);
-      // Le journal des items part avec : sans ça, une reprise repartirait avec
-      // des compteurs à jour mais un historique amputé du dernier bloc.
-      flushNow();
-      if (blockIndex + 1 < plan.blocks.length) {
-        autosave(blockIndex + 1);
-        setBlockIndex(blockIndex + 1);
-        // Bascule de mise au point : déclenche la coupure dès le premier bloc,
-        // pour valider l'écran sans jouer 45 minutes.
-        const cutAt = fastHalfway && plan.meta?.halfwayIndex !== undefined ? 1 : plan.meta?.halfwayIndex;
-        setPhase(cutAt === blockIndex + 1 ? 'halfway' : 'interstitial');
-      } else {
-        // Séance terminée : plus rien à reprendre.
-        clearSuspended();
-        finishSession();
-      }
+      advanceBlock();
     },
-    [blockIndex, plan.blocks.length, plan.meta?.halfwayIndex, fastHalfway, finishSession, autosave],
+    [advanceBlock],
+  );
+
+  const finishExternal = useCallback(
+    (entry: ExternalEntry | null) => {
+      if (entry) externals.current.push(entry);
+      advanceBlock();
+    },
+    [advanceBlock],
   );
 
   /**
@@ -198,6 +223,14 @@ export function SessionRunner({
     return (
       <Screen>
         <h2 className="text-xl font-semibold text-sky-400">Briefing</h2>
+        {/* Une séance composée sans consigne reste utile ; la faire passer pour
+            une séance ciblée, non. Le bandeau est au-dessus du briefing parce
+            qu'il conditionne la lecture de tout ce qui suit. */}
+        {plan.meta?.degraded && (
+          <p className="mt-4 rounded-lg border border-amber-700 bg-amber-950/30 p-4 text-amber-200">
+            {plan.meta.degraded}
+          </p>
+        )}
         <div className="mt-4 space-y-2 text-lg">
           {plan.briefing?.map((line, i) => <p key={i}>{line}</p>)}
         </div>
@@ -258,8 +291,25 @@ export function SessionRunner({
             : `${block.itemCount} items`}
           {block.tagFilter ? ` · drill ciblé : ${block.tagFilter}` : ''}
         </p>
-        <Hint>Espace pour démarrer</Hint>
+        {block.external && (
+          <p className="mt-3 rounded-lg border border-amber-800/60 bg-amber-950/20 px-3 py-2 text-sm text-amber-300">
+            Créneau à faire sur Pilotest — l’exercice ne se lancera pas ici.
+          </p>
+        )}
+        <Hint>Espace pour {block.external ? 'ouvrir le créneau' : 'démarrer'}</Hint>
       </Screen>
+    );
+  }
+
+  if (phase === 'running' && block && block.external) {
+    return (
+      <ExternalBlock
+        key={blockIndex}
+        exercise={block.exercise}
+        minutes={Math.round((block.durationSec ?? 0) / 60)}
+        onDone={(entry) => finishExternal(entry)}
+        onSkip={() => finishExternal(null)}
+      />
     );
   }
 
@@ -279,7 +329,14 @@ export function SessionRunner({
   }
 
   if (phase === 'log' && record) {
-    return <SessionLogScreen record={record} plan={plan} onDone={() => setPhase('debrief')} />;
+    return (
+      <SessionLogScreen
+        record={record}
+        plan={plan}
+        externals={externals.current}
+        onDone={() => setPhase('debrief')}
+      />
+    );
   }
 
   if (phase === 'debrief' && record) {

@@ -46,6 +46,7 @@ export default function Settings() {
         <ThemeSection />
         <PrioritiesSection />
         <PilotestSection />
+      <ExternalDrillSection />
         <DayLogSection />
         <FreeTrainingSection />
         <ExplainSection />
@@ -423,6 +424,73 @@ function PilotestSection() {
           </label>
         ))}
       </div>
+    </section>
+  );
+}
+
+/**
+ * Exercices dont le générateur local n'est pas jugé représentatif de Pilotest.
+ *
+ * Ce n'est pas un aveu de paresse, c'est une précaution : un score obtenu sur
+ * un générateur mal étalonné ne se contente pas d'être faux, il entre dans le
+ * classement des faiblesses et détourne les priorités du matin. Mieux vaut
+ * réserver le créneau et aller mesurer à la source.
+ */
+function ExternalDrillSection() {
+  const [prefs, setPrefs] = useState(getPrefs);
+
+  const toggle = (id: ExerciseId) => {
+    // Toujours repartir des prefs fraîches : une autre section a pu écrire.
+    const fresh = getPrefs();
+    const next = {
+      ...fresh,
+      externalDrill: { ...fresh.externalDrill, [id]: !fresh.externalDrill[id] },
+    };
+    setPrefs(next);
+    savePrefs(next);
+  };
+
+  const active = EXERCISES.filter((ex) => prefs.externalDrill[ex.id]);
+
+  return (
+    <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+      <h3 className="font-semibold">Drill externe — à faire sur Pilotest</h3>
+      <p className="mt-1 text-sm text-zinc-400">
+        Coche un exercice dont le générateur d’ici n’est pas calé sur l’original. Le coach continue
+        de lui réserver son créneau dans la séance, mais au lieu de le lancer il t’envoie le faire
+        sur Pilotest et te demande la classe obtenue au retour. Le créneau apparaît dans le log du
+        jour comme mesure officielle, pas comme mesure locale.
+      </p>
+      <div className="mt-3 grid gap-x-4 gap-y-1 sm:grid-cols-2">
+        {EXERCISES.map((ex) => (
+          <label
+            key={ex.id}
+            className="flex items-center gap-2 rounded-md px-1 py-1 text-sm text-zinc-300 hover:bg-zinc-900"
+          >
+            <input
+              type="checkbox"
+              checked={prefs.externalDrill[ex.id] === true}
+              onChange={() => toggle(ex.id)}
+              className="h-4 w-4 shrink-0 accent-amber-600"
+            />
+            <span className="truncate">{ex.name}</span>
+            {!ex.pilotestUrl && (
+              <span
+                title="Pas de lien direct vérifié : le créneau renverra vers la page de préparation cadets."
+                className="shrink-0 text-xs text-zinc-600"
+              >
+                lien générique
+              </span>
+            )}
+          </label>
+        ))}
+      </div>
+      {active.length > 0 && (
+        <p className="mt-3 rounded-lg border border-amber-800/60 bg-amber-950/20 p-3 text-sm text-amber-300">
+          {active.length} exercice{active.length > 1 ? 's' : ''} en drill externe :{' '}
+          {active.map((ex) => ex.name).join(', ')}. Ces créneaux ne se joueront plus ici.
+        </p>
+      )}
     </section>
   );
 }

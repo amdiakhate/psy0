@@ -7,6 +7,7 @@ import { rankWeakest } from '../analysis/scores';
 import { weakestTagOf } from '../analysis/errorTaxonomy';
 import { composeSimulation } from './simulation';
 import { composeGuided } from './composer';
+import { markExternalPlan } from './external';
 import { computeHalfwayIndex } from './composer-logic';
 import { LOG_RESERVE_SEC, composeMorningBlocks, prioritySecondsOf } from './morning-logic';
 import type { MorningDuration, MorningPriority } from './morning-logic';
@@ -138,7 +139,7 @@ function buildOffer(
     case 'discovery-morning': {
       if (decision.toDiscover.length === 0) {
         // Tout est découvert : session guidée classique de 30 min.
-        const plan = guardPsycho({ ...composeGuided(30), meta: { daily: 'morning', requiresLog: true } });
+        const plan = finalizePlan({ ...composeGuided(30), meta: { daily: 'morning', requiresLog: true } });
         return {
           decision, moment, plan: plan.plan, optional: false, note: plan.note,
           title: 'Session du matin — 30 min',
@@ -147,7 +148,7 @@ function buildOffer(
       }
       const list = decision.toDiscover.slice(0, 6);
       const blocks: SessionBlock[] = list.map((e) => ({ exercise: e, level: 'adaptive', durationSec: 300 }));
-      const guarded = guardPsycho({
+      const guarded = finalizePlan({
         mode: 'guided30',
         blocks,
         briefing: [
@@ -185,16 +186,26 @@ function buildOffer(
       };
     }
     case 'buildup-morning': {
-      const priorityName = getExercise(decision.priority).name;
-      const weakTag = weakestTagOf(decision.priority);
+      // Une priorité quand P1/P2/P3 sont saisies, trois en mode dégradé.
+      const priorities: MorningPriority[] = decision.priorities.map((exercise) => ({
+        exercise,
+        weakTag: weakestTagOf(exercise),
+      }));
+      const priorityNames = priorities.map((p) => getExercise(p.exercise).name);
+      const head = priorities[0];
 
       // 1 h 30 : une seconde priorité (la suivante de la rotation) et un second
       // groupe de rotation, pour ne pas empiler 40 min sur un seul exercice.
-      const priorities: MorningPriority[] = [{ exercise: decision.priority, weakTag }];
+      // En dégradé il y en a déjà trois : rien à ajouter.
       const groups = [decision.groupIndex];
       if (morningMin >= 90) {
-        const second = nextPriorityAfter(decision.priority, prefs.priorities, state.priorityCursor, weakestOrder);
-        if (second) priorities.push({ exercise: second, weakTag: weakestTagOf(second) });
+        if (!decision.degraded && head) {
+          const second = nextPriorityAfter(head.exercise, prefs.priorities, state.priorityCursor, weakestOrder);
+          if (second) {
+            priorities.push({ exercise: second, weakTag: weakestTagOf(second) });
+            priorityNames.push(getExercise(second).name);
+          }
+        }
         const secondGroup = nextGroupAfter(decision.groupIndex, groups);
         if (secondGroup !== null) groups.push(secondGroup);
       }
@@ -215,12 +226,17 @@ function buildOffer(
       const groupNames = groups.map((gi) => GROUPS[gi].name).join(' + ');
       const priorityMin = Math.round(prioritySecondsOf(blocks) / 60);
       const passes = blocks.filter((b) => b.role === 'priority').length;
+      const drills = priorities.filter((p) => p.weakTag);
 
-      const guarded = guardPsycho({
+      const guarded = finalizePlan({
         mode: morningMin === 60 ? 'guided60' : 'guided90',
         blocks,
         briefing: [
-          `Priorité du jour : ${priorityName}${weakTag ? ` (drill « ${weakTag.tag} »)` : ''} · rotation ${groupNames}.`,
+          decision.degraded
+            ? `Priorités non définies : le coach répartit sur tes ${priorities.length} exercices les plus faibles — ${priorityNames.join(', ')}.`
+            : `Priorité du jour : ${priorityNames[0]}${
+                head?.weakTag ? ` (drill « ${head.weakTag.tag} »)` : ''
+              } · rotation ${groupNames}.`,
           `Structure : 5 min d’échauffement, puis ${passes} passes de 8 min de priorité entrelacées avec la rotation, ${Math.round(
             (blocks.find((b) => b.role === 'psychomotor')?.durationSec ?? 0) / 60,
           )} min de Psychomoteur, ${Math.round(LOG_RESERVE_SEC / 60)} min de log.`,
@@ -233,16 +249,16 @@ function buildOffer(
           requiresLog: true,
           usedGroup: decision.groupIndex,
           halfwayIndex: morningMin > 60 ? computeHalfwayIndex(blocks) : undefined,
+          degraded: decision.degraded ? DEGRADED_BANNER : undefined,
         },
       });
       return {
         decision, moment, plan: guarded.plan, optional: false, note: guarded.note,
         title: `Session du matin — ${morningMin === 60 ? '60 min' : '1 h 30'} structurée`,
         subtitle:
-          `5 min Grilles → ${priorityMin} min ${priorities.map((p) => getExercise(p.exercise).name).join(' / ')} ` +
-          `(${passes} passes de 8 min) entrelacées avec ${groupNames} → 5 min Psychomoteur → ${Math.round(
-            LOG_RESERVE_SEC / 60,
-          )} min de log`,
+          `5 min Grilles → ${priorityMin} min ${priorityNames.join(' / ')} ` +
+          `(${passes} passes de 8 min${drills.length > 0 ? `, drill ${drills.map((d) => d.weakTag!.tag).join(' / ')}` : ''}) ` +
+          `entrelacées avec ${groupNames} → 5 min Psychomoteur → ${Math.round(LOG_RESERVE_SEC / 60)} min de log`,
       };
     }
     case 'buildup-evening': {
@@ -283,7 +299,7 @@ function buildOffer(
         gi += 1;
         if (gi > 40) break;
       }
-      const guarded = guardPsycho({
+      const guarded = finalizePlan({
         mode: 'simulation',
         blocks: shuffle(rng, picks).map((e) => ({ exercise: e, level: 'adaptive' as const, durationSec: 330 })),
         briefing: [
@@ -299,7 +315,7 @@ function buildOffer(
       };
     }
     case 'simulation-first': {
-      const guarded = guardPsycho(composeSimulation());
+      const guarded = finalizePlan(composeSimulation());
       return {
         decision, moment, plan: guarded.plan, optional: false, note: guarded.note,
         title: 'Simulation complète du jour',
@@ -337,6 +353,30 @@ function nextGroupAfter(current: number, used: number[]): number | null {
     if (!used.includes(index)) return index;
   }
   return null;
+}
+
+/**
+ * Bandeau affiché au lancement d'une séance composée sans P1/P2/P3.
+ *
+ * Le coach sait faire quelque chose d'utile sans consigne ; il ne doit pas
+ * laisser croire qu'il fait la même chose qu'avec. Sans cet aveu, une matinée
+ * répartie sur trois exercices devinés se lit comme une matinée ciblée.
+ */
+export const DEGRADED_BANNER =
+  'Priorités non définies — session dégradée. Le coach répartit sur tes trois exercices les plus faibles au lieu d’en travailler un en profondeur. Saisis P1/P2/P3 dans les Réglages pour retrouver une séance ciblée.';
+
+/** Le drapeau « non calibré » vit dans les prefs ; la logique, elle, reste pure. */
+export function isExternalExercise(id: ExerciseId): boolean {
+  return getPrefs().externalDrill[id] === true;
+}
+
+/**
+ * Le passage obligé de tout plan avant d'être joué : créneaux externes marqués,
+ * puis cap Psychomoteur appliqué. Les deux ensemble, parce que les oublier
+ * séparément a le même effet — une séance qui ne fait pas ce qu'elle annonce.
+ */
+export function finalizePlan(plan: SessionPlan): { plan: SessionPlan | null; note?: string } {
+  return guardPsycho(markExternalPlan(plan, isExternalExercise));
 }
 
 /** Applique le cap quotidien du Psychomoteur à n'importe quel plan. */

@@ -9,6 +9,7 @@ import { LEVELS } from './config';
 
 export const english: ExerciseModule<EnglishQuestion, EnglishAnswer> = {
   id: 'english',
+  pilotestUrl: 'https://www.pilotest.com/fr/tests/english',
   name: 'Anglais présélection cadets',
   description:
     'QCM d\'anglais type présélection : grammaire, vocabulaire courant, vocabulaire aviation et compréhension de phrases.',

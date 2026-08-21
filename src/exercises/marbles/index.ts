@@ -10,6 +10,7 @@ import { LEVELS } from './config';
 
 export const marbles: ExerciseModule<MarblesQuestion, string> = {
   id: 'marbles',
+  pilotestUrl: 'https://www.pilotest.com/fr/tests/billes',
   name: 'Billes',
   description:
     'Trois tubes en U (capacités 3, 2, 3). Compte le nombre MINIMUM de déplacements pour passer de la disposition de départ à celle d’arrivée — une bille se prend et se pose toujours sur le dessus.',

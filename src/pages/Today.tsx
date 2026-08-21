@@ -52,7 +52,8 @@ export default function Today() {
           <h3 className="mt-1 text-lg font-bold">Bilan Phase 1 → Phase 2</h3>
           <p className="mt-1 text-sm text-zinc-400">
             Saisis tes 16 classes Pilotest et tes trois priorités en une passe. Sans elles, le coach
-            travaille à l'aveugle sur « l'exercice le plus faible ».
+            ne peut pas cibler : il étale la matinée sur tes trois exercices les plus faibles au lieu
+            d'en travailler un en profondeur.
           </p>
         </Link>
       )}
@@ -153,9 +154,11 @@ export default function Today() {
       </div>
 
       {offer.decision.kind === 'buildup-morning' && prefs.priorities === null && (
-        <p className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 text-sm text-zinc-400">
-          Tes priorités P1/P2/P3 ne sont pas configurées : la session utilise ton exercice le plus
-          faible en attendant. <Link to="/settings" className="text-sky-400 underline">Les saisir dans Réglages</Link> (prévu le 17/08 au soir).
+        <p className="mt-4 rounded-xl border border-amber-800/60 bg-amber-950/20 p-4 text-sm text-amber-300">
+          Session dégradée : sans P1/P2/P3, le coach répartit les trois passes sur tes trois
+          exercices les plus faibles — une passe chacun. C'est un filet, pas une cible : 24 minutes
+          sur UN exercice choisi, c'est ce qui fait bouger une classe.{' '}
+          <Link to="/settings" className="text-sky-400 underline">Les saisir dans Réglages</Link>.
         </p>
       )}
 

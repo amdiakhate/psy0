@@ -84,7 +84,18 @@ export const INITIAL_DAILY_STATE: DailyState = {
 export type DailyDecision =
   | { kind: 'discovery-morning'; toDiscover: ExerciseId[] }
   | { kind: 'discovery-evening'; exercise: ExerciseId | null }
-  | { kind: 'buildup-morning'; priority: ExerciseId; groupIndex: number }
+  | {
+      kind: 'buildup-morning';
+      /**
+       * Les exercices travaillés en priorité ce matin. UN seul quand P1/P2/P3
+       * sont saisies — la rotation en désigne un, et il occupe les trois passes.
+       * TROIS en mode dégradé, une passe chacun (voir `morningPriorities`).
+       */
+      priorities: ExerciseId[];
+      groupIndex: number;
+      /** Composé sans consigne : le coach a deviné, et doit le dire. */
+      degraded: boolean;
+    }
   | { kind: 'buildup-evening'; exercise: ExerciseId | null }
   | { kind: 'mini-sim' }
   | { kind: 'rest' }
@@ -96,6 +107,59 @@ export type DailyDecision =
    * entraînement libre, sans avoir à deviner ce qu'il contenait.
    */
   | { kind: 'done-today'; replay: DailyDecision };
+
+/** Nombre de passes de priorité d'une séance du matin — donc de créneaux à répartir. */
+export const PRIORITY_PASSES = 3;
+
+/**
+ * Les priorités du matin, et l'aveu qui va avec.
+ *
+ * Priorités saisies : la rotation P1→P2→P3 en désigne UNE. Elle prend les trois
+ * passes, et c'est tout l'intérêt — 24 minutes sur un exercice choisi
+ * délibérément, c'est ce qui fait bouger une classe.
+ *
+ * Priorités NON saisies : on ne concentre rien. Le classement des faiblesses
+ * repose alors sur quelques dizaines d'items, parfois sur un seul essai à
+ * froid ; désigner un « exercice le plus faible » sur cette base est un pari,
+ * et miser la matinée entière dessus fait perdre la matinée si le pari est
+ * faux. On répartit donc sur les TROIS plus faibles, une passe chacun : le pire
+ * cas devient « un tiers de la séance mal ciblé » au lieu de « toute la séance ».
+ *
+ * Le classement peut être incomplet (exercices jamais joués) : on complète avec
+ * le registre, pour ne jamais rendre moins de trois créneaux quand il y a de
+ * quoi les remplir.
+ */
+export function morningPriorities(args: {
+  priorities: ExerciseId[] | null;
+  priorityCursor: number;
+  weakestOrder: ExerciseId[];
+  allExercises: ExerciseId[];
+}): { list: ExerciseId[]; degraded: boolean } {
+  const { priorities, priorityCursor, weakestOrder, allExercises } = args;
+  const chosen = priorities?.[priorityCursor % PRIORITY_PASSES];
+  if (chosen) return { list: [chosen], degraded: false };
+
+  const eligible = (e: ExerciseId) => e !== 'psychomotor';
+  const ranked = weakestOrder.filter(eligible);
+  const rest = allExercises.filter((e) => eligible(e) && !ranked.includes(e));
+  return { list: [...ranked, ...rest].slice(0, PRIORITY_PASSES), degraded: true };
+}
+
+/**
+ * Premier groupe de rotation, à partir du curseur, qui ne recoupe aucune
+ * priorité du jour. Sans ce filtre la rotation reprogrammerait un exercice déjà
+ * saturé par les passes de priorité. Si tous les groupes recoupent — cas
+ * possible en dégradé, où trois priorités touchent trois groupes — on rend le
+ * curseur : mieux vaut un doublon que pas de rotation du tout.
+ */
+export function groupForMorning(groupCursor: number, priorities: ExerciseId[]): number {
+  const start = groupCursor % GROUPS.length;
+  for (let k = 0; k < GROUPS.length; k++) {
+    const index = (start + k) % GROUPS.length;
+    if (!GROUPS[index].members.some((m) => priorities.includes(m))) return index;
+  }
+  return start;
+}
 
 export interface DecideArgs {
   moment: ParisMoment;
@@ -142,10 +206,18 @@ export function decideDaily(args: DecideArgs): DailyDecision {
     // La priorité et le groupe se calculent AVANT de savoir si la séance est
     // faite : c'est ce qui permet de reproposer le même programme à l'identique.
     // Le curseur n'a pas bougé — `advanceAfterMorning` est idempotent par jour.
-    const priority = priorities?.[state.priorityCursor % 3] ?? weakestOrder[0] ?? allExercises[0];
-    let g = state.groupCursor % GROUPS.length;
-    if (GROUPS[g].members.includes(priority)) g = (g + 1) % GROUPS.length;
-    const morning: DailyDecision = { kind: 'buildup-morning', priority, groupIndex: g };
+    const { list, degraded } = morningPriorities({
+      priorities,
+      priorityCursor: state.priorityCursor,
+      weakestOrder,
+      allExercises,
+    });
+    const morning: DailyDecision = {
+      kind: 'buildup-morning',
+      priorities: list,
+      groupIndex: groupForMorning(state.groupCursor, list),
+      degraded,
+    };
     return morningDone ? { kind: 'done-today', replay: morning } : morning;
   }
   const suggestion = weakestOrder.filter((e) => e !== 'psychomotor' && e !== state.lastEveningExercise)[0] ?? null;
@@ -157,7 +229,7 @@ export function advanceAfterMorning(state: DailyState, usedGroup: number | undef
   if (state.lastMorningDoneDay === dayKey) return state;
   return {
     ...state,
-    priorityCursor: (state.priorityCursor + 1) % 3,
+    priorityCursor: (state.priorityCursor + 1) % PRIORITY_PASSES,
     groupCursor: usedGroup !== undefined ? (usedGroup + 1) % GROUPS.length : state.groupCursor,
     lastMorningDoneDay: dayKey,
   };

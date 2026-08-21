@@ -212,6 +212,13 @@ export interface ExerciseModule<Q = unknown, A = unknown> {
   Component: React.FC<ExerciseComponentProps<Q, A>>;
   /** Illustration dédiée pour la page d'astuces (exercices en flux, démos 3D…). */
   TipsIllustration?: React.FC;
+  /**
+   * Page Pilotest de CE test, vérifiée. Sert au créneau externe : quand le
+   * générateur local n'est pas fiable, on envoie le candidat à la source.
+   * Absente là où l'URL n'a pas pu être vérifiée — un lien mort vaut moins
+   * qu'un renvoi vers la page de préparation.
+   */
+  pilotestUrl?: string;
   /** Mode apprentissage : leçon pas-à-pas avec arrêts sur image. */
   lesson?: Lesson;
   /**
@@ -257,6 +264,16 @@ export interface SessionBlock {
   itemCount?: number;
   /** Drill ciblé : ne générer que des items portant ce tag. */
   tagFilter?: string;
+  /**
+   * Créneau à faire sur Pilotest, pas ici.
+   *
+   * Certains générateurs locaux ne sont pas calibrés sur l'original — Airways
+   * en est le cas d'école. Les jouer ici produit un score qui ne veut rien dire
+   * et, pire, qui alimente le classement des faiblesses. Le coach garde donc le
+   * créneau dans la séance (le temps est réservé, la structure tient) mais
+   * envoie le candidat le faire à la source, et récupère le résultat à la main.
+   */
+  external?: boolean;
   label?: string;
   role?: BlockRole;
 }
@@ -280,6 +297,13 @@ export interface SessionPlanMeta {
    * Le cap borne ce que le coach programme ; il n'interdit pas d'en refaire.
    */
   ignoreDailyCap?: boolean;
+  /**
+   * Avertissement affiché au lancement quand la séance a été composée sur des
+   * hypothèses plutôt que sur des consignes — typiquement P1/P2/P3 non saisies.
+   * Une séance dégradée reste utile ; la faire passer pour une séance normale,
+   * non : le candidat croirait travailler ses vraies priorités.
+   */
+  degraded?: string;
 }
 
 export interface SessionPlan {

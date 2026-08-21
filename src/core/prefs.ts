@@ -57,6 +57,19 @@ export interface Prefs {
    * qu'on veut exactement quand il ne reste qu'à gagner en vitesse.
    */
   mentalResponse: 'auto' | 'produire' | 'qcm';
+  /**
+   * Exercices dont le générateur local n'est PAS considéré comme représentatif
+   * de Pilotest. Le coach continue de leur réserver leur créneau, mais au lieu
+   * de lancer l'exercice d'ici il renvoie vers la source et récupère le
+   * résultat à la main.
+   *
+   * Cas d'école : Airways. Sa densité d'avions, son barème et sa stratégie de
+   * déroutement ont été recalés plusieurs fois sans jamais être confrontés à
+   * l'original ; s'entraîner dessus reste utile, en tirer une classe ne l'est
+   * pas. Mieux vaut une mesure honnête faite ailleurs qu'un chiffre local qui
+   * pilote les priorités dans le vide.
+   */
+  externalDrill: Partial<Record<ExerciseId, boolean>>;
   /** Bascules de mise au point, à retirer avant le test. */
   dev: { fastHalfway: boolean };
 }
@@ -69,6 +82,7 @@ const DEFAULT_PREFS: Prefs = {
   hintsEnabled: true,
   itemTimeLimit: true,
   mentalResponse: 'auto',
+  externalDrill: {},
   dev: { fastHalfway: false },
 };
 

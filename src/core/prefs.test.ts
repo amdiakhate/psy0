@@ -16,6 +16,7 @@ const prefs = (over: Partial<Prefs> = {}): Prefs => ({
   hintsEnabled: true,
   itemTimeLimit: true,
   mentalResponse: 'auto',
+  externalDrill: {},
   dev: { fastHalfway: false },
   ...over,
 });
