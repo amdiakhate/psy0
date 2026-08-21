@@ -4,6 +4,7 @@ import type { StarAnswer, StarQuestion } from './generator';
 import { validate } from './validator';
 import { tips } from './tips';
 import { lesson } from './lesson';
+import { StarWordsExplain } from './Explain';
 import { StarWordsExercise } from './StarWordsExercise';
 import { SLOT_LABELS } from './geometry';
 import { LEVELS } from './config';
@@ -33,5 +34,7 @@ export const starWords: ExerciseModule<StarQuestion, StarAnswer> = {
       .join(' '),
   tips,
   lesson,
+  visualCorrectionOnly: true,
+  Explain: StarWordsExplain,
   Component: StarWordsExercise,
 };

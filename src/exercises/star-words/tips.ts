@@ -27,9 +27,9 @@ export const tips: Tips = {
       seed: 7,
       level: 3,
       walkthrough: [
-        'Relève le couple (3e, 5e lettre) des 9 mots : TERRINE (R,I) · NOURRIR (U,R) · INTERNE (T,R) · PEINTRE (I,T) · FERMIER (R,I) · SERRURE (R,U) · SARDINE (R,I) · ORIGINE (I,I) · VOISINE (I,I). Tu n’as plus besoin des mots, seulement de ces couples.',
-        'Cherche la lettre la plus rare : le U. Un seul mot l’a en 3e lettre (NOURRIR) et un seul en 5e (SERRURE). La case commune C/F est donc forcément un U : pose NOURRIR en C et SERRURE en F, sans hésiter.',
-        'Propage autour du cycle A-D-C-F-B-E-A : C finit par R en 5e → D doit commencer sa 3e lettre par R → FERMIER ; F a R en 3e → B doit avoir R en 5e → INTERNE ; puis PEINTRE en E (T en 5e de B) et ORIGINE en A. Les 6 cases sont cohérentes : valide. VOISINE aurait tout aussi bien fait l’affaire à la place d’ORIGINE — les deux valent le point.',
+        'Relève le couple (3e, 5e lettre) des 9 mots : CONFIER (N,I) · SOURIRE (U,I) · FERMIER (R,I) · JANVIER (N,I) · COURBER (U,B) · NOURRIR (U,R) · ORIGINE (I,I) · CABINET (B,N) · CANTINE (N,I). Tu n’as plus besoin des mots, seulement de ces couples.',
+        'Cherche la lettre la plus rare : le B. Un seul mot l’a en 3e lettre (CABINET) et un seul en 5e (COURBER). La case commune B/F est donc forcément un B : pose CABINET en B et COURBER en F, sans hésiter.',
+        'Propage autour du cycle B-F-C-D-A-E-B : COURBER impose U en C → NOURRIR ; NOURRIR impose R en D → FERMIER ; FERMIER impose I en A → ORIGINE ; puis CANTINE en E referme la boucle sur le N de CABINET. Les 6 cases sont cohérentes : valide.',
       ],
     },
     {
@@ -37,9 +37,9 @@ export const tips: Tips = {
       seed: 5,
       level: 1,
       walkthrough: [
-        'Couples (3e, 5e) : TOURNER (U,N) · DIRIGER (R,G) · NATUREL (T,R) · BORDURE (R,U) · RENTRER (N,R) · LIGOTER (G,T) · GLISSER (I,S) · SEMELLE (M,L) · POIREAU (I,E).',
-        'Aux niveaux faciles, trois mots n’accrochent aucune lettre imposée : ici GLISSER, SEMELLE et POIREAU n’ont ni U, ni R, ni N, ni G, ni T aux bonnes positions. Écarte-les d’emblée — il ne reste que 6 mots pour 6 emplacements.',
-        'Une fois les intrus écartés, le placement est mécanique : le U relie TOURNER (3e lettre) et BORDURE (5e lettre) sur la case A/D, le R relie NATUREL et BORDURE sur la case C/D… Suis le cycle et l’étoile se referme toute seule.',
+        'Couples (3e, 5e) : ATTIRER (T,R) · TOURNER (U,N) · JOURNAL (U,N) · BORDURE (R,U) · GLISSER (I,S) · FACTEUR (C,E) · FONDANT (N,A) · FORTUNE (R,U) · NATUREL (T,R).',
+        'Aux niveaux faciles, trois mots n’accrochent aucune lettre imposée : ici GLISSER, FACTEUR et FONDANT introduisent S, C, E ou A sans partenaire utile. Écarte-les d’emblée — il ne reste que 6 mots pour 6 emplacements.',
+        'Une fois les intrus écartés, le placement est mécanique : le U relie TOURNER et BORDURE sur A/D, le T relie NATUREL et ATTIRER sur C/F, puis FORTUNE et JOURNAL ferment les deux autres croisements. Suis le cycle et l’étoile se referme toute seule.',
       ],
     },
   ],

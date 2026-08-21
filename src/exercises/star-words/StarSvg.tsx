@@ -20,11 +20,11 @@ const B: Pt = [0, R];
 /** Les 6 segments, dans l'ordre des emplacements (cf. geometry.ts). */
 const SEGMENTS: [Pt, Pt][] = [
   [T, BR],
-  [BR, BL],
+  [BL, BR],
   [BL, T],
   [TL, TR],
-  [TR, B],
-  [B, TL],
+  [B, TR],
+  [TL, B],
 ];
 
 /**
@@ -34,7 +34,7 @@ const SEGMENTS: [Pt, Pt][] = [
  * mots se rejoignent SANS partager la case — on les décale donc vers
  * l'extérieur pour que les deux cases restent distinctes et lisibles.
  */
-const TIP_OFFSET = 0.78;
+const TIP_OFFSET = 0.58;
 
 function cellPoint(slot: number, index: number): Pt {
   const [s, e] = SEGMENTS[slot];
@@ -102,7 +102,22 @@ function badgePoint(slot: number): Pt {
 /* Rendu                                                               */
 /* ------------------------------------------------------------------ */
 
-const CELL = 30;
+// Pilotest laisse autant d'air entre les cases qu'autour des segments. Une
+// case plus petite que le pas du segment retrouve cette silhouette aérée sans
+// changer la géométrie logique des six croisements.
+const CELL = 25;
+
+function slotControlPoints(slot: number) {
+  const [start, end] = SEGMENTS[slot];
+  const length = Math.hypot(end[0] - start[0], end[1] - start[1]);
+  const ux = (end[0] - start[0]) / length;
+  const uy = (end[1] - start[1]) / length;
+  const px = -uy;
+  const py = ux;
+  const [firstX, firstY] = cellPoint(slot, 0);
+  const at = (distance: number): Pt => [firstX - ux * distance, firstY - uy * distance];
+  return { ux, uy, px, py, at };
+}
 
 export function StarSvg({
   placement,
@@ -110,23 +125,91 @@ export function StarSvg({
   activeSlot = null,
   highlightIntersections = [],
   size = 340,
+  framed = true,
+  showSlotLabels = true,
 }: {
   placement: Placement;
   onSlotClick?: (slot: number) => void;
   activeSlot?: number | null;
   highlightIntersections?: number[];
   size?: number;
+  framed?: boolean;
+  showSlotLabels?: boolean;
 }) {
   const conflicts = new Set(conflictingIntersections(placement));
   const highlighted = new Set(highlightIntersections);
 
   return (
     <svg
-      viewBox="-205 -205 410 410"
+      viewBox="-224 -224 448 448"
       width={size}
       height={size}
-      className="shrink-0 select-none rounded-xl border border-zinc-800 bg-zinc-950"
+      className={`h-auto max-w-full shrink-0 select-none ${
+        framed ? 'rounded-xl border border-zinc-800 bg-zinc-950' : 'bg-transparent'
+      }`}
     >
+      {/* Même flèche orientée dans le jeu et la correction ; poubelle si rempli. */}
+      {SEGMENTS.map((_, slot) => {
+        const filled = placement[slot] !== null && placement[slot] !== undefined;
+        const { px, py, at } = slotControlPoints(slot);
+        const [tipX, tipY] = at(17);
+        const [tailX, tailY] = at(33);
+        const headX = tipX - (tipX - tailX) * 0.38;
+        const headY = tipY - (tipY - tailY) * 0.38;
+        const [trashX, trashY] = at(48);
+        return (
+          <g key={`direction${slot}`}>
+            <g data-direction-arrow="true" pointerEvents="none" aria-hidden="true">
+              <line
+                x1={tailX}
+                y1={tailY}
+                x2={tipX}
+                y2={tipY}
+                stroke="#5b5bb7"
+                strokeWidth={2}
+                strokeLinecap="round"
+              />
+              <polyline
+                points={`${headX + px * 4.5},${headY + py * 4.5} ${tipX},${tipY} ${headX - px * 4.5},${headY - py * 4.5}`}
+                fill="none"
+                stroke="#5b5bb7"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </g>
+            {filled && onSlotClick && (
+              <g
+                data-slot-trash="true"
+                role="button"
+                tabIndex={0}
+                aria-label={`Retirer le mot de l’emplacement ${SLOT_LABELS[slot]}`}
+                className="cursor-pointer"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onSlotClick(slot);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onSlotClick(slot);
+                  }
+                }}
+              >
+                <circle cx={trashX} cy={trashY} r={10.5} fill="#450a0a" stroke="#ef4444" />
+                <path
+                  d={`M${trashX - 4},${trashY - 3}h8v8a1.5,1.5 0 0 1-1.5,1.5h-5A1.5,1.5 0 0 1 ${trashX - 4},${trashY + 5}z M${trashX - 5},${trashY - 5}h10 M${trashX - 2},${trashY - 6.5}h4`}
+                  fill="#f87171"
+                  stroke="#f87171"
+                  strokeWidth={1.3}
+                  strokeLinecap="round"
+                />
+              </g>
+            )}
+          </g>
+        );
+      })}
+
       {/*
         Les 6 côtés des deux triangles, tracés d'une case extrême à l'autre :
         les traits dépassent donc légèrement les pointes, ce qui relie
@@ -150,19 +233,26 @@ export function StarSvg({
 
       {/* Zone cliquable de chaque segment (sous les cases). */}
       {onSlotClick &&
-        SEGMENTS.map(([s, e], slot) => (
-          <line
-            key={`hit${slot}`}
-            x1={s[0]}
-            y1={s[1]}
-            x2={e[0]}
-            y2={e[1]}
-            stroke="transparent"
-            strokeWidth={CELL + 6}
-            className="cursor-pointer"
-            onClick={() => onSlotClick(slot)}
-          />
-        ))}
+        SEGMENTS.map((_, slot) => {
+          const [startX, startY] = cellPoint(slot, 0);
+          const [endX, endY] = cellPoint(slot, WORD_LENGTH - 1);
+          return (
+            <line
+              key={`hit${slot}`}
+              data-slot-hit="true"
+              x1={startX}
+              y1={startY}
+              x2={endX}
+              y2={endY}
+              stroke="transparent"
+              strokeWidth={CELL + 6}
+              strokeLinecap="round"
+              pointerEvents="stroke"
+              className="cursor-pointer"
+              onClick={() => onSlotClick(slot)}
+            />
+          );
+        })}
 
       {/* Segment sélectionné : surligné. */}
       {activeSlot !== null && (
@@ -243,8 +333,8 @@ export function StarSvg({
         );
       })}
 
-      {/* Pastilles A-F, au centre de l'étoile. */}
-      {SLOT_LABELS.map((label, slot) => {
+      {/* Repères pédagogiques optionnels : absents du vrai écran Pilotest. */}
+      {showSlotLabels && SLOT_LABELS.map((label, slot) => {
         const [x, y] = badgePoint(slot);
         const filled = placement[slot] !== null && placement[slot] !== undefined;
         return (

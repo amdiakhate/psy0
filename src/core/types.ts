@@ -227,6 +227,8 @@ export interface ExerciseModule<Q = unknown, A = unknown> {
    * attendue suffit.
    */
   Explain?: React.FC<ExplainProps<Q, A>>;
+  /** La correction dédiée porte toute l'information : masque le résumé textuel donné/attendu. */
+  visualCorrectionOnly?: boolean;
   /**
    * Astuce à la volée sur l'item courant. `null` quand cet item ne se prête à
    * aucun raccourci — mieux vaut ne rien dire qu'une banalité.

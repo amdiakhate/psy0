@@ -33,6 +33,12 @@ export function StarWordsExercise({ item, onAnswer }: ExerciseComponentProps<Sta
     setSelected((cur) => (cur === word ? null : word));
   };
 
+  /** Poubelle Pilotest : remet le mot dans la liste sans le présélectionner. */
+  const removeWord = (word: number) => {
+    setSlots((current) => current.map((value) => (value === word ? null : value)));
+    setSelected((current) => (current === word ? null : current));
+  };
+
   /** Clic sur un emplacement : y poser le mot sélectionné, ou vider l'emplacement. */
   const toggleSlot = (slot: number) => {
     if (slots[slot] !== null) {
@@ -62,49 +68,72 @@ export function StarWordsExercise({ item, onAnswer }: ExerciseComponentProps<Sta
   });
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-5">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 py-2">
       <p className="text-center text-sm text-zinc-400">
         Place <span className="font-semibold text-zinc-200">6 mots sur les 9</span> dans l'étoile :
         chaque case bleue est <span className="font-semibold text-sky-400">commune à deux mots</span>{' '}
         et ne doit porter qu'<span className="italic">une seule</span> lettre.
       </p>
 
-      <div className="flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:gap-8">
-        <StarSvg placement={placement} onSlotClick={toggleSlot} activeSlot={null} size={320} />
-
-        {/* min-w-0 : la colonne des mots doit pouvoir se comprimer (page d'astuces). */}
-        <div className="w-full min-w-0 max-w-md">
-          <div className="grid grid-cols-3 gap-1.5">
-            {q.words.map((word, i) => {
-              const slot = slotOfWord(i);
-              const isSelected = selected === i;
-              return (
+      <div className="grid w-full items-center gap-5 px-2 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10 lg:px-10">
+        {/* Pilotest présente les neuf mots en colonne à gauche de l'étoile. */}
+        <div className="order-2 grid min-w-0 grid-cols-3 gap-2 lg:order-1 lg:grid-cols-1 lg:gap-4">
+          {q.words.map((word, i) => {
+            const slot = slotOfWord(i);
+            const isSelected = selected === i;
+            return (
+              <div key={word} className="relative min-w-0">
                 <button
-                  key={word}
                   onClick={() => toggleWord(i)}
-                  className={`overflow-hidden rounded-lg border px-1.5 py-2 text-center font-mono text-xs tracking-wide transition-colors md:text-sm ${
+                  className={`w-full overflow-hidden rounded-lg border px-1.5 py-2.5 text-center font-mono text-xs tracking-wide transition-colors md:text-sm lg:px-4 lg:py-3 lg:text-lg ${
                     isSelected
                       ? 'border-sky-400 bg-sky-900/50 text-sky-100'
                       : slot >= 0
-                        ? 'border-zinc-800 bg-zinc-950 text-zinc-600 line-through'
+                        ? 'border-indigo-500 bg-indigo-700 text-white'
                         : 'border-zinc-700 bg-zinc-900 text-zinc-100 hover:border-sky-500'
                   }`}
                 >
-                  <span className="mr-1 text-[10px] text-zinc-500">{i + 1}</span>
+                  <span className={`mr-1 text-[10px] ${slot >= 0 ? 'text-indigo-200' : 'text-zinc-500'}`}>
+                    {i + 1}
+                  </span>
                   {word}
-                  {slot >= 0 && <span className="ml-1 text-[10px] text-sky-500">{SLOT_LABELS[slot]}</span>}
                 </button>
-              );
-            })}
-          </div>
+                {slot >= 0 && (
+                  <button
+                    type="button"
+                    aria-label={`Retirer ${word} de l’étoile`}
+                    onClick={() => removeWord(i)}
+                    className="absolute -left-3 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-full border border-indigo-300 bg-indigo-700 text-white shadow-md hover:bg-indigo-600"
+                  >
+                    <svg viewBox="0 0 20 20" className="size-3.5" aria-hidden="true">
+                      <path
+                        d="M5.5 6.5h9l-.7 9.2a1.5 1.5 0 0 1-1.5 1.3H7.7a1.5 1.5 0 0 1-1.5-1.3L5.5 6.5Zm2-3h5l.7 1.5H15v1H5V5h1.8l.7-1.5Z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
 
-          <p className="mt-3 text-xs text-zinc-500">
-            Touches <kbd className="text-zinc-300">1-9</kbd> pour choisir un mot, puis{' '}
-            <kbd className="text-zinc-300">A-F</kbd> pour l'emplacement. Re-cliquer sur un mot ou un
-            emplacement le retire.
+        <div className="order-1 flex min-w-0 flex-col items-center lg:order-2">
+          <StarSvg
+            placement={placement}
+            onSlotClick={toggleSlot}
+            activeSlot={null}
+            size={680}
+            framed={false}
+            showSlotLabels={false}
+          />
+
+          <p className="mt-1 text-center text-xs text-zinc-500">
+            Touches <kbd className="text-zinc-300">1-9</kbd> pour choisir un mot, puis clique sur un
+            côté de l'étoile pour le placer. Re-cliquer sur un mot ou un emplacement le retire.
           </p>
 
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3 flex items-center justify-center gap-3">
             <button
               onClick={() => onAnswer(slots)}
               className={`rounded-lg px-5 py-2 font-semibold ${

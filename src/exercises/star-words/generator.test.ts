@@ -4,6 +4,7 @@ import type { StarAnswer } from './generator';
 import { validate } from './validator';
 import { INTERSECTIONS, SLOT_COUNT, WORD_LENGTH, isPlacementCorrect } from './geometry';
 import { WORDS7 } from './data';
+import { diagnoseStarAnswer } from './explanation';
 
 const SEEDS = 150;
 const LEVELS = [1, 2, 3, 4, 5];
@@ -42,6 +43,30 @@ describe('star-words — géométrie', () => {
     // Chaque paire d'emplacements partage au plus une case.
     const pairs = INTERSECTIONS.map((x) => `${Math.min(x.wordA, x.wordB)}-${Math.max(x.wordA, x.wordB)}`);
     expect(new Set(pairs).size).toBe(6);
+  });
+});
+
+describe('star-words — correction expliquée', () => {
+  const question = {
+    words: ['AAAAAAA', 'BBBBBBB', 'CCCCCCC', 'DDDDDDD', 'EEEEEEE', 'FFFFFFF', 'GGGGGGG', 'HHHHHHH', 'IIIIIII'],
+    solution: [0, 0, 0, 0, 0, 0],
+  };
+
+  it('distingue une grille incomplète d’un conflit et nomme les lettres incompatibles', () => {
+    expect(diagnoseStarAnswer(question, [0, null, null, null, null, null])).toMatchObject({
+      kind: 'incomplete',
+      placedCount: 1,
+    });
+
+    expect(diagnoseStarAnswer(question, [0, 1, 2, 3, 4, 5])).toMatchObject({
+      kind: 'conflict',
+      conflict: {
+        wordA: 'AAAAAAA',
+        wordB: 'DDDDDDD',
+        letterA: 'A',
+        letterB: 'D',
+      },
+    });
   });
 });
 

@@ -6,12 +6,12 @@
  *
  * Triangle « pointe en haut »  : sommets T (haut), BL (bas-gauche), BR (bas-droite)
  *   - emplacement 0 : T  → BR
- *   - emplacement 1 : BR → BL
+ *   - emplacement 1 : BL → BR
  *   - emplacement 2 : BL → T
  * Triangle « pointe en bas »   : sommets B (bas), TL (haut-gauche), TR (haut-droite)
  *   - emplacement 3 : TL → TR
- *   - emplacement 4 : TR → B
- *   - emplacement 5 : B  → TL
+ *   - emplacement 4 : B  → TR
+ *   - emplacement 5 : TL → B
  *
  * Les deux triangles se croisent en 6 points : les sommets de l'hexagone
  * intérieur. Sur un segment, ces croisements tombent au tiers et aux deux tiers,
@@ -50,10 +50,10 @@ export interface Intersection {
  */
 export const INTERSECTIONS: readonly Intersection[] = [
   { wordA: 0, indexA: 2, wordB: 3, indexB: 4 },
-  { wordA: 0, indexA: 4, wordB: 4, indexB: 2 },
-  { wordA: 1, indexA: 2, wordB: 4, indexB: 4 },
-  { wordA: 1, indexA: 4, wordB: 5, indexB: 2 },
-  { wordA: 2, indexA: 2, wordB: 5, indexB: 4 },
+  { wordA: 0, indexA: 4, wordB: 4, indexB: 4 },
+  { wordA: 1, indexA: 4, wordB: 4, indexB: 2 },
+  { wordA: 1, indexA: 2, wordB: 5, indexB: 4 },
+  { wordA: 2, indexA: 2, wordB: 5, indexB: 2 },
   { wordA: 2, indexA: 4, wordB: 3, indexB: 2 },
 ];
 

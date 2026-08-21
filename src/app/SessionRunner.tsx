@@ -879,7 +879,7 @@ function BlockRunner({
             >
               <span className="text-lg leading-none">{feedback.ok ? '\u2713' : '\u2717'}</span>
               <span>{feedback.ok ? 'Juste' : 'Faux'}</span>
-              {!feedback.ok && feedback.expected !== '' && (
+              {!feedback.ok && !module_.visualCorrectionOnly && feedback.expected !== '' && (
                 <span className="font-normal opacity-90">{'\u2192'} {feedback.expected}</span>
               )}
             </div>
@@ -982,7 +982,7 @@ function Review({
           <span className={`font-semibold ${correct ? 'text-green-300' : 'text-red-300'}`}>
             {correct ? '✓ Juste' : '✗ Faux'}
           </span>
-          {!correct && (
+          {!correct && !module_.visualCorrectionOnly && (
             <>
               <span className="text-sm text-zinc-400">
                 Ta réponse : <span className="font-mono text-zinc-200">{given}</span>
