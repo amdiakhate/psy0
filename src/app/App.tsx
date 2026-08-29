@@ -26,7 +26,7 @@ const NAV: NavItem[] = [
   { to: '/simulation', label: 'Simulation PSY0' },
   { to: '/sprint', label: 'Psychomoteur quotidien' },
   { to: '/mental', label: 'Calcul mental' },
-  { to: '/culture', label: 'Culture aéro' },
+  { to: '/culture', label: 'Culture Aéro' },
   { to: '/learn', label: 'Apprendre' },
   { to: '/tips', label: 'Astuces' },
   { to: '/settings', label: 'Réglages' },

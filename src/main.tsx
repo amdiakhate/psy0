@@ -17,6 +17,16 @@ import Settings from './pages/Settings';
 import Bilan from './pages/Bilan';
 import Mental from './pages/Mental';
 import Culture from './pages/Culture';
+import { CultureDashboard } from './culture/pages/CultureDashboard';
+import { CultureReviewPage } from './culture/pages/CultureReviewPage';
+import { CultureQuizPage } from './culture/pages/CultureQuizPage';
+import { CultureErrorsPage } from './culture/pages/CultureErrorsPage';
+import { CultureSimulationPage } from './culture/pages/CultureSimulationPage';
+import { CultureLessonsPage } from './culture/pages/CultureLessonsPage';
+import { CultureFavoritesPage } from './culture/pages/CultureFavoritesPage';
+import { CultureExpressPage } from './culture/pages/CultureExpressPage';
+import { CultureDrillsPage } from './culture/pages/CultureDrillsPage';
+import { CultureAirFrancePage } from './culture/pages/CultureAirFrancePage';
 
 const router = createBrowserRouter([
   {
@@ -35,7 +45,22 @@ const router = createBrowserRouter([
       { path: 'tips/:id', element: <Tips /> },
       { path: 'mental', element: <Mental /> },
       { path: 'mental/:id', element: <Mental /> },
-      { path: 'culture', element: <Culture /> },
+      {
+        path: 'culture',
+        element: <Culture />,
+        children: [
+          { index: true, element: <CultureDashboard /> },
+          { path: 'air-france', element: <CultureAirFrancePage /> },
+          { path: 'review', element: <CultureReviewPage /> },
+          { path: 'quiz', element: <CultureQuizPage /> },
+          { path: 'errors', element: <CultureErrorsPage /> },
+          { path: 'simulation', element: <CultureSimulationPage /> },
+          { path: 'lessons', element: <CultureLessonsPage /> },
+          { path: 'favorites', element: <CultureFavoritesPage /> },
+          { path: 'express', element: <CultureExpressPage /> },
+          { path: 'drills', element: <CultureDrillsPage /> },
+        ],
+      },
       { path: 'learn', element: <Learn /> },
       { path: 'learn/:id', element: <Learn /> },
       { path: 'settings', element: <Settings /> },

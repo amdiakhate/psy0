@@ -1,53 +1,35 @@
-import type { CultureEntry, CultureTheme } from './types';
-import { THEMES } from './types';
-import { aerodynamique } from './data/aerodynamique';
-import { motorisation } from './data/motorisation';
-import { instruments } from './data/instruments';
-import { meteo } from './data/meteo';
-import { navigation } from './data/navigation';
-import { reglementation } from './data/reglementation';
-import { histoire } from './data/histoire';
-import { airFrance } from './data/air-france';
-import { geographie } from './data/geographie';
-import { aeronefs } from './data/aeronefs';
-import { cultureGenerale } from './data/culture-generale';
+import { coreLessons } from './data/lessons/core';
+import { document2026Questions } from './data/questions/document2026';
+import type { CultureCategory, CultureLesson, CultureQuestion } from './types';
+import { validateCultureBank } from './validation';
 
-/** La banque complète, dans l'ordre des thèmes. */
-export const BANK: CultureEntry[] = [
-  ...aerodynamique,
-  ...motorisation,
-  ...instruments,
-  ...meteo,
-  ...navigation,
-  ...reglementation,
-  ...histoire,
-  ...airFrance,
-  ...geographie,
-  ...aeronefs,
-  ...cultureGenerale,
-];
+export const QUESTIONS: CultureQuestion[] = document2026Questions;
+export const LESSONS: CultureLesson[] = coreLessons;
 
-const BY_ID = new Map(BANK.map((e) => [e.id, e]));
-
-export function entryById(id: string): CultureEntry | undefined {
-  return BY_ID.get(id);
+const validationErrors = validateCultureBank(QUESTIONS, LESSONS);
+if (validationErrors.length > 0) {
+  throw new Error(`Banque Culture Aéro invalide:\n${validationErrors.join('\n')}`);
 }
 
-export function byTheme(theme: CultureTheme): CultureEntry[] {
-  return BANK.filter((e) => e.theme === theme);
+const QUESTION_BY_ID = new Map(QUESTIONS.map((question) => [question.id, question]));
+const LESSON_BY_ID = new Map(LESSONS.map((lesson) => [lesson.id, lesson]));
+
+export function questionById(id: string): CultureQuestion | undefined {
+  return QUESTION_BY_ID.get(id);
 }
 
-/** Nombre de questions par thème — sert à l'affichage du programme. */
-export function counts(): Record<CultureTheme, number> {
-  const out = {} as Record<CultureTheme, number>;
-  for (const t of THEMES) out[t] = 0;
-  for (const e of BANK) out[e.theme] += 1;
-  return out;
+export function lessonById(id: string): CultureLesson | undefined {
+  return LESSON_BY_ID.get(id);
 }
 
-/**
- * Les questions calquées sur une question RÉELLEMENT relevée dans les annales
- * Pilotest 2018 ou 2019. À réviser en priorité : ce sont les seules dont on
- * sait qu'un examinateur les a jugées dignes d'être posées.
- */
-export const ASKED: CultureEntry[] = BANK.filter((e) => e.asked !== undefined);
+export function questionsByCategory(category: CultureCategory): CultureQuestion[] {
+  return QUESTIONS.filter((question) => question.categories.includes(category));
+}
+
+export function questionsByTag(tag: string): CultureQuestion[] {
+  return QUESTIONS.filter((question) => question.tags.includes(tag));
+}
+
+export function lessonsByCategory(category: CultureCategory): CultureLesson[] {
+  return LESSONS.filter((lesson) => lesson.category === category);
+}

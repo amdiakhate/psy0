@@ -11,8 +11,8 @@ Cet outil sert au **drill ciblé et au travail cognitif de fond** (mémoire de t
 ```bash
 npm install
 npm run dev        # http://localhost:5173 (ou le port affiché)
-npm run test       # tests des 16 générateurs (vitest)
-npx tsc --noEmit   # vérification TypeScript strict
+npm run test       # tests Vitest
+npm run typecheck  # vérification TypeScript strict
 ```
 
 100 % local : les données vivent dans le localStorage du navigateur. **Exporte régulièrement** (Réglages → Exporter) — le fichier JSON réimporte tout à l'identique.
@@ -30,10 +30,20 @@ src/
                créneaux horaires, plateaux, tendances/radar/streak
   coach/       composer 50/30/20 (conscient de la phase), briefing/débriefing,
                simulation complète + rapport par famille
+  culture/     Culture Aéro V2 : banque 2026, fiches, répétition espacée,
+               statistiques, simulation, favoris et drills générés
   app/         shell, SessionRunner (moteur de déroulé agnostique), contexte de session
   pages/       Dashboard, Entraînement libre, Session guidée, Simulation, Sprint,
                Astuces, Réglages
 ```
+
+## Culture Aéro
+
+L’entrée **Culture Aéro** ouvre un module entièrement séparé des scores et classes Pilotest. Il
+importe les 80 questions du document préparatoire 2026, propose 22 fiches courtes, une révision
+espacée, des quiz, une simulation, un mode erreurs, des favoris, une révision express et des drills
+de calculs aéronautiques et de caps. Sa progression versionnée est stockée dans
+`psy0.culture-v2` ; l’ancienne clé Culture n’est ni lue ni migrée.
 
 ## Ajouter un exercice
 

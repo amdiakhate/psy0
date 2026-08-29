@@ -1,0 +1,16 @@
+import { useState } from 'react';
+import { LESSONS, QUESTIONS } from '../bank';
+import { CULTURE_CATEGORY_BY_ID } from '../data/categories';
+import { CultureSession } from '../components/CultureSession';
+import { useCultureStore } from '../hooks/useCultureStore';
+import { toggleFavoriteLesson, toggleFavoriteQuestion } from '../storage';
+import type { CultureQuestion } from '../types';
+
+export function CultureFavoritesPage() {
+  const { store, updateStore } = useCultureStore();
+  const [running, setRunning] = useState<CultureQuestion[] | null>(null);
+  const questions = QUESTIONS.filter((question) => store.favoriteQuestionIds.includes(question.id));
+  const lessons = LESSONS.filter((lesson) => store.favoriteLessonIds.includes(lesson.id));
+  if (running) return <CultureSession questions={running} title="Favoris" subtitle="Les questions que tu as choisi de garder à portée de main" mode="review" onExit={() => setRunning(null)} />;
+  return <section><p className="text-xs font-semibold uppercase tracking-widest text-amber-400">Sélection personnelle</p><h3 className="mt-1 text-2xl font-bold">À revoir</h3><p className="mt-1 text-zinc-400">Tes questions et fiches favorites, indépendamment du planning automatique.</p>{questions.length === 0 && lessons.length === 0 ? <p className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5 text-zinc-500">Aucun favori. Utilise l’étoile dans une question ou une fiche.</p> : <><div className="mt-6 flex gap-3">{questions.length > 0 && <button type="button" onClick={() => setRunning(questions)} className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600">Réviser mes {questions.length} questions</button>}</div>{questions.length > 0 && <section className="mt-7"><h4 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Questions</h4><div className="mt-3 space-y-2">{questions.map((question) => <article key={question.id} className="flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"><div className="min-w-0 flex-1"><p className="text-xs uppercase tracking-widest text-zinc-600">{CULTURE_CATEGORY_BY_ID[question.category].shortLabel}</p><p className="mt-1 font-medium">{question.question}</p><p className="mt-1 text-sm text-green-400">{String(question.answer)}</p></div><button type="button" aria-label="Retirer des favoris" onClick={() => updateStore((current) => toggleFavoriteQuestion(current, question.id))} className="text-amber-300">★</button></article>)}</div></section>}{lessons.length > 0 && <section className="mt-7"><h4 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Fiches</h4><div className="mt-3 grid gap-3 md:grid-cols-2">{lessons.map((lesson) => <article key={lesson.id} className="flex items-start gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"><div className="min-w-0 flex-1"><p className="text-xs uppercase tracking-widest text-zinc-600">{CULTURE_CATEGORY_BY_ID[lesson.category].shortLabel}</p><p className="mt-1 font-medium">{lesson.title}</p><p className="mt-1 text-sm text-zinc-500">{lesson.takeaways.length} points à retenir</p></div><button type="button" aria-label="Retirer des favoris" onClick={() => updateStore((current) => toggleFavoriteLesson(current, lesson.id))} className="text-amber-300">★</button></article>)}</div></section>}</>}</section>;
+}
