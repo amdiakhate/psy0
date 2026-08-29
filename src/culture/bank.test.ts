@@ -4,16 +4,21 @@ import { CULTURE_CATEGORY_IDS } from './data/categories';
 import { validateCultureBank } from './validation';
 import type { CultureQuestion } from './types';
 
-describe('banque Culture Aéro V2', () => {
-  it('importe les 80 questions du document 2026 sans trou', () => {
-    expect(QUESTIONS).toHaveLength(80);
-    expect(QUESTIONS.map((question) => question.sourceQuestionNumber).sort((a, b) => Number(a) - Number(b))).toEqual(
-      Array.from({ length: 80 }, (_, index) => index + 1),
+describe('banque Culture Aéro V3', () => {
+  it('contient 380 questions éditoriales et conserve les 78 faits du document', () => {
+    expect(QUESTIONS).toHaveLength(380);
+    expect(QUESTIONS.map((question) => question.sourceQuestionNumber).filter(Boolean).sort((a, b) => Number(a) - Number(b))).toEqual(
+      Array.from({ length: 78 }, (_, index) => index + 3),
     );
   });
 
+  it('répartit exactement 180 questions CORE et 200 EXTENDED', () => {
+    expect(QUESTIONS.filter((question) => question.highYield)).toHaveLength(180);
+    expect(QUESTIONS.filter((question) => !question.highYield)).toHaveLength(200);
+  });
+
   it('contient des mini-fiches liées à des questions réelles', () => {
-    expect(LESSONS).toHaveLength(22);
+    expect(LESSONS).toHaveLength(60);
     expect(validateCultureBank(QUESTIONS, LESSONS)).toEqual([]);
   });
 
@@ -24,22 +29,19 @@ describe('banque Culture Aéro V2', () => {
   });
 
   it('retrouve une question par identifiant', () => {
-    expect(questionById('doc26-01')?.sourceQuestionNumber).toBe(1);
+    expect(questionById('doc26-03')?.sourceQuestionNumber).toBe(3);
     expect(questionById('missing')).toBeUndefined();
   });
 
   it('marque chaque donnée temporelle avec date et source', () => {
     for (const question of QUESTIONS.filter((item) => item.isTimeSensitive)) {
       expect(question.verifiedAt, question.id).toBe('2026-08-29');
-      expect(question.source, question.id).toContain('Culture_Aero');
+      expect(question.source, question.id).toBeTruthy();
     }
   });
 
-  it('réserve la saisie numérique aux deux calculs statiques', () => {
-    expect(QUESTIONS.filter((question) => question.type === 'numeric').map((question) => question.id)).toEqual([
-      'doc26-01',
-      'doc26-02',
-    ]);
+  it('réserve les saisies numériques aux générateurs de calcul hors banque', () => {
+    expect(QUESTIONS.filter((question) => question.type === 'numeric')).toEqual([]);
     expect(QUESTIONS.filter((question) => question.type === 'short-answer')).toEqual([]);
   });
 

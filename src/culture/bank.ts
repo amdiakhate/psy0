@@ -1,10 +1,9 @@
-import { coreLessons } from './data/lessons/core';
-import { document2026Questions } from './data/questions/document2026';
+import { allCultureLessons, allCultureQuestions } from './data/questions';
 import type { CultureCategory, CultureLesson, CultureQuestion } from './types';
 import { validateCultureBank } from './validation';
 
-export const QUESTIONS: CultureQuestion[] = document2026Questions;
-export const LESSONS: CultureLesson[] = coreLessons;
+export const QUESTIONS: CultureQuestion[] = allCultureQuestions;
+export const LESSONS: CultureLesson[] = allCultureLessons;
 
 const validationErrors = validateCultureBank(QUESTIONS, LESSONS);
 if (validationErrors.length > 0) {

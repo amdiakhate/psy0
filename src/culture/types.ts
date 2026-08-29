@@ -12,10 +12,22 @@ export type CultureCategory =
   | 'commercial-aviation'
   | 'general-aviation';
 
+export type CultureDomain =
+  | 'air-france'
+  | 'navigation'
+  | 'weather'
+  | 'aerodynamics'
+  | 'instruments'
+  | 'aerodromes'
+  | 'regulations-training'
+  | 'geography'
+  | 'history-commercial';
+
 export type CultureQuestionType = 'single-choice' | 'true-false' | 'numeric' | 'short-answer';
 
 export interface CultureQuestion {
   id: string;
+  domain?: CultureDomain;
   category: CultureCategory;
   categories: CultureCategory[];
   tags: string[];
@@ -37,6 +49,7 @@ export interface CultureQuestion {
 
 export interface CultureLesson {
   id: string;
+  domain?: CultureDomain;
   category: CultureCategory;
   title: string;
   takeaways: string[];

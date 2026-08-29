@@ -23,7 +23,7 @@ La V3 contient exactement 380 questions statiques :
 | Histoire / aviation commerciale | `general-aviation`, `commercial-aviation` hors Air France | 30 | 11 | 19 |
 | **Total** |  | **380** | **180** | **200** |
 
-Les 80 questions du document 2026 font partie de ces 380 questions et conservent leur identifiant `doc26-*`. Les nouvelles questions utilisent des préfixes stables par domaine. La banque contient exactement 60 mini-fiches, chacune reliée à 5 à 10 questions.
+Les 78 questions factuelles du document 2026 font partie de ces 380 questions et conservent leur identifiant `doc26-*`. Les deux calculs numériques du quiz source sont couverts par les générateurs de calcul et restent hors du décompte éditorial. Les nouvelles questions utilisent des préfixes stables par domaine. La banque contient exactement 60 mini-fiches, chacune reliée à 5 à 10 questions.
 
 ## CORE et EXTENDED
 
@@ -185,7 +185,7 @@ Les tests couvrent :
 - sélection stricte des six compartiments de la dernière ligne droite ;
 - statistiques séparées CORE/EXTENDED ;
 - validation des QCM, sources et questions numériques ;
-- conservation des 80 identifiants du document ;
+- conservation des 78 identifiants factuels du document ;
 - fonctionnement des réponses, progression et stockage existants ;
 - rendu des nouvelles métriques principales du dashboard lorsque le projet dispose du seam de test adapté.
 

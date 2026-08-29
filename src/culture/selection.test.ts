@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mulberry32 } from '../core/rng';
 import { QUESTIONS } from './bank';
 import { reviewQuestion } from './progress';
-import { selectBalancedSimulation, selectReviewQuestions } from './selection';
+import { selectBalancedSimulation, selectFinalStretchQuestions, selectReviewQuestions } from './selection';
 import { emptyCultureStore, recordCultureAnswer } from './storage';
 
 const NOW = new Date('2026-08-29T12:00:00Z');
@@ -22,8 +22,35 @@ describe('sélection Culture', () => {
     const wrong = QUESTIONS[0];
     store.progress[wrong.id] = reviewQuestion(undefined, wrong.id, 'wrong', NOW);
     expect(selectReviewQuestions(QUESTIONS, store, 20, NOW, mulberry32(2), { filter: 'errors' }).map((q) => q.id)).toEqual([wrong.id]);
-    expect(selectReviewQuestions(QUESTIONS, store, 80, NOW, mulberry32(2), { filter: 'new' })).toHaveLength(79);
+    expect(selectReviewQuestions(QUESTIONS, store, 400, NOW, mulberry32(2), { filter: 'new' })).toHaveLength(379);
     expect(selectReviewQuestions(QUESTIONS, store, 80, NOW, mulberry32(2), { filter: 'traps' }).every((q) => q.trap)).toBe(true);
+  });
+
+  it('applique les six compartiments stricts de dernière ligne droite', () => {
+    const base = QUESTIONS.find((question) => question.highYield)!;
+    const make = (id: string, highYield: boolean, category = base.category) => ({
+      ...base, id, highYield, category, categories: [category],
+    });
+    const wrong = make('bucket-wrong', false);
+    const freshCore = make('bucket-fresh', true);
+    const weakCore = make('bucket-weak', true, 'weather');
+    const dueCore = make('bucket-due', true, 'navigation');
+    const masteredCore = make('bucket-mastered', true, 'aerodynamics');
+    const extended = make('bucket-extended', false);
+    const store = emptyCultureStore();
+    store.progress[wrong.id] = reviewQuestion(undefined, wrong.id, 'wrong', NOW);
+    store.progress[weakCore.id] = reviewQuestion(undefined, weakCore.id, 'known', NOW);
+    store.progress[dueCore.id] = reviewQuestion(undefined, dueCore.id, 'guessed', new Date('2026-08-27T10:00:00Z'));
+    let mastered = reviewQuestion(undefined, masteredCore.id, 'known', NOW);
+    mastered = reviewQuestion(mastered, masteredCore.id, 'known', NOW);
+    store.progress[masteredCore.id] = reviewQuestion(mastered, masteredCore.id, 'known', NOW);
+    store.attempts.push({ id: 'weak-attempt', questionId: weakCore.id, category: 'weather', answeredAt: NOW.toISOString(), correct: false, verdict: 'wrong', sessionId: 's', mode: 'review' });
+
+    expect(selectFinalStretchQuestions(
+      [extended, masteredCore, dueCore, weakCore, freshCore, wrong], store, 6, NOW, mulberry32(9),
+    ).map((question) => question.id)).toEqual([
+      wrong.id, freshCore.id, weakCore.id, dueCore.id, masteredCore.id, extended.id,
+    ]);
   });
 
   it('identifie une catégorie faible à partir des essais', () => {

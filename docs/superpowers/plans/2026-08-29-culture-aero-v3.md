@@ -81,7 +81,7 @@ Expected: les nouveaux invariants compilent ; les volumes restent rouges jusqu'a
 
 - [ ] **Step 1: Classer les 80 questions existantes par domaine et niveau**
 
-Conserver les identifiants `doc26-01` à `doc26-80`, réserver `numeric` aux deux calculs du document et affecter le CORE aux notions prioritaires.
+Conserver les identifiants factuels `doc26-03` à `doc26-80`; les deux calculs du document sont couverts par les générateurs hors banque. Affecter le CORE aux notions prioritaires.
 
 - [ ] **Step 2: Ajouter les questions CORE manquantes**
 
@@ -94,7 +94,7 @@ Remplacer l'import unique du document par l'agrégat modulaire sans changer l'AP
 - [ ] **Step 4: Exécuter le test de décompte CORE**
 
 Run: `npm test -- src/culture/bank.test.ts`
-Expected: 180 CORE et conservation des 80 questions du document.
+Expected: 180 CORE et conservation des 78 questions factuelles du document.
 
 ### Task 3: Banque EXTENDED
 

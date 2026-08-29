@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { QUESTIONS } from './bank';
 import { checkAnswer } from './answers';
+import { mulberry32 } from '../core/rng';
+import { generateFlightMathQuestion } from './generators/flightMath';
 
 describe('réponses Culture', () => {
   it('gère les accents et la casse', () => {
@@ -10,9 +12,9 @@ describe('réponses Culture', () => {
   });
 
   it('gère les nombres et la virgule décimale', () => {
-    const distance = QUESTIONS.find((question) => question.id === 'doc26-01')!;
-    expect(checkAnswer(distance, '60')).toBe(true);
-    expect(checkAnswer(distance, 60)).toBe(true);
+    const distance = generateFlightMathQuestion(mulberry32(12));
+    expect(checkAnswer(distance, String(distance.answer))).toBe(true);
+    expect(checkAnswer(distance, Number(distance.answer))).toBe(true);
     expect(checkAnswer({ ...distance, answer: 64.75, acceptedAnswers: [] }, '64,75')).toBe(true);
   });
 

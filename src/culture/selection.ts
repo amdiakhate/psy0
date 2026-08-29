@@ -62,11 +62,37 @@ export function selectReviewQuestions(
   options: SelectionOptions = {},
 ): CultureQuestion[] {
   const pool = shuffle(rng, questions.filter((question) => eligible(question, store, options)));
+  if (options.finalStretch ?? store.finalStretch) {
+    return selectFinalStretchQuestions(pool, store, count, now, rng);
+  }
   return pool
     .map((question, index) => ({ question, index, score: priority(question, store, now, options.finalStretch ?? store.finalStretch) }))
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .slice(0, count)
     .map((item) => item.question);
+}
+
+export function selectFinalStretchQuestions(
+  questions: CultureQuestion[],
+  store: CultureStore,
+  count: number,
+  now: Date,
+  rng: Rng,
+): CultureQuestion[] {
+  const weak = new Set(weakestCategories(store));
+  const buckets: CultureQuestion[][] = Array.from({ length: 6 }, () => []);
+  for (const question of questions) {
+    const progress = store.progress[question.id];
+    let bucket: number;
+    if (hasActiveError(progress)) bucket = 0;
+    else if (question.highYield && !progress?.seenCount) bucket = 1;
+    else if (question.highYield && weak.has(question.category) && progress?.mastery !== 'mastered') bucket = 2;
+    else if (question.highYield && (isQuestionDue(progress, now) || progress?.mastery === 'learning' || progress?.mastery === 'review')) bucket = 3;
+    else if (question.highYield) bucket = 4;
+    else bucket = 5;
+    buckets[bucket].push(question);
+  }
+  return buckets.flatMap((bucket) => shuffle(rng, bucket)).slice(0, count);
 }
 
 export function selectBalancedSimulation(

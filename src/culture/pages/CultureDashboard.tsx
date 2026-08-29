@@ -27,7 +27,7 @@ export function CultureDashboard() {
   return (
     <div>
       <section className="overflow-hidden rounded-2xl border border-sky-900/60 bg-gradient-to-br from-sky-950/60 via-zinc-900/70 to-zinc-950 p-5 md:p-7">
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_1fr]">
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <span className="rounded-full border border-sky-800 bg-sky-950 px-2.5 py-1 text-xs font-semibold uppercase tracking-wider text-sky-300">Recommandation du jour</span>
@@ -41,9 +41,11 @@ export function CultureDashboard() {
               <Link to="/culture/express" className="rounded-lg border border-zinc-700 px-5 py-2.5 text-zinc-200 hover:bg-zinc-800">Révision express</Link>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Metric label="Maîtrisé" value={`${Math.round(stats.masteryPercent * 100)} %`} detail={`${stats.mastered}/${stats.total} notions`} tone="text-green-400" />
-            <Metric label="Réussite" value={`${Math.round(stats.accuracy * 100)} %`} detail={`${stats.seen} vues`} tone="text-sky-400" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+            <Metric label="CORE" value={`${stats.core.seen}/${stats.core.total}`} detail="questions vues" tone="text-sky-300" />
+            <Metric label="EXTENDED" value={`${stats.extended.seen}/${stats.extended.total}`} detail="questions vues" tone="text-zinc-300" />
+            <Metric label="Couverture CORE" value={`${Math.round(stats.core.coverage * 100)} %`} detail={`${stats.core.mastered} maîtrisées`} tone="text-green-400" />
+            <Metric label="Réussite CORE" value={`${Math.round(stats.core.accuracy * 100)} %`} detail="sur tes réponses" tone="text-sky-400" />
             <Metric label="À revoir" value={String(stats.toReview)} detail={`${stats.due} due${stats.due > 1 ? 's' : ''} aujourd’hui`} tone="text-amber-400" />
             <Metric label="Erreurs" value={String(stats.errors)} detail="encore actives" tone="text-red-400" />
           </div>

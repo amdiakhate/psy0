@@ -33,6 +33,30 @@ export interface CultureDashboardStats {
   weakest: CultureCategoryStats[];
   categories: CultureCategoryStats[];
   lastSevenDays: CultureDayStats[];
+  core: CultureTierStats;
+  extended: CultureTierStats;
+}
+
+export interface CultureTierStats {
+  total: number;
+  seen: number;
+  mastered: number;
+  coverage: number;
+  accuracy: number;
+}
+
+function tierStats(questions: CultureQuestion[], store: CultureStore, highYield: boolean): CultureTierStats {
+  const pool = questions.filter((question) => question.highYield === highYield);
+  const ids = new Set(pool.map((question) => question.id));
+  const attempts = store.attempts.filter((attempt) => ids.has(attempt.questionId));
+  const seen = pool.filter((question) => (store.progress[question.id]?.seenCount ?? 0) > 0).length;
+  return {
+    total: pool.length,
+    seen,
+    mastered: pool.filter((question) => store.progress[question.id]?.mastery === 'mastered').length,
+    coverage: pool.length === 0 ? 0 : seen / pool.length,
+    accuracy: attempts.length === 0 ? 0 : attempts.filter((attempt) => attempt.correct).length / attempts.length,
+  };
 }
 
 function localDay(date: Date): string {
@@ -116,5 +140,7 @@ export function getCultureDashboardStats(
     weakest,
     categories,
     lastSevenDays: sevenDayHistory(store, now),
+    core: tierStats(questions, store, true),
+    extended: tierStats(questions, store, false),
   };
 }
