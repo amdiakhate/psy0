@@ -1,6 +1,15 @@
 import { CULTURE_CATEGORY_IDS } from './data/categories';
 import type { CultureLesson, CultureQuestion } from './types';
 
+const NUMERIC_CALCULATION_TAGS = new Set([
+  'vitesse-distance-temps',
+  'caps',
+  'différence angulaire',
+  'cap opposé',
+  'QFU',
+  'conversion',
+]);
+
 export function validateCultureBank(
   questions: CultureQuestion[],
   lessons: CultureLesson[],
@@ -21,7 +30,15 @@ export function validateCultureBank(
       if (question.choices && new Set(question.choices).size !== question.choices.length) errors.push(`${question.id}: choix dupliqués`);
       if (typeof question.answer !== 'string' || !question.choices?.includes(question.answer)) errors.push(`${question.id}: réponse absente des choix`);
     }
-    if (question.type === 'numeric' && typeof question.answer !== 'number') errors.push(`${question.id}: réponse numérique requise`);
+    if (question.type === 'numeric') {
+      if (typeof question.answer !== 'number') errors.push(`${question.id}: réponse numérique requise`);
+      if (!question.tags.some((tag) => NUMERIC_CALCULATION_TAGS.has(tag))) {
+        errors.push(`${question.id}: numeric réservé aux calculs et drills`);
+      }
+    }
+    if (question.type === 'short-answer' && !question.tags.includes('rappel libre')) {
+      errors.push(`${question.id}: short-answer réservé au rappel libre explicite`);
+    }
     if (question.isTimeSensitive && (!question.verifiedAt || !question.source)) errors.push(`${question.id}: donnée temporelle sans date ou source`);
   }
 
