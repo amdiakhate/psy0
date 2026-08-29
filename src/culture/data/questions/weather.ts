@@ -68,4 +68,4 @@ const topics: CultureTopicSeed[] = [
   ]},
 ];
 
-export const weatherContent = buildDomainContent('weather', 'met', topics, 19);
+export const weatherContent = buildDomainContent('weather', 'met', topics);

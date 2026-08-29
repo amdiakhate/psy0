@@ -13,8 +13,10 @@ describe('banque Culture Aéro V3', () => {
   });
 
   it('répartit exactement 180 questions CORE et 200 EXTENDED', () => {
-    expect(QUESTIONS.filter((question) => question.highYield)).toHaveLength(180);
-    expect(QUESTIONS.filter((question) => !question.highYield)).toHaveLength(200);
+    expect(QUESTIONS.every((question) => question.tier === 'core' || question.tier === 'extended')).toBe(true);
+    expect(QUESTIONS.filter((question) => question.tier === 'core')).toHaveLength(180);
+    expect(QUESTIONS.filter((question) => question.tier === 'extended')).toHaveLength(200);
+    expect(QUESTIONS.every((question) => question.highYield === (question.tier === 'core'))).toBe(true);
   });
 
   it('contient des mini-fiches liées à des questions réelles', () => {

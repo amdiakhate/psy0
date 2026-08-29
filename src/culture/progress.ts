@@ -11,6 +11,8 @@ export function emptyProgress(questionId: string): CultureProgress {
     incorrectCount: 0,
     currentStreak: 0,
     mastery: 'new',
+    activeError: false,
+    examReady: false,
   };
 }
 
@@ -34,6 +36,7 @@ export function reviewQuestion(
     seenCount: previous.seenCount + 1,
     lastSeenAt: timestamp,
     understoodAt: undefined,
+    lastVerdict: verdict,
   };
 
   if (verdict === 'wrong') {
@@ -45,6 +48,8 @@ export function reviewQuestion(
       confidence: 0,
       lastIncorrectAt: timestamp,
       nextReviewAt: new Date(now.getTime() + 4 * HOUR_MS).toISOString(),
+      activeError: true,
+      examReady: false,
     };
   }
 
@@ -88,16 +93,12 @@ export function isQuestionDue(progress: CultureProgress | undefined, now: Date):
 }
 
 export function hasActiveError(progress: CultureProgress | undefined): boolean {
-  if (!progress || progress.incorrectCount === 0 || progress.understoodAt) return false;
-  return progress.currentStreak < 2;
+  return progress?.activeError === true;
 }
 
 export function markProgressUnderstood(progress: CultureProgress, now: Date): CultureProgress {
   return {
     ...progress,
     understoodAt: now.toISOString(),
-    currentStreak: Math.max(progress.currentStreak, 2),
-    mastery: progress.mastery === 'mastered' ? 'mastered' : 'review',
-    nextReviewAt: new Date(now.getTime() + 7 * DAY_MS).toISOString(),
   };
 }

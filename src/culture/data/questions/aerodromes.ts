@@ -40,4 +40,4 @@ const topics:CultureTopicSeed[]=[
     q('Quelle phase aligne l’avion avec l’axe de piste avant l’atterrissage ?','La finale',['La vent traversier','La vent arrière','Le roulage'], 'La finale est la dernière branche de l’approche.'),
   ]},
 ];
-export const aerodromesContent=buildDomainContent('aerodromes','ad',topics,10);
+export const aerodromesContent=buildDomainContent('aerodromes','ad',topics);

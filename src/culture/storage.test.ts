@@ -51,9 +51,45 @@ describe('stockage Culture V2', () => {
     expect(migrateCultureStore({ version: 99, progress: { q: {} } })).toEqual(emptyCultureStore());
   });
 
+  it('migre le store V1 sans perdre la progression et reconstruit le dernier verdict', () => {
+    const migrated = migrateCultureStore({
+      version: 1,
+      progress: { q: { questionId: 'q', seenCount: 1, correctCount: 0, incorrectCount: 1, currentStreak: 0, mastery: 'learning' } },
+      attempts: [{ id: 'a', questionId: 'q', category: 'navigation', answeredAt: '2026-08-29T10:00:00.000Z', correct: false, verdict: 'wrong', sessionId: 's1', mode: 'review' }],
+      sessions: [], favoriteQuestionIds: [], favoriteLessonIds: [], activeDays: [], finalStretch: true,
+    });
+    expect(migrated.version).toBe(2);
+    expect(migrated.progress.q).toMatchObject({ lastVerdict: 'wrong', activeError: true, examReady: false });
+    expect(migrated.finalStretch).toBe(true);
+  });
+
   it('marque une question comprise sans la supprimer', () => {
     let store = recordCultureAnswer({ store: emptyCultureStore(), questionId: 'doc26-01', category: 'mental-math', verdict: 'wrong', sessionId: 's1', mode: 'errors', now: new Date('2026-08-29T10:00:00Z') });
     store = markQuestionUnderstood(store, 'doc26-01', new Date('2026-08-29T11:00:00Z'));
-    expect(store.progress['doc26-01']).toMatchObject({ incorrectCount: 1, understoodAt: '2026-08-29T11:00:00.000Z' });
+    expect(store.progress['doc26-01']).toMatchObject({ incorrectCount: 1, activeError: true, understoodAt: '2026-08-29T11:00:00.000Z' });
+  });
+
+  it('résout une erreur par une bonne réponse dans une session ultérieure', () => {
+    let store = recordCultureAnswer({ store: emptyCultureStore(), questionId: 'q', category: 'navigation', verdict: 'wrong', sessionId: 's1', mode: 'review', now: new Date('2026-08-29T10:00:00Z') });
+    store = recordCultureAnswer({ store, questionId: 'q', category: 'navigation', verdict: 'known', sessionId: 's2', mode: 'review', now: new Date('2026-08-29T11:00:00Z') });
+    expect(store.progress.q.activeError).toBe(false);
+  });
+
+  it('demande deux bonnes réponses le même jour dans la session de l’erreur', () => {
+    let store = recordCultureAnswer({ store: emptyCultureStore(), questionId: 'q', category: 'navigation', verdict: 'wrong', sessionId: 's1', mode: 'review', now: new Date('2026-08-29T10:00:00Z') });
+    store = recordCultureAnswer({ store, questionId: 'q', category: 'navigation', verdict: 'known', sessionId: 's1', mode: 'review', now: new Date('2026-08-29T10:10:00Z') });
+    expect(store.progress.q.activeError).toBe(true);
+    store = recordCultureAnswer({ store, questionId: 'q', category: 'navigation', verdict: 'known', sessionId: 's1', mode: 'review', now: new Date('2026-08-29T10:20:00Z') });
+    expect(store.progress.q.activeError).toBe(false);
+  });
+
+  it('exige deux sessions et quatre heures pour examReady puis l’annule sur erreur', () => {
+    let store = recordCultureAnswer({ store: emptyCultureStore(), questionId: 'q', category: 'navigation', verdict: 'known', sessionId: 's1', mode: 'review', now: new Date('2026-08-29T10:00:00Z') });
+    store = recordCultureAnswer({ store, questionId: 'q', category: 'navigation', verdict: 'known', sessionId: 's2', mode: 'review', now: new Date('2026-08-29T13:59:00Z') });
+    expect(store.progress.q.examReady).toBe(false);
+    store = recordCultureAnswer({ store, questionId: 'q', category: 'navigation', verdict: 'known', sessionId: 's3', mode: 'review', now: new Date('2026-08-29T14:01:00Z') });
+    expect(store.progress.q.examReady).toBe(true);
+    store = recordCultureAnswer({ store, questionId: 'q', category: 'navigation', verdict: 'wrong', sessionId: 's4', mode: 'review', now: new Date('2026-08-29T15:00:00Z') });
+    expect(store.progress.q.examReady).toBe(false);
   });
 });

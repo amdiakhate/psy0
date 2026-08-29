@@ -19,6 +19,7 @@ function fraction(minutes: number): { numerator: number; denominator: number; la
 function base(id: string, question: string, answer: number, explanation: string): CultureQuestion {
   return {
     id,
+    tier: 'core',
     category: 'mental-math',
     categories: ['mental-math', 'navigation'],
     tags: ['vitesse-distance-temps', 'généré'],

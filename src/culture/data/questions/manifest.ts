@@ -16,3 +16,21 @@ export const CULTURE_BANK_TOTAL = 380;
 export const CULTURE_CORE_TOTAL = 180;
 export const CULTURE_EXTENDED_TOTAL = 200;
 export const CULTURE_LESSON_TOTAL = 60;
+
+function ids(prefix: string, count: number): string[] {
+  return Array.from({ length: count }, (_, index) => `v3-${prefix}-${String(index + 1).padStart(3, '0')}`);
+}
+
+// Registre éditorial explicite. Le tier ne dépend plus de la position au moment
+// où la banque est construite : chaque identifiant publié garde son niveau.
+export const CORE_ENRICHED_QUESTION_IDS = new Set([
+  ...ids('af', 15),
+  ...ids('nav', 21),
+  ...ids('met', 19),
+  ...ids('aero', 14),
+  ...ids('inst', 12),
+  ...ids('ad', 10),
+  ...ids('reg', 9),
+  ...ids('geo', 7),
+  ...ids('hist', 3),
+]);

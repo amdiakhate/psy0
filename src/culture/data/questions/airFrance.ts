@@ -53,4 +53,4 @@ const topics:CultureTopicSeed[]=[
     q('Quel pilote commande le premier vol du Concorde 001 ?','André Turcat',['Jean Mermoz','Charles Lindbergh','Antoine de Saint-Exupéry'],'André Turcat commande le vol inaugural du prototype français en 1969.'),
   ]},
 ];
-export const airFranceContent=buildDomainContent('air-france','af',topics,15);
+export const airFranceContent=buildDomainContent('air-france','af',topics);

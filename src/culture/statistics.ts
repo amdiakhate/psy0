@@ -11,6 +11,7 @@ export interface CultureCategoryStats {
   errors: number;
   due: number;
   accuracy: number | null;
+  sampleSize: number;
 }
 
 export interface CultureDayStats {
@@ -42,20 +43,25 @@ export interface CultureTierStats {
   seen: number;
   mastered: number;
   coverage: number;
-  accuracy: number;
+  attemptAccuracy: number;
+  currentAccuracy: number;
+  examReady: number;
 }
 
-function tierStats(questions: CultureQuestion[], store: CultureStore, highYield: boolean): CultureTierStats {
-  const pool = questions.filter((question) => question.highYield === highYield);
+function tierStats(questions: CultureQuestion[], store: CultureStore, tier: CultureQuestion['tier']): CultureTierStats {
+  const pool = questions.filter((question) => question.tier === tier);
   const ids = new Set(pool.map((question) => question.id));
   const attempts = store.attempts.filter((attempt) => ids.has(attempt.questionId));
+  const viewedProgress = pool.map((question) => store.progress[question.id]).filter((progress) => progress?.seenCount && progress.lastVerdict);
   const seen = pool.filter((question) => (store.progress[question.id]?.seenCount ?? 0) > 0).length;
   return {
     total: pool.length,
     seen,
     mastered: pool.filter((question) => store.progress[question.id]?.mastery === 'mastered').length,
     coverage: pool.length === 0 ? 0 : seen / pool.length,
-    accuracy: attempts.length === 0 ? 0 : attempts.filter((attempt) => attempt.correct).length / attempts.length,
+    attemptAccuracy: attempts.length === 0 ? 0 : attempts.filter((attempt) => attempt.correct).length / attempts.length,
+    currentAccuracy: viewedProgress.length === 0 ? 0 : viewedProgress.filter((progress) => progress.lastVerdict !== 'wrong').length / viewedProgress.length,
+    examReady: pool.filter((question) => store.progress[question.id]?.examReady).length,
   };
 }
 
@@ -93,6 +99,7 @@ export function getCategoryStats(
       errors: pool.filter((question) => hasActiveError(store.progress[question.id])).length,
       due: pool.filter((question) => isQuestionDue(store.progress[question.id], now)).length,
       accuracy: categoryAccuracy(store, category),
+      sampleSize: new Set(store.attempts.filter((attempt) => attempt.category === category).map((attempt) => attempt.questionId)).size,
     };
   });
 }
@@ -140,7 +147,7 @@ export function getCultureDashboardStats(
     weakest,
     categories,
     lastSevenDays: sevenDayHistory(store, now),
-    core: tierStats(questions, store, true),
-    extended: tierStats(questions, store, false),
+    core: tierStats(questions, store, 'core'),
+    extended: tierStats(questions, store, 'extended'),
   };
 }

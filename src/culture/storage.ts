@@ -10,7 +10,7 @@ import type {
 } from './types';
 
 export const CULTURE_STORAGE_KEY = 'culture-v2';
-export const CULTURE_STORAGE_VERSION = 1 as const;
+export const CULTURE_STORAGE_VERSION = 2 as const;
 const MAX_ATTEMPTS = 2_000;
 const MAX_SESSIONS = 100;
 
@@ -35,13 +35,46 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function normalizeProgress(value: unknown): Record<string, CultureProgress> {
+function migratedActiveError(item: Record<string, unknown>, attempts: CultureAttempt[]): boolean {
+  if (typeof item.activeError === 'boolean') return item.activeError;
+  const lastWrongIndex = attempts.findLastIndex((attempt) => !attempt.correct);
+  if (lastWrongIndex >= 0) {
+    const lastWrong = attempts[lastWrongIndex];
+    const correctAfter = attempts.slice(lastWrongIndex + 1).filter((attempt) => attempt.correct);
+    if (correctAfter.some((attempt) => attempt.sessionId !== lastWrong.sessionId)) return false;
+    const byDay = new Map<string, number>();
+    for (const attempt of correctAfter) {
+      const day = dayKey(new Date(attempt.answeredAt));
+      byDay.set(day, (byDay.get(day) ?? 0) + 1);
+    }
+    return ![...byDay.values()].some((count) => count >= 2);
+  }
+  return typeof item.incorrectCount === 'number'
+    && item.incorrectCount > 0
+    && (Boolean(item.understoodAt) || Number(item.currentStreak) < 2);
+}
+
+function migratedExamReady(item: Record<string, unknown>, attempts: CultureAttempt[]): boolean {
+  if (typeof item.examReady === 'boolean') return item.examReady;
+  const lastAttempt = attempts.at(-1);
+  if (!lastAttempt?.correct) return false;
+  const lastWrongIndex = attempts.findLastIndex((attempt) => !attempt.correct);
+  const correctAfter = attempts.slice(lastWrongIndex + 1).filter((attempt) => attempt.correct);
+  return correctAfter.some((attempt) => (
+    attempt !== lastAttempt
+    && attempt.sessionId !== lastAttempt.sessionId
+    && new Date(lastAttempt.answeredAt).getTime() - new Date(attempt.answeredAt).getTime() >= 4 * 3_600_000
+  ));
+}
+
+function normalizeProgress(value: unknown, attemptsByQuestion: Map<string, CultureAttempt[]>): Record<string, CultureProgress> {
   if (!isRecord(value)) return {};
   const result: Record<string, CultureProgress> = {};
   for (const [id, item] of Object.entries(value)) {
     if (!isRecord(item)) continue;
     const mastery = item.mastery;
     if (!['new', 'learning', 'review', 'mastered'].includes(String(mastery))) continue;
+    const attempts = attemptsByQuestion.get(id) ?? [];
     result[id] = {
       questionId: id,
       seenCount: typeof item.seenCount === 'number' ? item.seenCount : 0,
@@ -54,19 +87,27 @@ function normalizeProgress(value: unknown): Record<string, CultureProgress> {
       nextReviewAt: typeof item.nextReviewAt === 'string' ? item.nextReviewAt : undefined,
       confidence: [0, 1, 2, 3].includes(Number(item.confidence)) ? item.confidence as CultureProgress['confidence'] : undefined,
       understoodAt: typeof item.understoodAt === 'string' ? item.understoodAt : undefined,
+      lastVerdict: ['wrong', 'guessed', 'known', 'review'].includes(String(item.lastVerdict))
+        ? item.lastVerdict as CultureReviewVerdict
+        : attempts.at(-1)?.verdict,
+      activeError: migratedActiveError(item, attempts),
+      examReady: migratedExamReady(item, attempts),
     };
   }
   return result;
 }
 
 export function migrateCultureStore(value: unknown): CultureStore {
-  if (!isRecord(value) || value.version !== CULTURE_STORAGE_VERSION) return emptyCultureStore();
+  if (!isRecord(value) || (value.version !== 1 && value.version !== CULTURE_STORAGE_VERSION)) return emptyCultureStore();
+  const attempts = Array.isArray(value.attempts) ? value.attempts.filter(isRecord) as unknown as CultureAttempt[] : [];
+  const attemptsByQuestion = new Map<string, CultureAttempt[]>();
+  for (const attempt of attempts) attemptsByQuestion.set(attempt.questionId, [...(attemptsByQuestion.get(attempt.questionId) ?? []), attempt]);
   return {
     version: CULTURE_STORAGE_VERSION,
-    progress: normalizeProgress(value.progress),
+    progress: normalizeProgress(value.progress, attemptsByQuestion),
     favoriteQuestionIds: stringArray(value.favoriteQuestionIds),
     favoriteLessonIds: stringArray(value.favoriteLessonIds),
-    attempts: Array.isArray(value.attempts) ? value.attempts.filter(isRecord) as unknown as CultureAttempt[] : [],
+    attempts,
     sessions: Array.isArray(value.sessions) ? value.sessions.filter(isRecord) as unknown as CultureSessionSummary[] : [],
     activeDays: stringArray(value.activeDays),
     lastTrainingAt: typeof value.lastTrainingAt === 'string' ? value.lastTrainingAt : undefined,
@@ -89,6 +130,47 @@ function dayKey(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+function isCorrectVerdict(verdict: CultureReviewVerdict): boolean {
+  return verdict !== 'wrong';
+}
+
+function activeErrorAfterAttempt(args: {
+  store: CultureStore;
+  questionId: string;
+  verdict: CultureReviewVerdict;
+  sessionId: string;
+  now: Date;
+}): boolean {
+  const { store, questionId, verdict, sessionId, now } = args;
+  if (verdict === 'wrong') return true;
+  if (!store.progress[questionId]?.activeError) return false;
+  const attempts = store.attempts.filter((attempt) => attempt.questionId === questionId);
+  const lastWrongIndex = attempts.findLastIndex((attempt) => !attempt.correct);
+  const lastWrong = attempts[lastWrongIndex];
+  if (lastWrong && lastWrong.sessionId !== sessionId) return false;
+  const correctSinceError = attempts.slice(lastWrongIndex + 1).filter((attempt) => attempt.correct);
+  const sameDayCorrect = correctSinceError.filter((attempt) => dayKey(new Date(attempt.answeredAt)) === dayKey(now)).length + 1;
+  return sameDayCorrect < 2;
+}
+
+function examReadyAfterAttempt(args: {
+  store: CultureStore;
+  questionId: string;
+  verdict: CultureReviewVerdict;
+  sessionId: string;
+  now: Date;
+}): boolean {
+  const { store, questionId, verdict, sessionId, now } = args;
+  if (!isCorrectVerdict(verdict)) return false;
+  const attempts = store.attempts.filter((attempt) => attempt.questionId === questionId);
+  const lastWrongIndex = attempts.findLastIndex((attempt) => !attempt.correct);
+  return attempts.slice(lastWrongIndex + 1).some((attempt) => (
+    attempt.correct
+    && attempt.sessionId !== sessionId
+    && now.getTime() - new Date(attempt.answeredAt).getTime() >= 4 * 3_600_000
+  ));
+}
+
 export function recordCultureAnswer(args: {
   store: CultureStore;
   questionId: string;
@@ -99,7 +181,12 @@ export function recordCultureAnswer(args: {
   now: Date;
 }): CultureStore {
   const { store, questionId, category, verdict, sessionId, mode, now } = args;
-  const progress = reviewQuestion(store.progress[questionId], questionId, verdict, now);
+  const reviewed = reviewQuestion(store.progress[questionId], questionId, verdict, now);
+  const progress: CultureProgress = {
+    ...reviewed,
+    activeError: activeErrorAfterAttempt({ store, questionId, verdict, sessionId, now }),
+    examReady: examReadyAfterAttempt({ store, questionId, verdict, sessionId, now }),
+  };
   const attempt: CultureAttempt = {
     id: `${sessionId}:${questionId}:${now.getTime()}:${store.attempts.length}`,
     questionId,

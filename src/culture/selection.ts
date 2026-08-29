@@ -3,7 +3,7 @@ import type { Rng } from '../core/rng';
 import { hasActiveError, isQuestionDue } from './progress';
 import type { CultureCategory, CultureQuestion, CultureStore } from './types';
 
-export type CulturePoolFilter = 'all' | 'weak' | 'errors' | 'new' | 'traps';
+export type CulturePoolFilter = 'all' | 'weak' | 'errors' | 'new' | 'traps' | 'extended';
 
 export interface SelectionOptions {
   category?: CultureCategory;
@@ -13,8 +13,10 @@ export interface SelectionOptions {
 }
 
 export function categoryAccuracy(store: CultureStore, category: CultureCategory): number | null {
-  const attempts = store.attempts.filter((attempt) => attempt.category === category).slice(-30);
-  if (attempts.length === 0) return null;
+  const latest = new Map<string, CultureStore['attempts'][number]>();
+  for (const attempt of store.attempts) if (attempt.category === category) latest.set(attempt.questionId, attempt);
+  const attempts = [...latest.values()];
+  if (attempts.length < 5) return null;
   return attempts.filter((attempt) => attempt.correct).length / attempts.length;
 }
 
@@ -34,6 +36,7 @@ function eligible(question: CultureQuestion, store: CultureStore, options: Selec
   if (options.filter === 'errors' && !hasActiveError(progress)) return false;
   if (options.filter === 'new' && progress?.seenCount) return false;
   if (options.filter === 'traps' && !question.trap) return false;
+  if (options.filter === 'extended' && question.tier !== 'extended') return false;
   if (options.filter === 'weak' && !weakestCategories(store).some((category) => question.categories.includes(category))) return false;
   return true;
 }
@@ -62,7 +65,8 @@ export function selectReviewQuestions(
   options: SelectionOptions = {},
 ): CultureQuestion[] {
   const pool = shuffle(rng, questions.filter((question) => eligible(question, store, options)));
-  if (options.finalStretch ?? store.finalStretch) {
+  const explicitExtendedPool = options.filter === 'extended' || Boolean(options.category);
+  if ((options.finalStretch ?? store.finalStretch) && !explicitExtendedPool) {
     return selectFinalStretchQuestions(pool, store, count, now, rng);
   }
   return pool
@@ -79,20 +83,56 @@ export function selectFinalStretchQuestions(
   now: Date,
   rng: Rng,
 ): CultureQuestion[] {
-  const weak = new Set(weakestCategories(store));
-  const buckets: CultureQuestion[][] = Array.from({ length: 6 }, () => []);
-  for (const question of questions) {
+  const core = questions.filter((question) => question.tier === 'core');
+  const coverage = core.length === 0 ? 0 : core.filter((question) => (store.progress[question.id]?.seenCount ?? 0) > 0).length / core.length;
+  const allowExtended = coverage >= 0.9;
+  const newCore = core.filter((question) => !(store.progress[question.id]?.seenCount));
+  const errors = questions.filter((question) => hasActiveError(store.progress[question.id]) && (allowExtended || question.tier === 'core'));
+  const weakCore = core.filter((question) => {
     const progress = store.progress[question.id];
-    let bucket: number;
-    if (hasActiveError(progress)) bucket = 0;
-    else if (question.highYield && !progress?.seenCount) bucket = 1;
-    else if (question.highYield && weak.has(question.category) && progress?.mastery !== 'mastered') bucket = 2;
-    else if (question.highYield && (isQuestionDue(progress, now) || progress?.mastery === 'learning' || progress?.mastery === 'review')) bucket = 3;
-    else if (question.highYield) bucket = 4;
-    else bucket = 5;
-    buckets[bucket].push(question);
+    if (!progress?.seenCount || progress.examReady || hasActiveError(progress)) return false;
+    const uncertain = progress.lastVerdict;
+    const weakEvidence = progress.incorrectCount > 0 || uncertain === 'guessed' || uncertain === 'review';
+    return weakEvidence && (isQuestionDue(progress, now) || newCore.length === 0);
+  });
+  const consolidationCore = core.filter((question) => {
+    const progress = store.progress[question.id];
+    return Boolean(progress?.seenCount && !hasActiveError(progress) && !weakCore.includes(question) && isQuestionDue(progress, now));
+  });
+  const extended = allowExtended
+    ? questions.filter((question) => question.tier === 'extended' && !hasActiveError(store.progress[question.id]) && (!(store.progress[question.id]?.seenCount) || isQuestionDue(store.progress[question.id], now)))
+    : [];
+
+  const ratios = [0.4, 8 / 30, 0.2, 4 / 30];
+  const quotas = ratios.map((ratio) => Math.floor(count * ratio));
+  while (quotas.reduce((sum, value) => sum + value, 0) < count) quotas[0] += 1;
+  const selected: CultureQuestion[] = [];
+  const categoryCounts = new Map<CultureCategory, number>();
+  const categoryCap = Math.max(1, Math.ceil(count * 0.4));
+  const extendedCap = Math.floor(count * 0.2);
+
+  function take(pool: CultureQuestion[], wanted: number): void {
+    const candidates = shuffle(rng, pool.filter((question) => !selected.some((item) => item.id === question.id)));
+    let added = 0;
+    for (const question of candidates) {
+      if (added >= wanted || selected.length >= count) break;
+      if ((categoryCounts.get(question.category) ?? 0) >= categoryCap) continue;
+      if (question.tier === 'extended' && selected.filter((item) => item.tier === 'extended').length >= extendedCap) continue;
+      selected.push(question);
+      categoryCounts.set(question.category, (categoryCounts.get(question.category) ?? 0) + 1);
+      added += 1;
+    }
   }
-  return buckets.flatMap((bucket) => shuffle(rng, bucket)).slice(0, count);
+
+  const pools = [newCore, errors, weakCore, [...consolidationCore, ...extended]];
+  pools.forEach((pool, index) => take(pool, quotas[index]));
+  let cursor = 0;
+  while (selected.length < count && cursor < pools.length) {
+    const before = selected.length;
+    take(pools[cursor], count - selected.length);
+    if (selected.length === before) cursor += 1;
+  }
+  return shuffle(rng, selected).slice(0, count);
 }
 
 export function selectBalancedSimulation(

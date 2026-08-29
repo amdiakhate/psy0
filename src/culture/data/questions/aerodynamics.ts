@@ -55,4 +55,4 @@ const topics: CultureTopicSeed[] = [
     q('Quelle précaution réduit le risque derrière un avion lourd au départ ?','Éviter sa trajectoire et respecter l’espacement',['Décoller exactement à son point de rotation','Rester sous sa trajectoire','Ignorer le vent'],'L’espacement et une trajectoire adaptée évitent la zone de sillage la plus dangereuse.'),
   ]},
 ];
-export const aerodynamicsContent=buildDomainContent('aerodynamics','aero',topics,14);
+export const aerodynamicsContent=buildDomainContent('aerodynamics','aero',topics);

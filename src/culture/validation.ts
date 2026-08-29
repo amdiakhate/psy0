@@ -27,14 +27,14 @@ export function validateCultureBank(
   const categoryIds = new Set(CULTURE_CATEGORY_IDS);
 
   if (questions.length !== CULTURE_BANK_TOTAL) errors.push(`banque: ${CULTURE_BANK_TOTAL} questions requises`);
-  if (questions.filter((question) => question.highYield).length !== CULTURE_CORE_TOTAL) errors.push(`banque: ${CULTURE_CORE_TOTAL} questions CORE requises`);
-  if (questions.filter((question) => !question.highYield).length !== CULTURE_EXTENDED_TOTAL) errors.push(`banque: ${CULTURE_EXTENDED_TOTAL} questions EXTENDED requises`);
+  if (questions.filter((question) => question.tier === 'core').length !== CULTURE_CORE_TOTAL) errors.push(`banque: ${CULTURE_CORE_TOTAL} questions CORE requises`);
+  if (questions.filter((question) => question.tier === 'extended').length !== CULTURE_EXTENDED_TOTAL) errors.push(`banque: ${CULTURE_EXTENDED_TOTAL} questions EXTENDED requises`);
   if (lessons.length !== CULTURE_LESSON_TOTAL) errors.push(`banque: ${CULTURE_LESSON_TOTAL} fiches requises`);
 
   for (const [domain, target] of Object.entries(CULTURE_BANK_TARGETS)) {
     const domainQuestions = questions.filter((question) => question.domain === domain);
     if (domainQuestions.length !== target.total) errors.push(`${domain}: ${target.total} questions requises`);
-    if (domainQuestions.filter((question) => question.highYield).length !== target.core) errors.push(`${domain}: ${target.core} questions CORE requises`);
+    if (domainQuestions.filter((question) => question.tier === 'core').length !== target.core) errors.push(`${domain}: ${target.core} questions CORE requises`);
   }
 
   for (const question of questions) {
@@ -42,6 +42,8 @@ export function validateCultureBank(
     ids.add(question.id);
     if (!categoryIds.has(question.category)) errors.push(`${question.id}: catégorie inconnue`);
     if (!question.domain) errors.push(`${question.id}: domaine éditorial absent`);
+    if (!['core', 'extended'].includes(question.tier)) errors.push(`${question.id}: tier explicite absent ou invalide`);
+    if (question.highYield !== (question.tier === 'core')) errors.push(`${question.id}: highYield incohérent avec tier`);
     if (!question.categories.includes(question.category)) errors.push(`${question.id}: catégorie principale absente de categories`);
     if (question.explanation.trim().length < 20) errors.push(`${question.id}: explication insuffisante`);
     if (!question.source) errors.push(`${question.id}: source absente`);

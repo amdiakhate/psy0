@@ -25,4 +25,4 @@ const topics:CultureTopicSeed[]=[
     q('Quel fuseau utilise Singapour toute l’année ?','UTC+8',['UTC+6','UTC+7','UTC+9'],'Singapour est à UTC+8 sans heure d’été.'),q('Quel fuseau utilise Paris en hiver ?','UTC+1',['UTC','UTC+2','UTC-1'],'La France métropolitaine est à UTC+1 en heure standard.'),q('Quel fuseau utilise Paris en été ?','UTC+2',['UTC+1','UTC+3','UTC'],'Le passage à l’heure d’été place Paris à UTC+2.'),q('Quand il est 12 h UTC, quelle heure est-il à Singapour ?','20 h',['18 h','19 h','21 h'],'UTC+8 ajoute huit heures.'),q('Pourquoi l’écart Paris–New York peut-il varier temporairement au printemps ou à l’automne ?','Les changements d’heure n’ont pas lieu aux mêmes dates',['La Terre ralentit','UTC change chaque mois','New York change de longitude'],'Les calendriers de passage à l’heure d’été diffèrent.'),
   ]},
 ];
-export const geographyContent=buildDomainContent('geography','geo',topics,7);
+export const geographyContent=buildDomainContent('geography','geo',topics);

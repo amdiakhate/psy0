@@ -45,4 +45,4 @@ const topics:CultureTopicSeed[]=[
     q('Quelle différence sépare nord vrai et nord magnétique ?','La déclinaison magnétique',['La déviation instrumentale','Le facteur de charge','La finesse'],'Cette différence dépend de la position géographique.'),
   ]},
 ];
-export const instrumentsContent=buildDomainContent('instruments','inst',topics,12);
+export const instrumentsContent=buildDomainContent('instruments','inst',topics);

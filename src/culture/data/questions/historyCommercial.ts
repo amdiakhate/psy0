@@ -16,4 +16,4 @@ const topics:CultureTopicSeed[]=[
     q('Quel avion est couramment surnommé « Jumbo Jet » ?','Le Boeing 747',['L’Airbus A220','Le Concorde','Le Douglas DC-3'],'Le 747 est un gros-porteur emblématique à pont supérieur partiel.'),q('Quel avion est un transport supersonique franco-britannique ?','Le Concorde',['Le Boeing 787','L’Airbus A350','Le DC-3'],'Concorde est issu d’une coopération franco-britannique.'),q('Quel avion a joué un rôle majeur dans l’essor du transport commercial avant l’ère des jets ?','Le Douglas DC-3',['Le Spitfire','Le X-15','Le Vostok 1'],'Le DC-3 combine fiabilité et économie sur de nombreuses lignes.'),q('Que caractérise un avion gros-porteur ?','Une cabine comportant généralement deux couloirs',['Une seule place pilote','Une propulsion obligatoirement supersonique','L’absence de soute'],'Les wide-bodies disposent généralement de deux allées en cabine.'),
   ]},
 ];
-export const historyCommercialContent=buildDomainContent('history-commercial','hist',topics,3);
+export const historyCommercialContent=buildDomainContent('history-commercial','hist',topics);

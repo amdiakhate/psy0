@@ -27,6 +27,7 @@ export type CultureQuestionType = 'single-choice' | 'true-false' | 'numeric' | '
 
 export interface CultureQuestion {
   id: string;
+  tier: 'core' | 'extended';
   domain?: CultureDomain;
   category: CultureCategory;
   categories: CultureCategory[];
@@ -88,6 +89,9 @@ export interface CultureProgress {
   nextReviewAt?: string;
   confidence?: CultureConfidence;
   understoodAt?: string;
+  lastVerdict?: CultureReviewVerdict;
+  activeError: boolean;
+  examReady: boolean;
 }
 
 export type CultureReviewVerdict = 'wrong' | 'guessed' | 'known' | 'review';
@@ -123,8 +127,8 @@ export interface CultureSessionSummary {
   total: number;
 }
 
-export interface CultureStoreV1 {
-  version: 1;
+export interface CultureStoreV2 {
+  version: 2;
   progress: Record<string, CultureProgress>;
   favoriteQuestionIds: string[];
   favoriteLessonIds: string[];
@@ -135,4 +139,4 @@ export interface CultureStoreV1 {
   finalStretch: boolean;
 }
 
-export type CultureStore = CultureStoreV1;
+export type CultureStore = CultureStoreV2;

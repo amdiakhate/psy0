@@ -1,4 +1,5 @@
 import type { CultureCategory, CultureDiagram, CultureDomain, CultureLesson, CultureQuestion } from '../../types';
+import { CORE_ENRICHED_QUESTION_IDS } from './manifest';
 
 export type QuestionSeed = readonly [
   question: string,
@@ -33,7 +34,6 @@ export function buildDomainContent(
   domain: CultureDomain,
   prefix: string,
   topics: CultureTopicSeed[],
-  coreCount: number,
 ): BuiltDomainContent {
   let ordinal = 0;
   const lessons: CultureLesson[] = [];
@@ -44,9 +44,11 @@ export function buildDomainContent(
     for (const seed of topic.questions) {
       ordinal += 1;
       const id = `v3-${prefix}-${String(ordinal).padStart(3, '0')}`;
+      const tier = CORE_ENRICHED_QUESTION_IDS.has(id) ? 'core' : 'extended';
       questionIds.push(id);
       questions.push({
         id,
+        tier,
         domain,
         category: topic.category,
         categories: [...new Set([topic.category, ...(topic.categories ?? [])])],
@@ -56,11 +58,11 @@ export function buildDomainContent(
         choices: [seed[1], ...seed[2]],
         answer: seed[1],
         explanation: seed[3],
-        difficulty: ordinal <= coreCount ? 1 : 2,
+        difficulty: tier === 'core' ? 1 : 2,
         source: topic.source,
         isTimeSensitive: Boolean(topic.verifiedAt),
         verifiedAt: topic.verifiedAt,
-        highYield: ordinal <= coreCount,
+        highYield: tier === 'core',
         trap: topic.trap,
         memoryTip: topic.memoryTip,
       });

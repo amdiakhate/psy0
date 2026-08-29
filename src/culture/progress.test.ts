@@ -26,18 +26,10 @@ describe('répétition espacée Culture V2', () => {
     expect(third).toMatchObject({ mastery: 'mastered', currentStreak: 3, correctCount: 3 });
   });
 
-  it('ne retire une erreur qu’après deux réponses sues', () => {
-    const wrong = reviewQuestion(undefined, 'q1', 'wrong', T0);
-    const once = reviewQuestion(wrong, 'q1', 'known', T0);
-    const twice = reviewQuestion(once, 'q1', 'known', T0);
-    expect(hasActiveError(once)).toBe(true);
-    expect(hasActiveError(twice)).toBe(false);
-  });
-
-  it('permet de marquer explicitement une erreur comprise', () => {
+  it('marquer comprise conserve l’erreur active', () => {
     const wrong = reviewQuestion(undefined, 'q1', 'wrong', T0);
     const understood = markProgressUnderstood(wrong, T0);
-    expect(hasActiveError(understood)).toBe(false);
+    expect(hasActiveError(understood)).toBe(true);
     expect(understood.understoodAt).toBe(T0.toISOString());
   });
 

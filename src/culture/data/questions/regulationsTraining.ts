@@ -47,4 +47,4 @@ const topics:CultureTopicSeed[]=[
     q('Que signifie la lettre R dans IR ?','Rating',['Route','Record','Regulation'],'IR développe Instrument Rating.'),
   ]},
 ];
-export const regulationsTrainingContent=buildDomainContent('regulations-training','reg',topics,9);
+export const regulationsTrainingContent=buildDomainContent('regulations-training','reg',topics);

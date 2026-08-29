@@ -16,6 +16,7 @@ function display(value: number): string {
 function numeric(id: string, question: string, answer: number, explanation: string, tags: string[]): CultureQuestion {
   return {
     id,
+    tier: 'core',
     category: 'navigation',
     categories: ['navigation', 'aerodromes'],
     tags: [...tags, 'généré'],
@@ -60,6 +61,7 @@ export function generateHeadingQuestion(rng: Rng): CultureQuestion {
     ]);
     return {
       id: `generated-cardinal-${nonce}`,
+      tier: 'core',
       category: 'navigation', categories: ['navigation'], tags: ['caps', 'orientation cardinale', 'généré'],
       question: `Quel cap correspond au point cardinal ${cardinal.name} ?`, type: 'single-choice',
       choices: ['000°', '090°', '180°', '270°'], answer: cardinal.answer,

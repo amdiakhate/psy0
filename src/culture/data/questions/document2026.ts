@@ -23,8 +23,10 @@ function choice(
   options: QuestionOptions = {},
 ): CultureQuestion {
   const isTimeSensitive = options.timeSensitive ?? false;
+  const highYield = options.highYield ?? true;
   return {
     id: `doc26-${String(number).padStart(2, '0')}`,
+    tier: highYield ? 'core' : 'extended',
     category,
     categories: [...new Set([category, ...(options.categories ?? [])])],
     tags: options.tags ?? [],
@@ -40,7 +42,7 @@ function choice(
     verifiedAt: isTimeSensitive ? VERIFIED_AT : undefined,
     trap: options.trap,
     memoryTip: options.memoryTip,
-    highYield: options.highYield ?? true,
+    highYield,
   };
 }
 
@@ -53,8 +55,10 @@ function numeric(
   options: QuestionOptions = {},
 ): CultureQuestion {
   const isTimeSensitive = options.timeSensitive ?? false;
+  const highYield = options.highYield ?? true;
   return {
     id: `doc26-${String(number).padStart(2, '0')}`,
+    tier: highYield ? 'core' : 'extended',
     category,
     categories: [...new Set([category, ...(options.categories ?? [])])],
     tags: options.tags ?? [],
@@ -70,7 +74,7 @@ function numeric(
     verifiedAt: isTimeSensitive ? VERIFIED_AT : undefined,
     trap: options.trap,
     memoryTip: options.memoryTip,
-    highYield: options.highYield ?? true,
+    highYield,
   };
 }
 

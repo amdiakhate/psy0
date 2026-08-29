@@ -7,6 +7,7 @@ import { useCultureStore } from '../hooks/useCultureStore';
 import { selectReviewQuestions } from '../selection';
 import { getCultureDashboardStats } from '../statistics';
 import { setFinalStretch } from '../storage';
+import { hasActiveError } from '../progress';
 
 const DEFAULT_FOCUS = ['instruments', 'weather', 'navigation'] as const;
 
@@ -14,11 +15,12 @@ export function CultureDashboard() {
   const { store, updateStore } = useCultureStore();
   const now = new Date();
   const stats = getCultureDashboardStats(QUESTIONS, store, now);
-  const focus = [...stats.weakest.map((item) => item.category), ...DEFAULT_FOCUS]
+  const focusCandidates = store.finalStretch ? stats.weakest.map((item) => item.category) : [...stats.weakest.map((item) => item.category), ...DEFAULT_FOCUS];
+  const focus = focusCandidates
     .filter((category, index, all) => all.indexOf(category) === index)
     .slice(0, 3);
   const recommendation = selectReviewQuestions(QUESTIONS, store, store.finalStretch ? 30 : 20, now, mulberry32(now.getDate() + 2026), { finalStretch: store.finalStretch });
-  const todayErrors = recommendation.filter((question) => (store.progress[question.id]?.incorrectCount ?? 0) > 0).length;
+  const todayErrors = recommendation.filter((question) => hasActiveError(store.progress[question.id])).length;
   const todayNavigation = recommendation.filter((question) => question.categories.includes('navigation')).length;
   const todayAirFrance = recommendation.filter((question) => question.categories.includes('air-france')).length;
   const todayInstruments = recommendation.filter((question) => question.categories.includes('instruments')).length;
@@ -41,14 +43,19 @@ export function CultureDashboard() {
               <Link to="/culture/express" className="rounded-lg border border-zinc-700 px-5 py-2.5 text-zinc-200 hover:bg-zinc-800">Révision express</Link>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
+          {store.finalStretch ? <div className="grid grid-cols-2 gap-3">
+            <Metric label="Couverture CORE" value={`${Math.round(stats.core.coverage * 100)} %`} detail={`${stats.core.seen}/${stats.core.total} vues`} tone="text-green-400" />
+            <Metric label="Réussite actuelle CORE" value={`${Math.round(stats.core.currentAccuracy * 100)} %`} detail="dernier verdict par question" tone="text-sky-400" />
+            <Metric label="Exam ready" value={`${stats.core.examReady}/${stats.core.total}`} detail="deux sessions espacées" tone="text-emerald-300" />
+            <Metric label="Erreurs actives" value={String(stats.errors)} detail="à reconfirmer" tone="text-red-400" />
+          </div> : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
             <Metric label="CORE" value={`${stats.core.seen}/${stats.core.total}`} detail="questions vues" tone="text-sky-300" />
             <Metric label="EXTENDED" value={`${stats.extended.seen}/${stats.extended.total}`} detail="questions vues" tone="text-zinc-300" />
-            <Metric label="Couverture CORE" value={`${Math.round(stats.core.coverage * 100)} %`} detail={`${stats.core.mastered} maîtrisées`} tone="text-green-400" />
-            <Metric label="Réussite CORE" value={`${Math.round(stats.core.accuracy * 100)} %`} detail="sur tes réponses" tone="text-sky-400" />
-            <Metric label="À revoir" value={String(stats.toReview)} detail={`${stats.due} due${stats.due > 1 ? 's' : ''} aujourd’hui`} tone="text-amber-400" />
+            <Metric label="Couverture CORE" value={`${Math.round(stats.core.coverage * 100)} %`} detail={`${stats.core.examReady} exam ready`} tone="text-green-400" />
+            <Metric label="Réussite actuelle CORE" value={`${Math.round(stats.core.currentAccuracy * 100)} %`} detail="dernier verdict par question" tone="text-sky-400" />
+            <Metric label="Précision des tentatives" value={`${Math.round(stats.core.attemptAccuracy * 100)} %`} detail="historique CORE" tone="text-zinc-300" />
             <Metric label="Erreurs" value={String(stats.errors)} detail="encore actives" tone="text-red-400" />
-          </div>
+          </div>}
         </div>
       </section>
 
@@ -68,7 +75,7 @@ export function CultureDashboard() {
         <div className="mt-3 grid gap-3 md:grid-cols-3">
           {focus.map((category, index) => {
             const item = stats.categories.find((entry) => entry.category === category)!;
-            return <div key={category} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"><div className="flex items-center justify-between"><span className="font-mono text-xs text-zinc-600">0{index + 1}</span><span className={`font-mono text-sm ${item.accuracy === null ? 'text-zinc-600' : item.accuracy >= 0.75 ? 'text-green-400' : 'text-amber-400'}`}>{item.accuracy === null ? 'à découvrir' : `${Math.round(item.accuracy * 100)} %`}</span></div><p className="mt-4 font-semibold">{CULTURE_CATEGORY_BY_ID[category].label}</p><p className="mt-1 text-sm text-zinc-500">{item.errors} erreur{item.errors > 1 ? 's' : ''} · {item.due} due{item.due > 1 ? 's' : ''}</p></div>;
+            return <div key={category} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"><div className="flex items-center justify-between"><span className="font-mono text-xs text-zinc-600">0{index + 1}</span><span className={`font-mono text-sm ${item.accuracy === null ? 'text-zinc-600' : item.accuracy >= 0.75 ? 'text-green-400' : 'text-amber-400'}`}>{item.accuracy === null ? 'échantillon insuffisant' : `${Math.round(item.accuracy * 100)} %`}</span></div><p className="mt-4 font-semibold">{CULTURE_CATEGORY_BY_ID[category].label}</p><p className="mt-1 text-sm text-zinc-500">{item.sampleSize} question{item.sampleSize > 1 ? 's' : ''} distincte{item.sampleSize > 1 ? 's' : ''} · {item.errors} erreur{item.errors > 1 ? 's' : ''}</p></div>;
           })}
         </div>
       </section>

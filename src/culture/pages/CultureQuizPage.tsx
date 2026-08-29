@@ -8,7 +8,7 @@ import { useCultureStore } from '../hooks/useCultureStore';
 import { selectReviewQuestions } from '../selection';
 import type { CultureCategory } from '../types';
 
-type Filter = 'all' | 'weak' | 'errors' | 'new' | 'traps';
+type Filter = 'all' | 'weak' | 'errors' | 'new' | 'traps' | 'extended';
 
 export function CultureQuizPage() {
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ export function CultureQuizPage() {
       <p className="text-xs font-semibold uppercase tracking-widest text-sky-400">Session personnalisée</p><h3 className="mt-1 text-2xl font-bold">Quiz rapide</h3><p className="mt-2 text-zinc-400">Choisis le volume et le vivier. Le moteur conserve la priorité aux erreurs et aux échéances dans le filtre choisi.</p>
       <fieldset className="mt-6"><legend className="text-sm font-semibold text-zinc-300">Nombre de questions</legend><div className="mt-2 flex gap-2">{([5, 10, 20] as const).map((value) => <ChoiceButton key={value} active={count === value} onClick={() => setCount(value)}>{value} questions</ChoiceButton>)}</div></fieldset>
       <label className="mt-6 block text-sm font-semibold text-zinc-300">Catégorie<select value={category} onChange={(event) => setCategory(event.target.value as CultureCategory | '')} className="mt-2 block w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 outline-none focus:border-sky-500"><option value="">Toutes les catégories</option>{CULTURE_CATEGORIES.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-      <fieldset className="mt-6"><legend className="text-sm font-semibold text-zinc-300">Vivier</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{([['all', 'Toutes catégories'], ['weak', 'Mes points faibles'], ['errors', 'Mes erreurs'], ['new', 'Jamais vues'], ['traps', 'Questions pièges']] as const).map(([value, label]) => <ChoiceButton key={value} active={filter === value} onClick={() => setFilter(value)}>{label}</ChoiceButton>)}</div></fieldset>
+      <fieldset className="mt-6"><legend className="text-sm font-semibold text-zinc-300">Vivier</legend><div className="mt-2 grid gap-2 sm:grid-cols-2">{([['all', 'Toutes catégories'], ['weak', 'Mes points faibles'], ['errors', 'Mes erreurs'], ['new', 'Jamais vues'], ['traps', 'Questions pièges'], ['extended', 'Extended uniquement']] as const).map(([value, label]) => <ChoiceButton key={value} active={filter === value} onClick={() => setFilter(value)}>{label}</ChoiceButton>)}</div></fieldset>
       <div className="mt-7 flex gap-3"><button type="button" disabled={questions.length === 0} onClick={() => setRunning(true)} className="rounded-lg bg-sky-600 px-5 py-2.5 font-semibold text-white hover:bg-sky-500 disabled:opacity-40">Lancer {questions.length} question{questions.length > 1 ? 's' : ''}</button><button type="button" onClick={() => navigate('/culture')} className="rounded-lg border border-zinc-700 px-4 py-2.5 text-zinc-300 hover:bg-zinc-800">Annuler</button></div>
     </section>
   );

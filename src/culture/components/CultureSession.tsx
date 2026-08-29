@@ -9,6 +9,7 @@ import { presentQuestion, scoreByCategory, scoreOf } from '../quiz';
 import type { PresentedCultureQuestion } from '../quiz';
 import { recordCultureAnswer, recordCultureSession, toggleFavoriteQuestion } from '../storage';
 import type { CultureQuestion, CultureReviewVerdict, CultureSessionMode } from '../types';
+import { reinsertWithinPassageLimit } from '../sessionQueue';
 
 interface SessionResult {
   item: PresentedCultureQuestion;
@@ -80,12 +81,12 @@ export function CultureSession({ questions, title, subtitle, mode, exam = false,
     if (!correct) {
       persist(item.question, 'wrong');
       if (!reinserted.includes(item.question.id)) {
-        setQueue((current) => [...current, item]);
+        setQueue((current) => reinsertWithinPassageLimit(current, item, index));
         setReinserted((current) => [...current, item.question.id]);
       }
     }
     setPhase('feedback');
-  }, [exam, input, item, next, persist, phase, reinserted, selected]);
+  }, [exam, index, input, item, next, persist, phase, reinserted, selected]);
 
   const confidence = useCallback((verdict: 'guessed' | 'known' | 'review') => {
     if (!item || !result?.correct) return;

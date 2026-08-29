@@ -70,4 +70,4 @@ const topics: CultureTopicSeed[] = [
   ]},
 ];
 
-export const navigationContent = buildDomainContent('navigation', 'nav', topics, 21);
+export const navigationContent = buildDomainContent('navigation', 'nav', topics);
