@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { QUESTIONS } from './bank';
+import { categoryCoreCoverageLabel } from './dashboardMetrics';
 import { getCultureDashboardStats } from './statistics';
 import { emptyCultureStore, recordCultureAnswer } from './storage';
+import type { CultureQuestion } from './types';
 
 describe('statistiques Culture', () => {
   it('calcule le taux, les erreurs, les échéances et les faiblesses', () => {
@@ -78,5 +80,35 @@ describe('statistiques Culture', () => {
     expect(stats.toExplore.map((item) => item.coreUnseen)).toEqual(
       stats.toExplore.map((item) => item.coreUnseen).sort((a, b) => b - a),
     );
+  });
+
+  it('compte les mêmes CORE mental-math avec une catégorie principale ou secondaire', () => {
+    const secondaryMentalMath: CultureQuestion = {
+      ...QUESTIONS[0],
+      id: 'test-secondary-mental-math',
+      tier: 'core',
+      highYield: true,
+      category: 'navigation',
+      categories: ['navigation', 'mental-math'],
+    };
+    let store = emptyCultureStore();
+    const now = new Date('2026-08-29T12:00:00Z');
+    store = recordCultureAnswer({
+      store,
+      questionId: secondaryMentalMath.id,
+      category: secondaryMentalMath.category,
+      verdict: 'known',
+      sessionId: 'secondary-category',
+      mode: 'review',
+      now,
+    });
+    const stats = getCultureDashboardStats([secondaryMentalMath], store, now);
+    const mentalMath = stats.categories.find((item) => item.category === 'mental-math')!;
+    expect(mentalMath).toMatchObject({
+      coreTotal: 1,
+      coreSeen: 1,
+      coreUnseen: 0,
+    });
+    expect(categoryCoreCoverageLabel(mentalMath)).toBe('1/1 CORE vues');
   });
 });
