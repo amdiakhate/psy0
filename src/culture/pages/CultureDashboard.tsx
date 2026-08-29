@@ -9,16 +9,12 @@ import { getCultureDashboardStats } from '../statistics';
 import { setFinalStretch } from '../storage';
 import { hasActiveError } from '../progress';
 
-const DEFAULT_FOCUS = ['instruments', 'weather', 'navigation'] as const;
-
 export function CultureDashboard() {
   const { store, updateStore } = useCultureStore();
   const now = new Date();
   const stats = getCultureDashboardStats(QUESTIONS, store, now);
-  const focusCandidates = store.finalStretch ? stats.weakest.map((item) => item.category) : [...stats.weakest.map((item) => item.category), ...DEFAULT_FOCUS];
-  const focus = focusCandidates
-    .filter((category, index, all) => all.indexOf(category) === index)
-    .slice(0, 3);
+  const weakFocus = stats.weakest.slice(0, 3);
+  const exploreFocus = stats.toExplore.slice(0, Math.max(0, 3 - weakFocus.length));
   const recommendation = selectReviewQuestions(QUESTIONS, store, store.finalStretch ? 30 : 20, now, mulberry32(now.getDate() + 2026), { finalStretch: store.finalStretch });
   const todayErrors = recommendation.filter((question) => hasActiveError(store.progress[question.id])).length;
   const todayNavigation = recommendation.filter((question) => question.categories.includes('navigation')).length;
@@ -45,7 +41,7 @@ export function CultureDashboard() {
           </div>
           {store.finalStretch ? <div className="grid grid-cols-2 gap-3">
             <Metric label="Couverture CORE" value={`${Math.round(stats.core.coverage * 100)} %`} detail={`${stats.core.seen}/${stats.core.total} vues`} tone="text-green-400" />
-            <Metric label="Réussite actuelle CORE" value={`${Math.round(stats.core.currentAccuracy * 100)} %`} detail="dernier verdict par question" tone="text-sky-400" />
+            <Metric label="CORE solides" value={`${Math.round(stats.core.solidRate * 100)} %`} detail={`${stats.core.solid}/${stats.core.seen} vues solides · réussite actuelle ${Math.round(stats.core.currentAccuracy * 100)} %`} tone="text-sky-400" />
             <Metric label="Exam ready" value={`${stats.core.examReady}/${stats.core.total}`} detail="deux sessions espacées" tone="text-emerald-300" />
             <Metric label="Erreurs actives" value={String(stats.errors)} detail="à reconfirmer" tone="text-red-400" />
           </div> : <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
@@ -69,15 +65,10 @@ export function CultureDashboard() {
 
       <section className="mt-7">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <div><p className="text-xs font-semibold uppercase tracking-widest text-amber-400">À travailler aujourd’hui</p><h3 className="mt-1 text-xl font-semibold">Tes trois priorités</h3></div>
-          <Link to={`/culture/review?filter=weak&count=15`} className="text-sm text-sky-400 hover:text-sky-300">Session ciblée →</Link>
+          <div><p className="text-xs font-semibold uppercase tracking-widest text-amber-400">À travailler aujourd’hui</p><h3 className="mt-1 text-xl font-semibold">Priorités de couverture</h3></div>
         </div>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
-          {focus.map((category, index) => {
-            const item = stats.categories.find((entry) => entry.category === category)!;
-            return <div key={category} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"><div className="flex items-center justify-between"><span className="font-mono text-xs text-zinc-600">0{index + 1}</span><span className={`font-mono text-sm ${item.accuracy === null ? 'text-zinc-600' : item.accuracy >= 0.75 ? 'text-green-400' : 'text-amber-400'}`}>{item.accuracy === null ? 'échantillon insuffisant' : `${Math.round(item.accuracy * 100)} %`}</span></div><p className="mt-4 font-semibold">{CULTURE_CATEGORY_BY_ID[category].label}</p><p className="mt-1 text-sm text-zinc-500">{item.sampleSize} question{item.sampleSize > 1 ? 's' : ''} distincte{item.sampleSize > 1 ? 's' : ''} · {item.errors} erreur{item.errors > 1 ? 's' : ''}</p></div>;
-          })}
-        </div>
+        {weakFocus.length > 0 && <div className="mt-4"><div className="flex items-center justify-between gap-3"><h4 className="text-sm font-semibold text-zinc-300">Points faibles</h4><Link to="/culture/review?filter=weak&count=15" className="text-sm text-sky-400 hover:text-sky-300">Session ciblée →</Link></div><div className="mt-2 grid gap-3 md:grid-cols-3">{weakFocus.map((item, index) => <PriorityCard key={item.category} item={item} index={index} kind="weak" />)}</div></div>}
+        {exploreFocus.length > 0 && <div className="mt-5"><h4 className="text-sm font-semibold text-zinc-300">À explorer davantage</h4><div className="mt-2 grid gap-3 md:grid-cols-3">{exploreFocus.map((item, index) => <PriorityCard key={item.category} item={item} index={weakFocus.length + index} kind="explore" />)}</div></div>}
       </section>
 
       <section className="mt-7 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
@@ -106,5 +97,6 @@ export function CultureDashboard() {
 }
 
 function Metric({ label, value, detail, tone }: { label: string; value: string; detail: string; tone: string }) { return <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/50 p-4"><p className="text-xs uppercase tracking-wider text-zinc-500">{label}</p><p className={`mt-1 font-mono text-2xl font-bold ${tone}`}>{value}</p><p className="mt-1 text-xs text-zinc-600">{detail}</p></div>; }
+function PriorityCard({ item, index, kind }: { item: ReturnType<typeof getCultureDashboardStats>['categories'][number]; index: number; kind: 'weak' | 'explore' }) { return <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"><div className="flex items-center justify-between"><span className="font-mono text-xs text-zinc-600">0{index + 1}</span><span className={`font-mono text-sm ${kind === 'weak' ? 'text-amber-400' : 'text-sky-400'}`}>{kind === 'weak' ? `${Math.round((item.accuracy ?? 0) * 100)} %` : `${item.coreUnseen} CORE à découvrir`}</span></div><p className="mt-4 font-semibold">{CULTURE_CATEGORY_BY_ID[item.category].label}</p><p className="mt-1 text-sm text-zinc-500">{kind === 'weak' ? `${item.sampleSize} questions distinctes · ${item.errors} erreur${item.errors > 1 ? 's' : ''}` : `${item.sampleSize}/5 pour un échantillon fiable · ${item.coreSeen}/${item.coreTotal} CORE vues`}</p></div>; }
 function Action({ to, label, detail }: { to: string; label: string; detail: string }) { return <Link to={to} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition hover:border-sky-700 hover:bg-sky-950/20"><p className="font-semibold text-zinc-100">{label}</p><p className="mt-1 text-xs text-zinc-500">{detail}</p></Link>; }
 function PlanCount({ value, label }: { value: number; label: string }) { return <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-2"><span className="font-mono font-bold text-amber-300">{value}</span><span className="ml-1 text-zinc-500">{label}</span></div>; }

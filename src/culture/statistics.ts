@@ -12,6 +12,9 @@ export interface CultureCategoryStats {
   due: number;
   accuracy: number | null;
   sampleSize: number;
+  coreTotal: number;
+  coreSeen: number;
+  coreUnseen: number;
 }
 
 export interface CultureDayStats {
@@ -32,6 +35,7 @@ export interface CultureDashboardStats {
   streak: number;
   lastTrainingAt?: string;
   weakest: CultureCategoryStats[];
+  toExplore: CultureCategoryStats[];
   categories: CultureCategoryStats[];
   lastSevenDays: CultureDayStats[];
   core: CultureTierStats;
@@ -46,6 +50,8 @@ export interface CultureTierStats {
   attemptAccuracy: number;
   currentAccuracy: number;
   examReady: number;
+  solid: number;
+  solidRate: number;
 }
 
 function tierStats(questions: CultureQuestion[], store: CultureStore, tier: CultureQuestion['tier']): CultureTierStats {
@@ -54,6 +60,11 @@ function tierStats(questions: CultureQuestion[], store: CultureStore, tier: Cult
   const attempts = store.attempts.filter((attempt) => ids.has(attempt.questionId));
   const viewedProgress = pool.map((question) => store.progress[question.id]).filter((progress) => progress?.seenCount && progress.lastVerdict);
   const seen = pool.filter((question) => (store.progress[question.id]?.seenCount ?? 0) > 0).length;
+  const solid = pool.filter((question) => {
+    const progress = store.progress[question.id];
+    const lastVerdictCorrect = progress?.lastVerdict === 'known' || progress?.lastVerdict === 'guessed' || progress?.lastVerdict === 'review';
+    return Boolean(progress?.seenCount && lastVerdictCorrect && !hasActiveError(progress));
+  }).length;
   return {
     total: pool.length,
     seen,
@@ -62,6 +73,8 @@ function tierStats(questions: CultureQuestion[], store: CultureStore, tier: Cult
     attemptAccuracy: attempts.length === 0 ? 0 : attempts.filter((attempt) => attempt.correct).length / attempts.length,
     currentAccuracy: viewedProgress.length === 0 ? 0 : viewedProgress.filter((progress) => progress.lastVerdict !== 'wrong').length / viewedProgress.length,
     examReady: pool.filter((question) => store.progress[question.id]?.examReady).length,
+    solid,
+    solidRate: seen === 0 ? 0 : solid / seen,
   };
 }
 
@@ -91,6 +104,8 @@ export function getCategoryStats(
 ): CultureCategoryStats[] {
   return CULTURE_CATEGORY_IDS.map((category) => {
     const pool = questions.filter((question) => question.categories.includes(category));
+    const corePool = pool.filter((question) => question.tier === 'core');
+    const coreSeen = corePool.filter((question) => (store.progress[question.id]?.seenCount ?? 0) > 0).length;
     return {
       category,
       total: pool.length,
@@ -100,6 +115,9 @@ export function getCategoryStats(
       due: pool.filter((question) => isQuestionDue(store.progress[question.id], now)).length,
       accuracy: categoryAccuracy(store, category),
       sampleSize: new Set(store.attempts.filter((attempt) => attempt.category === category).map((attempt) => attempt.questionId)).size,
+      coreTotal: corePool.length,
+      coreSeen,
+      coreUnseen: corePool.length - coreSeen,
     };
   });
 }
@@ -130,8 +148,12 @@ export function getCultureDashboardStats(
   }).length;
   const correct = store.attempts.filter((attempt) => attempt.correct).length;
   const weakest = categories
-    .filter((item) => item.accuracy !== null)
+    .filter((item) => item.sampleSize >= 5 && item.accuracy !== null && item.accuracy < 0.85)
     .sort((a, b) => (a.accuracy ?? 1) - (b.accuracy ?? 1))
+    .slice(0, 3);
+  const toExplore = categories
+    .filter((item) => item.sampleSize < 5)
+    .sort((a, b) => b.coreUnseen - a.coreUnseen || a.sampleSize - b.sampleSize)
     .slice(0, 3);
   return {
     total: questions.length,
@@ -145,6 +167,7 @@ export function getCultureDashboardStats(
     streak: cultureStreak(store.activeDays, now),
     lastTrainingAt: store.lastTrainingAt,
     weakest,
+    toExplore,
     categories,
     lastSevenDays: sevenDayHistory(store, now),
     core: tierStats(questions, store, 'core'),

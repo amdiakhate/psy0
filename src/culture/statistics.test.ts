@@ -46,4 +46,37 @@ describe('statistiques Culture', () => {
     expect(stats.core.attemptAccuracy).toBeCloseTo(1 / 3);
     expect(stats.core.currentAccuracy).toBe(0.5);
   });
+
+  it('ne compte comme solide qu’une CORE correcte sans erreur active', () => {
+    const [solid, unresolved] = QUESTIONS.filter((question) => question.tier === 'core').slice(0, 2);
+    let store = emptyCultureStore();
+    const now = new Date('2026-08-29T12:00:00Z');
+    store = recordCultureAnswer({ store, questionId: solid.id, category: solid.category, verdict: 'known', sessionId: 's1', mode: 'review', now });
+    store = recordCultureAnswer({ store, questionId: unresolved.id, category: unresolved.category, verdict: 'wrong', sessionId: 's2', mode: 'review', now });
+    store = recordCultureAnswer({ store, questionId: unresolved.id, category: unresolved.category, verdict: 'known', sessionId: 's2', mode: 'review', now: new Date(now.getTime() + 1_000) });
+    const stats = getCultureDashboardStats(QUESTIONS, store, now);
+    expect(stats.core.currentAccuracy).toBe(1);
+    expect(stats.core).toMatchObject({ seen: 2, solid: 1, solidRate: 0.5 });
+  });
+
+  it('sépare les vrais points faibles des catégories à explorer', () => {
+    const navigation = QUESTIONS.filter((question) => question.category === 'navigation').slice(0, 5);
+    const weather = QUESTIONS.filter((question) => question.category === 'weather').slice(0, 5);
+    let store = emptyCultureStore();
+    const now = new Date('2026-08-29T12:00:00Z');
+    for (const question of navigation) {
+      store = recordCultureAnswer({ store, questionId: question.id, category: question.category, verdict: 'known', sessionId: 'navigation', mode: 'review', now });
+    }
+    for (const [index, question] of weather.entries()) {
+      store = recordCultureAnswer({ store, questionId: question.id, category: question.category, verdict: index === 0 ? 'wrong' : 'known', sessionId: 'weather', mode: 'review', now });
+    }
+    const stats = getCultureDashboardStats(QUESTIONS, store, now);
+    expect(stats.weakest.map((item) => item.category)).toContain('weather');
+    expect(stats.weakest.map((item) => item.category)).not.toContain('navigation');
+    expect(stats.weakest.every((item) => item.sampleSize >= 5 && (item.accuracy ?? 1) < 0.85)).toBe(true);
+    expect(stats.toExplore.every((item) => item.sampleSize < 5)).toBe(true);
+    expect(stats.toExplore.map((item) => item.coreUnseen)).toEqual(
+      stats.toExplore.map((item) => item.coreUnseen).sort((a, b) => b - a),
+    );
+  });
 });
