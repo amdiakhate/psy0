@@ -4,6 +4,7 @@ import { Sparkline } from '../../components/Sparkline';
 import { QUESTIONS } from '../bank';
 import { CULTURE_CATEGORIES, CULTURE_CATEGORY_BY_ID } from '../data/categories';
 import { categoryCoreCoverageLabel, categoryCoreCoveragePercent } from '../dashboardMetrics';
+import { CULTURE_DRILL_LABELS, getDrillDashboardStats } from '../drillStatistics';
 import { useCultureStore } from '../hooks/useCultureStore';
 import { selectReviewQuestions } from '../selection';
 import { getCultureDashboardStats } from '../statistics';
@@ -14,6 +15,7 @@ export function CultureDashboard() {
   const { store, updateStore } = useCultureStore();
   const now = new Date();
   const stats = getCultureDashboardStats(QUESTIONS, store, now);
+  const drillStats = getDrillDashboardStats(store.drillAttempts, now);
   const weakFocus = stats.weakest.slice(0, 3);
   const exploreFocus = stats.toExplore.slice(0, Math.max(0, 3 - weakFocus.length));
   const recommendation = selectReviewQuestions(QUESTIONS, store, store.finalStretch ? 30 : 20, now, mulberry32(now.getDate() + 2026), { finalStretch: store.finalStretch });
@@ -56,6 +58,8 @@ export function CultureDashboard() {
         </div>
       </section>
 
+      <DrillOverview stats={drillStats} />
+
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
         <div>
           <p className="font-medium">Mode dernière ligne droite</p>
@@ -85,6 +89,7 @@ export function CultureDashboard() {
         <div className="flex items-center justify-between"><h3 className="text-sm font-semibold uppercase tracking-widest text-zinc-500">Progression par catégorie</h3><div className="flex items-center gap-3 text-xs text-zinc-500"><Sparkline values={values} /><span>{stats.streak} j de suite</span></div></div>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           {CULTURE_CATEGORIES.map((category) => {
+            if (category.id === 'mental-math') return <DrillCategoryCard key={category.id} stats={drillStats} />;
             const item = stats.categories.find((entry) => entry.category === category.id)!;
             const percent = categoryCoreCoveragePercent(item);
             return <Link key={category.id} to={category.id === 'air-france' ? '/culture/air-france' : `/culture/quiz?category=${category.id}`} className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4 transition hover:border-zinc-700"><div className="flex items-center justify-between gap-3"><p className="font-medium">{category.label}</p><span className="font-mono text-sm text-zinc-500">{item.accuracy === null ? '—' : `${Math.round(item.accuracy * 100)} %`}</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-800"><div className="h-full bg-green-600" style={{ width: `${percent}%` }} /></div><p className="mt-2 text-xs text-zinc-600">{categoryCoreCoverageLabel(item)} · {item.mastered} maîtrisées · {item.due} dues</p></Link>;
@@ -98,6 +103,13 @@ export function CultureDashboard() {
 }
 
 function Metric({ label, value, detail, tone }: { label: string; value: string; detail: string; tone: string }) { return <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/50 p-4"><p className="text-xs uppercase tracking-wider text-zinc-500">{label}</p><p className={`mt-1 font-mono text-2xl font-bold ${tone}`}>{value}</p><p className="mt-1 text-xs text-zinc-600">{detail}</p></div>; }
+function DrillOverview({ stats }: { stats: ReturnType<typeof getDrillDashboardStats> }) {
+  const visibleTypes = stats.byType.filter((item) => item.type !== 'time-conversion' || item.attempts > 0);
+  return <section className="mt-4 rounded-2xl border border-cyan-900/50 bg-cyan-950/10 p-5"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">Calculs & caps</p><h3 className="mt-1 text-xl font-semibold">Exercices générés, statistiques séparées du CORE</h3></div><Link to="/culture/drills" className="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-600">Continuer le drill</Link></div><div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4"><DrillMetric label="Réussite" value={formatRate(stats.successRate)} /><DrillMetric label="Réalisés" value={String(stats.total)} /><DrillMetric label="Aujourd’hui" value={String(stats.today)} /><DrillMetric label="Dernière session" value={stats.lastAttemptAt ? new Date(stats.lastAttemptAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : 'Aucune'} /></div><div className="mt-5 grid gap-2 md:grid-cols-2">{visibleTypes.map((item) => <div key={item.type} className="flex items-center justify-between gap-3 rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-2 text-sm"><div><p className="text-zinc-300">{CULTURE_DRILL_LABELS[item.type]}</p><p className="text-xs text-zinc-600">{item.attempts} tentative{item.attempts > 1 ? 's' : ''}{!item.sampleSufficient ? ' · échantillon faible' : ''}</p></div><span className="font-mono text-cyan-300">{formatRate(item.rate)}</span></div>)}</div>{stats.weakest && <div className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-900/60 bg-amber-950/20 p-4"><div><p className="text-xs font-semibold uppercase tracking-wider text-amber-400">Drill recommandé aujourd’hui</p><p className="mt-1 font-medium">{CULTURE_DRILL_LABELS[stats.weakest.type]} · {formatRate(stats.weakest.rate)}</p><p className="text-xs text-zinc-500">{stats.weakest.correct}/{stats.weakest.attempts} corrects sur la fenêtre récente</p></div><Link to={`/culture/drills?type=${stats.weakest.type}&count=5`} className="rounded-lg bg-amber-700 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600">Faire 5 exercices</Link></div>}</section>;
+}
+function DrillCategoryCard({ stats }: { stats: ReturnType<typeof getDrillDashboardStats> }) { return <Link to="/culture/drills" className="rounded-xl border border-cyan-900/50 bg-cyan-950/10 p-4 transition hover:border-cyan-700"><div className="flex items-center justify-between gap-3"><div><p className="font-medium">Performances / calculs</p><p className="mt-1 text-xs text-cyan-500">Exercices générés</p></div><span className="font-mono text-sm text-cyan-300">{formatRate(stats.successRate)}</span></div><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-zinc-800"><div className="h-full bg-cyan-600" style={{ width: `${Math.round((stats.successRate ?? 0) * 100)}%` }} /></div><p className="mt-2 text-xs text-zinc-500">{stats.total} exercice{stats.total > 1 ? 's' : ''} réalisé{stats.total > 1 ? 's' : ''} · activité dynamique</p></Link>; }
+function DrillMetric({ label, value }: { label: string; value: string }) { return <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3"><p className="text-xs uppercase tracking-wider text-zinc-600">{label}</p><p className="mt-1 font-mono text-lg font-semibold text-cyan-300">{value}</p></div>; }
+function formatRate(rate: number | null): string { return rate === null ? '—' : `${Math.round(rate * 100)} %`; }
 function PriorityCard({ item, index, kind }: { item: ReturnType<typeof getCultureDashboardStats>['categories'][number]; index: number; kind: 'weak' | 'explore' }) { return <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4"><div className="flex items-center justify-between"><span className="font-mono text-xs text-zinc-600">0{index + 1}</span><span className={`font-mono text-sm ${kind === 'weak' ? 'text-amber-400' : 'text-sky-400'}`}>{kind === 'weak' ? `${Math.round((item.accuracy ?? 0) * 100)} %` : `${item.coreUnseen} CORE à découvrir`}</span></div><p className="mt-4 font-semibold">{CULTURE_CATEGORY_BY_ID[item.category].label}</p><p className="mt-1 text-sm text-zinc-500">{kind === 'weak' ? `${item.sampleSize} questions distinctes · ${item.errors} erreur${item.errors > 1 ? 's' : ''}` : `${item.sampleSize}/5 pour un échantillon fiable · ${categoryCoreCoverageLabel(item)}`}</p></div>; }
 function Action({ to, label, detail }: { to: string; label: string; detail: string }) { return <Link to={to} className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 transition hover:border-sky-700 hover:bg-sky-950/20"><p className="font-semibold text-zinc-100">{label}</p><p className="mt-1 text-xs text-zinc-500">{detail}</p></Link>; }
 function PlanCount({ value, label }: { value: number; label: string }) { return <div className="rounded-lg border border-zinc-800 bg-zinc-950/40 px-3 py-2"><span className="font-mono font-bold text-amber-300">{value}</span><span className="ml-1 text-zinc-500">{label}</span></div>; }

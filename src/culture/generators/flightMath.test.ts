@@ -22,4 +22,10 @@ describe('générateur vitesse distance temps', () => {
       expect(generated.some((question) => question.question.includes(`${minutes} min`) || question.explanation.includes(`${minutes} min`)), String(minutes)).toBe(true);
     }
   });
+
+  it('peut générer un sous-type demandé avec son métadonnée de drill', () => {
+    for (const type of ['distance', 'time', 'speed'] as const) {
+      expect(generateFlightMathQuestion(mulberry32(42), type).drillType).toBe(type);
+    }
+  });
 });

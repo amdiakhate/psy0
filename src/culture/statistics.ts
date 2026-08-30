@@ -148,11 +148,11 @@ export function getCultureDashboardStats(
   }).length;
   const correct = store.attempts.filter((attempt) => attempt.correct).length;
   const weakest = categories
-    .filter((item) => item.sampleSize >= 5 && item.accuracy !== null && item.accuracy < 0.85)
+    .filter((item) => item.category !== 'mental-math' && item.sampleSize >= 5 && item.accuracy !== null && item.accuracy < 0.85)
     .sort((a, b) => (a.accuracy ?? 1) - (b.accuracy ?? 1))
     .slice(0, 3);
   const toExplore = categories
-    .filter((item) => item.sampleSize < 5)
+    .filter((item) => item.category !== 'mental-math' && item.sampleSize < 5)
     .sort((a, b) => b.coreUnseen - a.coreUnseen || a.sampleSize - b.sampleSize)
     .slice(0, 3);
   return {

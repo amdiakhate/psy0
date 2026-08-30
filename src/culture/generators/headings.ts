@@ -1,5 +1,7 @@
 import type { Rng } from '../../core/rng';
-import type { CultureQuestion } from '../types';
+import type { CultureDrillType, CultureQuestion } from '../types';
+
+type HeadingDrillType = Extract<CultureDrillType, 'heading-turn' | 'angular-difference' | 'opposite-heading' | 'cardinal-heading' | 'qfu'>;
 
 function pick<T>(rng: Rng, values: readonly T[]): T {
   return values[Math.floor(rng() * values.length)];
@@ -13,7 +15,7 @@ function display(value: number): string {
   return String(normalize(value)).padStart(3, '0');
 }
 
-function numeric(id: string, question: string, answer: number, explanation: string, tags: string[]): CultureQuestion {
+function numeric(id: string, drillType: HeadingDrillType, question: string, answer: number, explanation: string, tags: string[]): CultureQuestion {
   return {
     id,
     tier: 'core',
@@ -29,32 +31,34 @@ function numeric(id: string, question: string, answer: number, explanation: stri
     isTimeSensitive: false,
     highYield: true,
     memoryTip: 'Normalise toujours le résultat entre 000° et 359°.',
+    drillType,
   };
 }
 
-export function generateHeadingQuestion(rng: Rng): CultureQuestion {
-  const kind = Math.floor(rng() * 5);
+export function generateHeadingQuestion(rng: Rng, requestedType?: HeadingDrillType): CultureQuestion {
+  const kinds: HeadingDrillType[] = ['heading-turn', 'angular-difference', 'opposite-heading', 'cardinal-heading', 'qfu'];
+  const kind = requestedType ?? kinds[Math.floor(rng() * kinds.length)];
   const nonce = Math.floor(rng() * 1_000_000);
   const headings = Array.from({ length: 36 }, (_, index) => index * 10);
   const current = pick(rng, headings);
 
-  if (kind === 0) {
+  if (kind === 'heading-turn') {
     const delta = pick(rng, [30, 40, 60, 70, 80, 100, 120, 150, 170]);
     const right = rng() >= 0.5;
     const answer = normalize(current + (right ? delta : -delta));
-    return numeric(`generated-turn-${nonce}`, `Cap actuel ${display(current)}°. Tourne à ${right ? 'droite' : 'gauche'} de ${delta}°. Nouveau cap ?`, answer, `${display(current)} ${right ? '+' : '−'} ${delta} = ${right ? current + delta : current - delta}. Après passage éventuel par 360°, le cap est ${display(answer)}°.`, ['caps']);
+    return numeric(`generated-turn-${nonce}`, kind, `Cap actuel ${display(current)}°. Tourne à ${right ? 'droite' : 'gauche'} de ${delta}°. Nouveau cap ?`, answer, `${display(current)} ${right ? '+' : '−'} ${delta} = ${right ? current + delta : current - delta}. Après passage éventuel par 360°, le cap est ${display(answer)}°.`, ['caps']);
   }
-  if (kind === 1) {
+  if (kind === 'angular-difference') {
     const other = pick(rng, headings.filter((heading) => heading !== current));
     const direct = Math.abs(other - current);
     const answer = Math.min(direct, 360 - direct);
-    return numeric(`generated-angle-${nonce}`, `Quelle est la plus petite différence angulaire entre ${display(current)}° et ${display(other)}° ?`, answer, `Écart direct : ${direct}°. Écart par le nord : ${360 - direct}°. Le plus petit vaut ${answer}°.`, ['caps', 'différence angulaire']);
+    return numeric(`generated-angle-${nonce}`, kind, `Quelle est la plus petite différence angulaire entre ${display(current)}° et ${display(other)}° ?`, answer, `Écart direct : ${direct}°. Écart par le nord : ${360 - direct}°. Le plus petit vaut ${answer}°.`, ['caps', 'différence angulaire']);
   }
-  if (kind === 2) {
+  if (kind === 'opposite-heading') {
     const answer = normalize(current + 180);
-    return numeric(`generated-opposite-${nonce}`, `Quel est le cap opposé de ${display(current)}° ?`, answer, `Un cap opposé diffère de 180° : ${display(current)} + 180°, normalisé, donne ${display(answer)}°.`, ['caps', 'cap opposé']);
+    return numeric(`generated-opposite-${nonce}`, kind, `Quel est le cap opposé de ${display(current)}° ?`, answer, `Un cap opposé diffère de 180° : ${display(current)} + 180°, normalisé, donne ${display(answer)}°.`, ['caps', 'cap opposé']);
   }
-  if (kind === 3) {
+  if (kind === 'cardinal-heading') {
     const cardinal = pick(rng, [
       { name: 'Nord', answer: '000°' }, { name: 'Est', answer: '090°' },
       { name: 'Sud', answer: '180°' }, { name: 'Ouest', answer: '270°' },
@@ -67,9 +71,10 @@ export function generateHeadingQuestion(rng: Rng): CultureQuestion {
       choices: ['000°', '090°', '180°', '270°'], answer: cardinal.answer,
       explanation: `${cardinal.name} correspond au cap ${cardinal.answer}.`, difficulty: 1,
       isTimeSensitive: false, highYield: true, memoryTip: 'N 000, E 090, S 180, W 270.',
+      drillType: kind,
     };
   }
   const qfu = pick(rng, Array.from({ length: 36 }, (_, index) => index + 1));
   const cap = qfu * 10 === 360 ? 360 : qfu * 10;
-  return numeric(`generated-qfu-${nonce}`, `Quel QFU correspond approximativement au cap ${String(cap).padStart(3, '0')}° ?`, qfu, `Le QFU retire le zéro final du cap arrondi à la dizaine : ${String(cap).padStart(3, '0')}° → ${String(qfu).padStart(2, '0')}.`, ['QFU', 'caps']);
+  return numeric(`generated-qfu-${nonce}`, kind, `Quel QFU correspond approximativement au cap ${String(cap).padStart(3, '0')}° ?`, qfu, `Le QFU retire le zéro final du cap arrondi à la dizaine : ${String(cap).padStart(3, '0')}° → ${String(qfu).padStart(2, '0')}.`, ['QFU', 'caps']);
 }

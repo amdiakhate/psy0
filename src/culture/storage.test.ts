@@ -6,6 +6,7 @@ import {
   markQuestionUnderstood,
   migrateCultureStore,
   recordCultureAnswer,
+  recordCultureDrillAttempt,
   saveCultureStore,
   setFinalStretch,
   toggleFavoriteLesson,
@@ -21,7 +22,7 @@ vi.stubGlobal('localStorage', {
   get length() { return values.size; },
 });
 
-describe('stockage Culture V2', () => {
+describe('stockage Culture V3', () => {
   beforeEach(() => values.clear());
 
   it('part d’un schéma versionné vide', () => {
@@ -40,6 +41,7 @@ describe('stockage Culture V2', () => {
     store = toggleFavoriteLesson(store, 'lesson-vdt');
     store = setFinalStretch(store, true);
     store = recordCultureAnswer({ store, questionId: 'doc26-01', category: 'mental-math', verdict: 'known', sessionId: 's1', mode: 'review', now: new Date('2026-08-29T10:00:00Z') });
+    store = recordCultureDrillAttempt({ store, drillType: 'distance', correct: true, expectedAnswer: 60, givenAnswer: 60, now: new Date('2026-08-29T10:01:00Z') });
     saveCultureStore(store);
     expect(values.has(`psy0.${CULTURE_STORAGE_KEY}`)).toBe(true);
     expect(loadCultureStore()).toEqual(store);
@@ -58,9 +60,37 @@ describe('stockage Culture V2', () => {
       attempts: [{ id: 'a', questionId: 'q', category: 'navigation', answeredAt: '2026-08-29T10:00:00.000Z', correct: false, verdict: 'wrong', sessionId: 's1', mode: 'review' }],
       sessions: [], favoriteQuestionIds: [], favoriteLessonIds: [], activeDays: [], finalStretch: true,
     });
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(3);
     expect(migrated.progress.q).toMatchObject({ lastVerdict: 'wrong', activeError: true, examReady: false });
     expect(migrated.finalStretch).toBe(true);
+  });
+
+  it('enregistre les drills séparément des tentatives de la banque statique', () => {
+    const store = recordCultureDrillAttempt({
+      store: emptyCultureStore(),
+      drillType: 'heading-turn',
+      correct: false,
+      expectedAnswer: 30,
+      givenAnswer: 40,
+      now: new Date('2026-08-30T08:00:00Z'),
+    });
+    expect(store.attempts).toEqual([]);
+    expect(store.drillAttempts).toHaveLength(1);
+    expect(store.drillAttempts[0]).toMatchObject({
+      drillType: 'heading-turn',
+      correct: false,
+      expectedAnswer: 30,
+      givenAnswer: 40,
+      answeredAt: '2026-08-30T08:00:00.000Z',
+    });
+  });
+
+  it('migre un store V2 avec une liste de drills vide', () => {
+    const migrated = migrateCultureStore({
+      version: 2, progress: {}, attempts: [], sessions: [],
+      favoriteQuestionIds: [], favoriteLessonIds: [], activeDays: [], finalStretch: false,
+    });
+    expect(migrated).toMatchObject({ version: 3, drillAttempts: [] });
   });
 
   it('marque une question comprise sans la supprimer', () => {

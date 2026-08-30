@@ -18,4 +18,10 @@ describe('générateur de caps', () => {
       expect(ids.some((id) => id.includes(kind)), kind).toBe(true);
     }
   });
+
+  it('peut générer chacun des sous-types de caps à la demande', () => {
+    for (const type of ['heading-turn', 'angular-difference', 'opposite-heading', 'cardinal-heading', 'qfu'] as const) {
+      expect(generateHeadingQuestion(mulberry32(42), type).drillType).toBe(type);
+    }
+  });
 });

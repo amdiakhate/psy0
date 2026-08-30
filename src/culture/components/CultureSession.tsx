@@ -26,12 +26,14 @@ export interface CultureSessionProps {
   tracked?: boolean;
   onExit: () => void;
   onReviewErrors?: (questions: CultureQuestion[]) => void;
+  onAttempt?: (attempt: { question: CultureQuestion; given: Exclude<CultureGivenAnswer, null>; correct: boolean; responseTimeMs: number }) => void;
 }
 
-export function CultureSession({ questions, title, subtitle, mode, exam = false, tracked = true, onExit, onReviewErrors }: CultureSessionProps) {
+export function CultureSession({ questions, title, subtitle, mode, exam = false, tracked = true, onExit, onReviewErrors, onAttempt }: CultureSessionProps) {
   const seed = useRef(newSeed());
   const sessionId = useRef(`culture-${Date.now()}-${seed.current}`);
   const startedAt = useRef(new Date());
+  const questionStartedAt = useRef(Date.now());
   const initial = useMemo(() => questions.map((question, index) => presentQuestion(question, mulberry32(seed.current + index))), [questions]);
   const [queue, setQueue] = useState(initial);
   const [index, setIndex] = useState(0);
@@ -65,6 +67,7 @@ export function CultureSession({ questions, title, subtitle, mode, exam = false,
     setInput('');
     setPhase('answer');
     setIndex((current) => current + 1);
+    questionStartedAt.current = Date.now();
   }, []);
 
   const submit = useCallback(() => {
@@ -72,6 +75,7 @@ export function CultureSession({ questions, title, subtitle, mode, exam = false,
     const given = item.question.type === 'numeric' || item.question.type === 'short-answer' ? input : selected;
     if (given === null || given === '') return;
     const correct = checkAnswer(item.question, given);
+    onAttempt?.({ question: item.question, given, correct, responseTimeMs: Date.now() - questionStartedAt.current });
     setResults((current) => [...current, { item, given, correct }]);
     if (exam) {
       persist(item.question, correct ? 'known' : 'wrong');
@@ -86,7 +90,7 @@ export function CultureSession({ questions, title, subtitle, mode, exam = false,
       }
     }
     setPhase('feedback');
-  }, [exam, index, input, item, next, persist, phase, reinserted, selected]);
+  }, [exam, index, input, item, next, onAttempt, persist, phase, reinserted, selected]);
 
   const confidence = useCallback((verdict: 'guessed' | 'known' | 'review') => {
     if (!item || !result?.correct) return;

@@ -2,6 +2,8 @@ import { loadJson, saveJson } from '../core/storage';
 import { emptyProgress, markProgressUnderstood, reviewQuestion } from './progress';
 import type {
   CultureAttempt,
+  CultureDrillAttempt,
+  CultureDrillType,
   CultureProgress,
   CultureReviewVerdict,
   CultureSessionMode,
@@ -10,9 +12,11 @@ import type {
 } from './types';
 
 export const CULTURE_STORAGE_KEY = 'culture-v2';
-export const CULTURE_STORAGE_VERSION = 2 as const;
+export const CULTURE_STORAGE_VERSION = 3 as const;
 const MAX_ATTEMPTS = 2_000;
 const MAX_SESSIONS = 100;
+const MAX_DRILL_ATTEMPTS = 5_000;
+const DRILL_TYPES = new Set<CultureDrillType>(['distance', 'time', 'speed', 'heading-turn', 'opposite-heading', 'angular-difference', 'qfu', 'cardinal-heading', 'time-conversion']);
 
 export function emptyCultureStore(): CultureStore {
   return {
@@ -21,6 +25,7 @@ export function emptyCultureStore(): CultureStore {
     favoriteQuestionIds: [],
     favoriteLessonIds: [],
     attempts: [],
+    drillAttempts: [],
     sessions: [],
     activeDays: [],
     finalStretch: false,
@@ -33,6 +38,23 @@ function stringArray(value: unknown): string[] {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function normalizeDrillAttempts(value: unknown): CultureDrillAttempt[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item): CultureDrillAttempt[] => {
+    if (!isRecord(item) || typeof item.id !== 'string' || typeof item.drillType !== 'string' || !DRILL_TYPES.has(item.drillType as CultureDrillType) || typeof item.correct !== 'boolean' || typeof item.answeredAt !== 'string' || !Number.isFinite(Date.parse(item.answeredAt))) return [];
+    const answer = (candidate: unknown): string | number | boolean | undefined => ['string', 'number', 'boolean'].includes(typeof candidate) ? candidate as string | number | boolean : undefined;
+    return [{
+      id: item.id,
+      drillType: item.drillType as CultureDrillType,
+      correct: item.correct,
+      answeredAt: item.answeredAt,
+      expectedAnswer: answer(item.expectedAnswer),
+      givenAnswer: answer(item.givenAnswer),
+      responseTimeMs: typeof item.responseTimeMs === 'number' && item.responseTimeMs >= 0 ? item.responseTimeMs : undefined,
+    }];
+  }).slice(-MAX_DRILL_ATTEMPTS);
 }
 
 function migratedActiveError(item: Record<string, unknown>, attempts: CultureAttempt[]): boolean {
@@ -98,7 +120,7 @@ function normalizeProgress(value: unknown, attemptsByQuestion: Map<string, Cultu
 }
 
 export function migrateCultureStore(value: unknown): CultureStore {
-  if (!isRecord(value) || (value.version !== 1 && value.version !== CULTURE_STORAGE_VERSION)) return emptyCultureStore();
+  if (!isRecord(value) || ![1, 2, CULTURE_STORAGE_VERSION].includes(Number(value.version))) return emptyCultureStore();
   const attempts = Array.isArray(value.attempts) ? value.attempts.filter(isRecord) as unknown as CultureAttempt[] : [];
   const attemptsByQuestion = new Map<string, CultureAttempt[]>();
   for (const attempt of attempts) attemptsByQuestion.set(attempt.questionId, [...(attemptsByQuestion.get(attempt.questionId) ?? []), attempt]);
@@ -108,10 +130,34 @@ export function migrateCultureStore(value: unknown): CultureStore {
     favoriteQuestionIds: stringArray(value.favoriteQuestionIds),
     favoriteLessonIds: stringArray(value.favoriteLessonIds),
     attempts,
+    drillAttempts: normalizeDrillAttempts(value.drillAttempts),
     sessions: Array.isArray(value.sessions) ? value.sessions.filter(isRecord) as unknown as CultureSessionSummary[] : [],
     activeDays: stringArray(value.activeDays),
     lastTrainingAt: typeof value.lastTrainingAt === 'string' ? value.lastTrainingAt : undefined,
     finalStretch: value.finalStretch === true,
+  };
+}
+
+export function recordCultureDrillAttempt(args: {
+  store: CultureStore;
+  drillType: CultureDrillType;
+  correct: boolean;
+  expectedAnswer?: string | number | boolean;
+  givenAnswer?: string | number | boolean;
+  responseTimeMs?: number;
+  now: Date;
+}): CultureStore {
+  const { store, now, ...values } = args;
+  const attempt: CultureDrillAttempt = {
+    id: `drill:${values.drillType}:${now.getTime()}:${store.drillAttempts.length}`,
+    answeredAt: now.toISOString(),
+    ...values,
+  };
+  return {
+    ...store,
+    drillAttempts: [...store.drillAttempts, attempt].slice(-MAX_DRILL_ATTEMPTS),
+    activeDays: [...new Set([...store.activeDays, dayKey(now)])].sort(),
+    lastTrainingAt: now.toISOString(),
   };
 }
 

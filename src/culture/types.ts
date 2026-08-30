@@ -25,6 +25,17 @@ export type CultureDomain =
 
 export type CultureQuestionType = 'single-choice' | 'true-false' | 'numeric' | 'short-answer';
 
+export type CultureDrillType =
+  | 'distance'
+  | 'time'
+  | 'speed'
+  | 'heading-turn'
+  | 'opposite-heading'
+  | 'angular-difference'
+  | 'qfu'
+  | 'cardinal-heading'
+  | 'time-conversion';
+
 export interface CultureQuestion {
   id: string;
   tier: 'core' | 'extended';
@@ -46,6 +57,7 @@ export interface CultureQuestion {
   trap?: string;
   memoryTip?: string;
   highYield: boolean;
+  drillType?: CultureDrillType;
 }
 
 export interface CultureLesson {
@@ -107,6 +119,16 @@ export interface CultureAttempt {
   mode: CultureSessionMode;
 }
 
+export interface CultureDrillAttempt {
+  id: string;
+  drillType: CultureDrillType;
+  correct: boolean;
+  answeredAt: string;
+  expectedAnswer?: string | number | boolean;
+  givenAnswer?: string | number | boolean;
+  responseTimeMs?: number;
+}
+
 export type CultureSessionMode =
   | 'review'
   | 'quick-quiz'
@@ -127,16 +149,17 @@ export interface CultureSessionSummary {
   total: number;
 }
 
-export interface CultureStoreV2 {
-  version: 2;
+export interface CultureStoreV3 {
+  version: 3;
   progress: Record<string, CultureProgress>;
   favoriteQuestionIds: string[];
   favoriteLessonIds: string[];
   attempts: CultureAttempt[];
+  drillAttempts: CultureDrillAttempt[];
   sessions: CultureSessionSummary[];
   activeDays: string[];
   lastTrainingAt?: string;
   finalStretch: boolean;
 }
 
-export type CultureStore = CultureStoreV2;
+export type CultureStore = CultureStoreV3;

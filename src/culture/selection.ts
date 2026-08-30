@@ -21,11 +21,11 @@ export function categoryAccuracy(store: CultureStore, category: CultureCategory)
 }
 
 export function weakestCategories(store: CultureStore, count = 3): CultureCategory[] {
-  const categories = [...new Set(store.attempts.map((attempt) => attempt.category))];
+  const categories = [...new Set(store.attempts.map((attempt) => attempt.category))].filter((category) => category !== 'mental-math');
   return categories
     .map((category) => ({ category, accuracy: categoryAccuracy(store, category) }))
-    .filter((item): item is { category: CultureCategory; accuracy: number } => item.accuracy !== null && item.accuracy < 0.85)
-    .sort((a, b) => a.accuracy - b.accuracy)
+    .filter((item) => item.accuracy !== null && item.accuracy < 0.85)
+    .sort((a, b) => (a.accuracy ?? 1) - (b.accuracy ?? 1))
     .slice(0, count)
     .map((item) => item.category);
 }
