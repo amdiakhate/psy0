@@ -83,7 +83,13 @@ Le comparatif utilise au moins 1 000 planches déterministes, soit 200 seeds par
 - les réponses partielles et les réemplois illicites de pièces dans une série dédiée ;
 - la solution attendue et les 24 rotations propres du cube complet.
 
-Pour chaque réponse complète, le test compare le verdict de l’ancien `sameCube()` au verdict du nouveau moteur. Une divergence affiche le seed, le niveau, les trous, la réponse, l’état reconstruit et les deux verdicts.
+Pour chaque réponse complète, le test compare l’ancien `sameCube()` au nouveau moteur. Le rapport distingue trois compteurs :
+
+- divergence d’identité de face ;
+- divergence d’orientation de symbole ;
+- divergence de verdict global.
+
+Une divergence affiche le seed, le niveau, les trous, la réponse, l’état reconstruit et les deux diagnostics. Les trois compteurs doivent être nuls avant la bascule de `validate()`.
 
 Le test différentiel reste dans la suite Vitest. Si son volume nuit au cycle courant, `npm test` conserve un échantillon déterministe et un script `test:cubes:exhaustive` exécute les 1 000 planches. Le rapport exhaustif doit passer avant la bascule du validateur et avant la livraison.
 
@@ -250,6 +256,8 @@ Le Coach choisit un voisin ancre déjà placé. Il colore l’arête physique co
 
 Une face de symétrie visuelle 4 ne génère jamais d’erreur d’orientation.
 
+Dans la correction courte, chaque erreur d’orientation possède un bouton « Pourquoi cette face tourne ? ». Il ouvre directement l’animation de l’arête physique et du voisin ancre, sans ouvrir les autres sections de géométrie détaillée.
+
 ## 9. Correction React
 
 Le module Cubes branche `Explain: CubeCoachCorrection` et `visualCorrectionOnly: true`.
@@ -319,6 +327,8 @@ Le générateur vérifie que :
 - une comparaison d’anneau rend la solution unique ;
 - les deux candidats ne diffèrent pas seulement par un symbole visuellement invariant ;
 - le cas n’est pas résolu plus tôt par élimination triviale.
+
+Le corpus alterne deux familles : ambiguïté sur la face centrale du patron et ambiguïté sur une autre case. Les tests imposent la présence des deux familles sur un balayage déterministe afin de ne pas enseigner un raccourci lié à une position unique.
 
 ### Face correcte, orientation fausse
 
