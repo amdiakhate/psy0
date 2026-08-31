@@ -41,6 +41,8 @@ export interface Prefs {
    * calme — un dépassement de chrono en phase d'apprentissage n'apprend rien.
    */
   itemTimeLimit: boolean;
+  /** Tutoriel détaillé après les planches Cubes, jamais utilisé en simulation. */
+  cubeCoachEnabled: boolean;
   /**
    * Calcul mental : produire la réponse au clavier, ou la reconnaître en QCM.
    *
@@ -81,6 +83,7 @@ const DEFAULT_PREFS: Prefs = {
   pauseAfterAnswer: 'erreurs',
   hintsEnabled: true,
   itemTimeLimit: true,
+  cubeCoachEnabled: true,
   mentalResponse: 'auto',
   externalDrill: {},
   dev: { fastHalfway: false },

@@ -24,5 +24,17 @@ describe('chemin pédagogique minimal', () => {
     const kinds = buildReasoningPath(item!.question).minimalSteps.map((step) => step.kind);
     expect(kinds).toContain('two-candidates');
     expect(kinds).toContain('ring-comparison');
+    expect(kinds).toContain('mirror-rejection');
+  });
+
+  it('garde comme étape décisive le dernier placement, avant les rotations de symboles', () => {
+    const item = Array.from({ length: 500 }, (_, seed) => generate(seed, 4, 'letters')).find(({ question }) => {
+      const path = buildReasoningPath(question);
+      return path.minimalSteps.some((step) => step.kind === 'orientation-anchor');
+    });
+    expect(item).toBeDefined();
+    const path = buildReasoningPath(item!.question);
+    expect(path.minimalSteps[path.decisiveStepIndex].kind).not.toBe('orientation-anchor');
+    expect(path.minimalSteps.slice(path.decisiveStepIndex + 1).every((step) => step.kind === 'orientation-anchor')).toBe(true);
   });
 });

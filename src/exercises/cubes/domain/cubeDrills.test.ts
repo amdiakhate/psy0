@@ -10,6 +10,7 @@ const TYPES: CubeDrillType[] = [
   'rotation',
   'two-remaining',
   'orientation-only',
+  'full-puzzle',
 ];
 
 describe('générateurs de drills Cubes', () => {

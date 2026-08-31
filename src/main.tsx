@@ -27,6 +27,10 @@ import { CultureFavoritesPage } from './culture/pages/CultureFavoritesPage';
 import { CultureExpressPage } from './culture/pages/CultureExpressPage';
 import { CultureDrillsPage } from './culture/pages/CultureDrillsPage';
 import { CultureAirFrancePage } from './culture/pages/CultureAirFrancePage';
+import { CubesCoachPage } from './exercises/cubes/pages/CubesCoachPage';
+import { CubesDrillPlayer } from './exercises/cubes/pages/CubesDrillPlayer';
+import { CubesGuidedSolve } from './exercises/cubes/pages/CubesGuidedSolve';
+import { CubesHistoryPage } from './exercises/cubes/pages/CubesHistoryPage';
 
 const router = createBrowserRouter([
   {
@@ -45,6 +49,10 @@ const router = createBrowserRouter([
       { path: 'tips/:id', element: <Tips /> },
       { path: 'mental', element: <Mental /> },
       { path: 'mental/:id', element: <Mental /> },
+      { path: 'cubes', element: <CubesCoachPage /> },
+      { path: 'cubes/drill/:type', element: <CubesDrillPlayer /> },
+      { path: 'cubes/guided', element: <CubesGuidedSolve /> },
+      { path: 'cubes/history', element: <CubesHistoryPage /> },
       {
         path: 'culture',
         element: <Culture />,

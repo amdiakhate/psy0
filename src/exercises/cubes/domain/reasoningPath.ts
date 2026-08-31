@@ -210,6 +210,14 @@ export function buildReasoningPath(question: CubesQuestion): ReasoningPath {
       expectedOrder,
       targetOrder,
     });
+    if (holes.length === 2) {
+      steps.push({
+        kind: 'mirror-rejection',
+        centerFaceId: expected.id,
+        normalOrder: expectedOrder,
+        mirroredOrder: [expectedOrder[0], expectedOrder[3], expectedOrder[2], expectedOrder[1]],
+      });
+    }
     solved.set(hole, expected);
     remainingHoles.delete(hole);
     remainingIds.delete(expected.id);
@@ -219,7 +227,7 @@ export function buildReasoningPath(question: CubesQuestion): ReasoningPath {
   addOrientationSteps(question, solution, steps);
   return {
     minimalSteps: steps,
-    decisiveStepIndex: steps.length > 0 ? steps.length - 1 : placementDecisiveIndex,
+    decisiveStepIndex: placementDecisiveIndex,
     ...(alternatives.length > 0 ? { alternativeValidSteps: alternatives } : {}),
   };
 }

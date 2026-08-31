@@ -46,6 +46,11 @@ function TipsDetail({ id }: { id: ExerciseId }) {
       </Link>
       <h2 className="mt-2 text-2xl font-bold">{module_.name}</h2>
       <p className="mt-1 text-zinc-400">{module_.description}</p>
+      {id === 'cubes' && (
+        <Link to="/cubes" className="mt-3 inline-flex rounded-lg border border-sky-800/70 px-3 py-2 text-sm font-semibold text-sky-300 hover:border-sky-500">
+          Ouvrir le Coach Cubes
+        </Link>
+      )}
 
       {atCeiling && (
         <div className="mt-4 rounded-xl border border-amber-800/60 bg-amber-950/20 p-4 text-sm text-amber-200">

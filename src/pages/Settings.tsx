@@ -187,6 +187,13 @@ function ExplainSection() {
     savePrefs(next);
   };
 
+  const toggleCubeCoach = () => {
+    const fresh = getPrefs();
+    const next = { ...fresh, cubeCoachEnabled: !fresh.cubeCoachEnabled };
+    setPrefs(next);
+    savePrefs(next);
+  };
+
   return (
     <section className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
       <h3 className="font-semibold text-zinc-300">Aide pendant l’entraînement</h3>
@@ -234,6 +241,21 @@ function ExplainSection() {
             60 s sur les Cubes — et l'exercice enchaîne. Une question perdue au chrono est
             enregistrée comme telle et non comme une erreur : manquer de temps et se tromper sont
             deux défauts différents. Toujours imposée en simulation, quoi qu'il en soit ici.
+          </span>
+        </span>
+      </label>
+      <label className="mt-4 flex items-start gap-3 border-t border-zinc-800 pt-4 text-sm">
+        <input
+          type="checkbox"
+          checked={prefs.cubeCoachEnabled}
+          onChange={toggleCubeCoach}
+          className="mt-0.5 h-4 w-4 accent-sky-600"
+        />
+        <span>
+          <span className="font-medium text-zinc-200">Coach visuel Cubes</span>
+          <span className="block text-zinc-500">
+            Après une planche, montre le chemin de résolution le plus court puis la géométrie à la demande.
+            Activé par défaut en entraînement ; jamais affiché pendant une simulation.
           </span>
         </span>
       </label>

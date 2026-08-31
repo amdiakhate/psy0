@@ -38,6 +38,7 @@ export interface ChoiceCubeDrill extends DrillBase {
   focusPosition: FacePosition;
   ringA?: readonly FaceId[];
   ringB?: readonly FaceId[];
+  target?: Cube;
 }
 
 export interface TwoRemainingCubeDrill extends DrillBase {
@@ -180,6 +181,7 @@ function choiceDrill(seed: number, type: ChoiceCubeDrill['type']): ChoiceCubeDri
     prompt: `Quelle rotation faut-il appliquer à la face ${rotated[focusPosition].id} ?`,
     choices: [0, 1, 2, 3].map((rot) => choice(String(rot), rot === 0 ? 'Aucune' : rot === 2 ? '180°' : rot === 1 ? '90° antihoraire' : '90° horaire')),
     answer: { choiceId: String(expectedRot) },
+    target: rotated,
   };
 }
 

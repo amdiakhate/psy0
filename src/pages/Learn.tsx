@@ -70,6 +70,11 @@ function LessonPlayer({ id }: { id: ExerciseId }) {
       </Link>
       <h2 className="mt-2 text-2xl font-bold">{module_.name}</h2>
       <p className="text-sky-400">{lesson.title}</p>
+      {id === 'cubes' && (
+        <Link to="/cubes" className="mt-3 inline-flex rounded-lg border border-sky-800/70 px-3 py-2 text-sm font-semibold text-sky-300 hover:border-sky-500">
+          Coach interactif et drills ciblés
+        </Link>
+      )}
 
       {index === -1 ? (
         <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-900/60 p-6">

@@ -144,7 +144,9 @@ export function analyzeCubeAttempt(question: CubesQuestion, answer: CubesAnswer)
       identityCorrect && normalizeRot(expected.sym, expected.rot) === normalizeRot(given.sym, given.rot);
     let primaryCause: CubeErrorCause | undefined;
 
-    if (!identityCorrect) {
+    if (candidate === null) {
+      primaryCause = undefined;
+    } else if (!identityCorrect) {
       const badOpposite = oppositePairs.some(
         (pair) => !pair.valid && pair.positions.includes(position),
       );

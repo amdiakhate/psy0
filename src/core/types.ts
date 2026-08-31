@@ -169,6 +169,15 @@ export interface ExplainProps<Q = unknown, A = unknown> {
   answer: A;
 }
 
+export interface AttemptResultContext<Q = unknown, A = unknown> {
+  item: Item<Q>;
+  answer: A | undefined;
+  correct: boolean;
+  rtMs: number;
+  sessionId: string;
+  mode: SessionMode;
+}
+
 /**
  * Astuce calculée sur l'item COURANT, révélée en cours de partie.
  *
@@ -237,6 +246,8 @@ export interface ExerciseModule<Q = unknown, A = unknown> {
    * couleurs) : à 0,5 s par stimulus, lire une astuce coûte l'item suivant.
    */
   hint?: (item: Item<Q>) => Hint | null;
+  /** Persistance enrichie propre à un exercice, en plus de l'event log générique. */
+  onAttemptResult?: (context: AttemptResultContext<Q, A>) => void;
 }
 
 /** Un event par item répondu — la source unique du moteur d'analyse. */

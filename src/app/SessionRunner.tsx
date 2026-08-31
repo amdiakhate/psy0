@@ -596,6 +596,14 @@ function BlockRunner({
     (answer: unknown) => {
       const rtMs = Date.now() - itemShownAt.current;
       const correct = module_.validate(item, answer);
+      module_.onAttemptResult?.({
+        item,
+        answer,
+        correct,
+        rtMs,
+        sessionId,
+        mode: plan.mode,
+      });
       logEvent({
         tags: usedHintRef.current ? [...item.tags, 'hint-used'] : item.tags,
         correct,
@@ -637,7 +645,7 @@ function BlockRunner({
       usedHintRef.current = false;
       setItemLeft(itemLimitSec);
     },
-    [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, plan.mode],
+    [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, plan.mode, sessionId, itemLimitSec],
   );
 
   /** Reprise après une correction : c'est ici que l'item suivant est enfin tiré. */
@@ -677,6 +685,14 @@ function BlockRunner({
    * des deux te coûte des points.
    */
   const handleTimeout = useCallback(() => {
+    module_.onAttemptResult?.({
+      item,
+      answer: undefined,
+      correct: false,
+      rtMs: Math.round((itemLimitSec ?? 0) * 1000),
+      sessionId,
+      mode: plan.mode,
+    });
     logEvent({
       tags: [...item.tags, 'timeout', ...(usedHintRef.current ? ['hint-used'] : [])],
       correct: false,
@@ -714,7 +730,7 @@ function BlockRunner({
     setHintLevel(0);
     usedHintRef.current = false;
     setItemLeft(itemLimitSec);
-  }, [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, itemLimitSec, plan.mode]);
+  }, [module_, item, logEvent, block.itemCount, block.durationSec, block.tagFilter, itemLimitSec, plan.mode, sessionId]);
 
   const timeoutRef = useRef(handleTimeout);
   timeoutRef.current = handleTimeout;
@@ -840,7 +856,7 @@ function BlockRunner({
           )}
           {block.itemCount !== undefined && (
             <span className="text-sky-300">
-              Question {Math.min(stats.current.items + 1, block.itemCount)}/{block.itemCount}
+              Question {Math.max(1, Math.min(stats.current.items + (review === null ? 1 : 0), block.itemCount))}/{block.itemCount}
             </span>
           )}
           {block.durationSec !== undefined && (

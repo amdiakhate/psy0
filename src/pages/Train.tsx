@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { EXERCISES } from '../exercises';
 import { useSession } from '../app/SessionContext';
 import { ExercisePicker } from '../components/ExercisePicker';
@@ -40,6 +41,11 @@ export default function Train() {
         <div className="mt-8 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
           <p className="font-semibold">{module_.name}</p>
           <p className="mt-1 text-zinc-400">{module_.description}</p>
+          {module_.id === 'cubes' && (
+            <Link to="/cubes" className="mt-3 inline-flex rounded-lg border border-sky-800/70 bg-sky-950/30 px-3 py-2 text-sm font-semibold text-sky-300 hover:border-sky-500">
+              Ouvrir le Coach Cubes
+            </Link>
+          )}
           {module_.id === 'psychomotor' && <PsychoBudget />}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="text-sm text-zinc-500">Niveau :</span>

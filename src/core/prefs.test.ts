@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PRIORITIES_LOCKED_UNTIL, arePrioritiesLocked, missingPilotestClasses } from './prefs';
+import { PRIORITIES_LOCKED_UNTIL, arePrioritiesLocked, getPrefs, missingPilotestClasses } from './prefs';
 import type { Prefs } from './prefs';
 import type { ExerciseId } from './types';
 
@@ -15,6 +15,7 @@ const prefs = (over: Partial<Prefs> = {}): Prefs => ({
   pauseAfterAnswer: 'erreurs',
   hintsEnabled: true,
   itemTimeLimit: true,
+  cubeCoachEnabled: true,
   mentalResponse: 'auto',
   externalDrill: {},
   dev: { fastHalfway: false },
@@ -67,5 +68,11 @@ describe('missingPilotestClasses', () => {
     // avec une absence de saisie par une comparaison laxiste.
     const p = prefs({ pilotestClass: { cubes: null, marbles: 1 } });
     expect(missingPilotestClasses(all, p)).toEqual(['cubes', 'english']);
+  });
+});
+
+describe('préférences Coach Cubes', () => {
+  it('active le Coach par défaut sur un stockage neuf ou indisponible', () => {
+    expect(getPrefs().cubeCoachEnabled).toBe(true);
   });
 });

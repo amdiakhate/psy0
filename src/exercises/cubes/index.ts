@@ -6,6 +6,8 @@ import { lesson } from './lesson';
 import { CubesExercise } from './CubesExercise';
 import { Cube3DTip } from './Cube3DTip';
 import { LEVELS } from './config';
+import { recordCubeFullAttempt } from './progress/cubeCoachStorage';
+import { CubeCoachCorrection } from './coach/CubeCoachCorrection';
 
 export const cubes: ExerciseModule<CubesQuestion, CubesAnswer> = {
   id: 'cubes',
@@ -21,6 +23,7 @@ export const cubes: ExerciseModule<CubesQuestion, CubesAnswer> = {
   timed: 'per-item',
   generate,
   validate,
+  onAttemptResult: recordCubeFullAttempt,
   answerToString: (a) =>
     Object.entries(a)
       .map(([hole, p]) => `${hole}:${p.pieceId}${p.rot > 0 ? `↻${p.rot}` : ''}`)
@@ -33,4 +36,6 @@ export const cubes: ExerciseModule<CubesQuestion, CubesAnswer> = {
   lesson,
   Component: CubesExercise,
   TipsIllustration: Cube3DTip,
+  Explain: CubeCoachCorrection,
+  visualCorrectionOnly: true,
 };
