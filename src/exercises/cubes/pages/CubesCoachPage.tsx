@@ -153,7 +153,7 @@ export function CubesCoachPage() {
       <section className="mt-8 grid gap-5 lg:grid-cols-2">
         <div className="rounded-xl bg-zinc-900/55 p-5">
           <h3 className="text-lg font-semibold">Patron actuel à connaître</h3>
-          <p className="mt-1 text-sm text-zinc-500">Le jeu utilise la croix U / L-F-R-B / D. Les relations viennent de sa géométrie, pas d’une table mémorisée.</p>
+          <p className="mt-1 text-sm text-zinc-500">Le jeu utilise le patron en croix affiché dans les planches. Les relations viennent de sa géométrie, pas des lettres techniques du moteur.</p>
           <div className="mt-4"><OppositePairsDiagram cube={reference} /></div>
         </div>
         <div className="rounded-xl bg-zinc-900/55 p-5">

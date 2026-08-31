@@ -11,6 +11,20 @@ const edgeClass = {
   left: 'bottom-2 left-0 top-2 w-1',
 } as const;
 
+const edgeLabel = {
+  top: 'supérieure',
+  right: 'droite',
+  bottom: 'inférieure',
+  left: 'gauche',
+} as const;
+
+const anchorClass = {
+  top: '-top-8 left-1/2 -translate-x-1/2',
+  right: '-right-8 top-1/2 -translate-y-1/2',
+  bottom: '-bottom-8 left-1/2 -translate-x-1/2',
+  left: '-left-8 top-1/2 -translate-y-1/2',
+} as const;
+
 function turnLabel(correction: number): string {
   if (correction === 0) return 'aucune rotation';
   if (correction === 2) return '180°';
@@ -27,7 +41,7 @@ export function CubeRotationExplanation({ diagnostic, cube }: { diagnostic: Orie
           <h4 className="font-semibold text-sky-200">Même bord physique, autre côté à l’écran</h4>
           <p className="mt-1 max-w-2xl text-sm text-zinc-300">
             L’arête rouge touchait {faceName(cube, diagnostic.anchorFaceId)} sur le patron de référence.
-            Dans le patron cible, ce même voisin impose l’arête {diagnostic.targetEdge}. Le symbole tourne avec la face.
+            Dans le patron cible, ce même voisin impose l’arête {edgeLabel[diagnostic.targetEdge]}. Le symbole tourne avec la face.
           </p>
         </div>
         <button onClick={() => setReplay((value) => value + 1)} className="rounded-md border border-sky-700 px-3 py-1.5 text-sm text-sky-200 hover:bg-sky-950 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400">
@@ -35,12 +49,12 @@ export function CubeRotationExplanation({ diagnostic, cube }: { diagnostic: Orie
         </button>
       </div>
       <div className="mt-4 grid items-center gap-4 sm:grid-cols-[1fr_auto_1fr]">
-        <FaceWithEdge sym={face.sym} rot={diagnostic.givenRot} edge={diagnostic.sourceEdge} label="Ta rotation" />
+        <FaceWithEdge sym={face.sym} rot={diagnostic.givenRot} edge={diagnostic.sourceEdge} anchor={faceName(cube, diagnostic.anchorFaceId)} label="Avant" />
         <svg viewBox="0 0 48 24" className="mx-auto h-6 w-12 text-sky-400" aria-hidden>
           <path d="M3 12h36m-8-7 8 7-8 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <div key={replay} className="cube-coach-turn" style={{ '--cube-turn': `${-90 * diagnostic.correction}deg` } as React.CSSProperties}>
-          <FaceWithEdge sym={face.sym} rot={diagnostic.expectedRot} edge={diagnostic.targetEdge} label="Orientation correcte" />
+          <FaceWithEdge sym={face.sym} rot={diagnostic.expectedRot} edge={diagnostic.targetEdge} anchor={faceName(cube, diagnostic.anchorFaceId)} label="Après : orientation correcte" />
         </div>
       </div>
       <p className="mt-3 text-center text-sm font-semibold text-sky-200">Rotation nécessaire : {turnLabel(diagnostic.correction)}</p>
@@ -48,11 +62,14 @@ export function CubeRotationExplanation({ diagnostic, cube }: { diagnostic: Orie
   );
 }
 
-function FaceWithEdge({ sym, rot, edge, label }: { sym: number; rot: number; edge: keyof typeof edgeClass; label: string }) {
+function FaceWithEdge({ sym, rot, edge, anchor, label }: { sym: number; rot: number; edge: keyof typeof edgeClass; anchor: string; label: string }) {
   return (
     <figure className="text-center">
-      <div className="relative mx-auto h-28 w-28 rounded-lg border border-zinc-600 bg-zinc-800">
+      <div className="relative mx-auto my-8 h-28 w-28 rounded-lg border border-zinc-600 bg-zinc-800">
         <span className={`absolute z-10 rounded-full bg-red-400 ${edgeClass[edge]}`} />
+        <span className={`absolute z-20 grid h-8 w-8 place-items-center rounded-md border border-red-400 bg-zinc-950 text-sm font-bold text-red-300 ${anchorClass[edge]}`} aria-label={`Face voisine ${anchor}`}>
+          {anchor}
+        </span>
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-label={`${label}, symbole tourné de ${rot * 90} degrés`}>
           <Glyph sym={sym} rot={rot} />
         </svg>

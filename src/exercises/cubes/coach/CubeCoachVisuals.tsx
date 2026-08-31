@@ -1,4 +1,4 @@
-import { Glyph, SYMBOLS } from '../CubeSvg';
+import { Glyph, symbolName } from '../CubeSvg';
 import { POS } from '../cube-model';
 import type { Cube } from '../domain/types';
 import type { FaceId, FacePosition } from '../domain/types';
@@ -12,12 +12,23 @@ export const NET_CELLS: ReadonlyArray<{ position: FacePosition; col: number; row
   { position: POS.D, col: 1, row: 2 },
 ];
 
+const POSITION_NAMES: Readonly<Record<FacePosition, string>> = {
+  [POS.R]: 'case à droite du centre',
+  [POS.L]: 'case à gauche du centre',
+  [POS.U]: 'case au-dessus du centre',
+  [POS.D]: 'case sous le centre',
+  [POS.F]: 'case centrale',
+  [POS.B]: 'case à l’extrémité droite',
+};
+
+export function netPositionName(position: FacePosition): string {
+  return POSITION_NAMES[position];
+}
+
 export function faceName(cube: Cube, faceId: FaceId): string {
   const face = cube.find((candidate) => candidate.id === faceId);
   if (!face) return faceId;
-  const symbol = SYMBOLS[face.sym];
-  if (symbol?.kind === 'letter') return symbol.char;
-  return `symbole ${face.sym - 5}`;
+  return symbolName(face.sym);
 }
 
 export function CoachNet({

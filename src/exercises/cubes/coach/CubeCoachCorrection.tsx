@@ -8,7 +8,7 @@ import { analyzeCubeAttempt } from '../domain/cubeAnalysis';
 import type { CubeErrorCause } from '../domain/cubeAnalysis';
 import type { ReasoningStep } from '../domain/reasoningPath';
 import { solutionCubeFor } from '../domain/reasoningPath';
-import { CoachNet, OppositePairsDiagram, RingDiagram, faceName } from './CubeCoachVisuals';
+import { CoachNet, OppositePairsDiagram, RingDiagram, faceName, netPositionName } from './CubeCoachVisuals';
 import { CubeRotationExplanation } from './CubeRotationExplanation';
 import { CubeDebugPanel } from './CubeDebugPanel';
 
@@ -95,7 +95,7 @@ export function CubeCoachCorrection({ item, answer }: ExplainProps<CubesQuestion
                 onClick={() => setOpenFace(openFace === face.position ? null : face.position)}
                 className={`rounded-lg border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${openFace === face.position ? 'border-sky-500 bg-sky-950/50 text-sky-200' : 'border-zinc-700 text-zinc-300 hover:border-zinc-500'}`}
               >
-                Case {face.position + 1} · {face.givenFaceId ? faceName(attempted ?? solution, face.givenFaceId) : 'vide'}
+                {netPositionName(face.position)} · {face.givenFaceId ? faceName(attempted ?? solution, face.givenFaceId) : 'vide'}
               </button>
             ))}
           </div>

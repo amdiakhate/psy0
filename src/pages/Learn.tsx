@@ -64,7 +64,7 @@ function LessonPlayer({ id }: { id: ExerciseId }) {
   });
 
   return (
-    <div className="max-w-3xl">
+    <div className={id === 'cubes' ? 'max-w-5xl' : 'max-w-3xl'}>
       <Link to="/learn" className="text-sm text-sky-400 hover:underline">
         ← Toutes les leçons
       </Link>
@@ -115,7 +115,7 @@ function LessonPlayer({ id }: { id: ExerciseId }) {
           ) : (
             <>
               {/* Arrêt sur image */}
-              <div className="mt-3 flex justify-center rounded-xl border border-zinc-800 bg-zinc-950/60 p-5">
+              <div className={`mt-3 flex justify-center rounded-xl border border-zinc-800 bg-zinc-950/60 ${id === 'cubes' ? 'min-h-[360px] items-center p-4 sm:p-7' : 'p-5'}`}>
                 <lesson.Scene scene={step!.scene} stepIndex={index} />
               </div>
 

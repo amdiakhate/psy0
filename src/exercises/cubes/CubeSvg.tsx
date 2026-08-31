@@ -42,6 +42,16 @@ export const SYMBOLS: SymbolDef[] = [
 export const LETTER_SYMS = [0, 1, 2, 3, 4, 5];
 export const SHAPE_SYMS = [6, 7, 8, 9, 10, 11];
 
+const SHAPE_NAMES = ['carré', 'octogone', 'cercle', 'trèfle', 'étoile', 'croix'] as const;
+
+/** Libellé utilisateur du symbole réellement dessiné sur une face. */
+export function symbolName(sym: number): string {
+  const definition = SYMBOLS[sym];
+  if (!definition) return `symbole ${sym + 1}`;
+  if (definition.kind === 'letter') return definition.char;
+  return SHAPE_NAMES[sym - LETTER_SYMS.length] ?? `symbole ${sym + 1}`;
+}
+
 export function Glyph({ sym, rot, color = 'var(--ink-200)' }: { sym: number; rot: number; color?: string }) {
   // rot = quarts de tour anti-horaires dans le repère (u droite, v haut) de la
   // face ⇒ rotate(-90·rot) en SVG (y vers le bas). Convention IDENTIQUE patron/cube.

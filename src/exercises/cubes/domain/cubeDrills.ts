@@ -2,6 +2,7 @@ import { mulberry32, randInt, shuffle } from '../../../core/rng';
 import { generate, solutionAnswer } from '../generator';
 import type { CubesAnswer, CubesQuestion, Piece } from '../generator';
 import { ALL_ROTATIONS, applyRotation, POS } from '../cube-model';
+import { symbolName } from '../CubeSvg';
 import { getClockwiseNeighbors, getOppositePosition } from './cubeGeometry';
 import type { Cube, CubeFace, FaceId, FacePosition, QuarterTurn } from './types';
 import { quarterTurn } from './types';
@@ -90,7 +91,12 @@ function labeledCube(): Cube {
   }));
 }
 
-const faceLabel = (cube: Cube, position: FacePosition): FaceId => cube[position].id;
+const faceId = (cube: Cube, position: FacePosition): FaceId => cube[position].id;
+const faceLabel = (cube: Cube, position: FacePosition): string => symbolName(cube[position].sym);
+const labelForId = (cube: Cube, id: FaceId): string => {
+  const face = cube.find((candidate) => candidate.id === id);
+  return face ? symbolName(face.sym) : id;
+};
 const choice = (id: string, label = id, faceIds?: readonly FaceId[]): DrillChoice => ({
   id,
   label,
@@ -101,7 +107,8 @@ function choiceDrill(seed: number, type: ChoiceCubeDrill['type']): ChoiceCubeDri
   const rng = mulberry32(seed);
   const reference = labeledCube();
   const focusPosition = POSITIONS[randInt(rng, 0, POSITIONS.length - 1)];
-  const focusId = faceLabel(reference, focusPosition);
+  const focusId = faceId(reference, focusPosition);
+  const focusLabel = faceLabel(reference, focusPosition);
   const base = {
     id: `${type}-${seed}`,
     type,
@@ -112,48 +119,48 @@ function choiceDrill(seed: number, type: ChoiceCubeDrill['type']): ChoiceCubeDri
   } as const;
 
   if (type === 'opposites') {
-    const correct = faceLabel(reference, getOppositePosition(focusPosition));
+    const correct = faceId(reference, getOppositePosition(focusPosition));
     const distractors = shuffle(rng, reference.map((face) => face.id).filter((id) => id !== correct)).slice(0, 3);
     return {
       ...base,
-      prompt: `Quelle face est opposée à ${focusId} ?`,
-      choices: shuffle(rng, [correct, ...distractors]).map((id) => choice(id)),
+      prompt: `Quelle face est opposée à ${focusLabel} ?`,
+      choices: shuffle(rng, [correct, ...distractors]).map((id) => choice(id, labelForId(reference, id))),
       answer: { choiceId: correct },
     };
   }
 
   if (type === 'adjacency') {
-    const neighbors = getClockwiseNeighbors(focusPosition).map((position) => faceLabel(reference, position));
-    const opposite = faceLabel(reference, getOppositePosition(focusPosition));
+    const neighbors = getClockwiseNeighbors(focusPosition).map((position) => faceId(reference, position));
+    const opposite = faceId(reference, getOppositePosition(focusPosition));
     const validId = neighbors.join('-');
     const variants: DrillChoice[] = [
-      choice(validId, neighbors.join(' · '), neighbors),
-      choice(`bad-1-${seed}`, [opposite, ...neighbors.slice(1)].join(' · '), [opposite, ...neighbors.slice(1)]),
-      choice(`bad-2-${seed}`, [...neighbors.slice(0, 3), focusId].join(' · '), [...neighbors.slice(0, 3), focusId]),
-      choice(`bad-3-${seed}`, [neighbors[0], opposite, neighbors[2], focusId].join(' · '), [neighbors[0], opposite, neighbors[2], focusId]),
+      choice(validId, neighbors.map((id) => labelForId(reference, id)).join(' · '), neighbors),
+      choice(`bad-1-${seed}`, [opposite, ...neighbors.slice(1)].map((id) => labelForId(reference, id)).join(' · '), [opposite, ...neighbors.slice(1)]),
+      choice(`bad-2-${seed}`, [...neighbors.slice(0, 3), focusId].map((id) => labelForId(reference, id)).join(' · '), [...neighbors.slice(0, 3), focusId]),
+      choice(`bad-3-${seed}`, [neighbors[0], opposite, neighbors[2], focusId].map((id) => labelForId(reference, id)).join(' · '), [neighbors[0], opposite, neighbors[2], focusId]),
     ];
     return {
       ...base,
-      prompt: `Quelles sont les quatre faces adjacentes à ${focusId} ?`,
+      prompt: `Quelles sont les quatre faces adjacentes à ${focusLabel} ?`,
       choices: shuffle(rng, variants),
       answer: { choiceId: validId },
     };
   }
 
   if (type === 'rings') {
-    const ring = getClockwiseNeighbors(focusPosition).map((position) => faceLabel(reference, position));
+    const ring = getClockwiseNeighbors(focusPosition).map((position) => faceId(reference, position));
     const validId = ring.join('-');
     const reversed = [ring[0], ring[3], ring[2], ring[1]];
     const swapped = [ring[0], ring[2], ring[1], ring[3]];
     const shiftedWrong = [ring[1], ring[0], ring[2], ring[3]];
     return {
       ...base,
-      prompt: `Quel ordre circulaire est possible autour de ${focusId} ?`,
+      prompt: `Quel ordre circulaire est possible autour de ${focusLabel} ?`,
       choices: shuffle(rng, [
-        choice(validId, ring.join(' → '), ring),
-        choice(`reverse-${seed}`, reversed.join(' → '), reversed),
-        choice(`swap-${seed}`, swapped.join(' → '), swapped),
-        choice(`shift-${seed}`, shiftedWrong.join(' → '), shiftedWrong),
+        choice(validId, ring.map((id) => labelForId(reference, id)).join(' → '), ring),
+        choice(`reverse-${seed}`, reversed.map((id) => labelForId(reference, id)).join(' → '), reversed),
+        choice(`swap-${seed}`, swapped.map((id) => labelForId(reference, id)).join(' → '), swapped),
+        choice(`shift-${seed}`, shiftedWrong.map((id) => labelForId(reference, id)).join(' → '), shiftedWrong),
       ]),
       answer: { choiceId: validId },
       ringA: ring,
@@ -178,7 +185,7 @@ function choiceDrill(seed: number, type: ChoiceCubeDrill['type']): ChoiceCubeDri
   const expectedRot = rotated[focusPosition].rot;
   return {
     ...base,
-    prompt: `Quelle rotation faut-il appliquer à la face ${rotated[focusPosition].id} ?`,
+    prompt: `Quelle rotation faut-il appliquer à la face ${symbolName(rotated[focusPosition].sym)} ?`,
     choices: [0, 1, 2, 3].map((rot) => choice(String(rot), rot === 0 ? 'Aucune' : rot === 2 ? '180°' : rot === 1 ? '90° antihoraire' : '90° horaire')),
     answer: { choiceId: String(expectedRot) },
     target: rotated,
@@ -210,7 +217,7 @@ function twoRemainingDrill(seed: number): TwoRemainingCubeDrill {
     target,
     pieces: shuffle(rng, pieces),
     focusPosition,
-    choices: shuffle(rng, pieces.map((piece) => choice(piece.faceId))),
+    choices: shuffle(rng, pieces.map((piece) => choice(piece.faceId, symbolName(piece.sym)))),
     answer: { choiceId: expectedId },
     ambiguityLocation: center ? 'center' : 'non-center',
     orientationTargets: [],

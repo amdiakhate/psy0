@@ -13,6 +13,9 @@ import { appendCubeAttempt, skillsForCubeDrill } from '../progress/cubeCoachStor
 import type { QuarterTurn } from '../domain/types';
 import { quarterTurn } from '../domain/types';
 import { CubesExercise } from '../CubesExercise';
+import type { CubesAnswer } from '../generator';
+import { CubeCoachCorrection } from '../coach/CubeCoachCorrection';
+import { getClockwiseNeighbors, getOppositePosition } from '../domain/cubeGeometry';
 
 const AVAILABLE: CubeDrillType[] = ['opposites', 'adjacency', 'rings', 'mirror', 'rotation', 'two-remaining', 'orientation-only', 'full-puzzle'];
 
@@ -142,11 +145,17 @@ export function CubesDrillPlayer() {
         <h2 className="text-xl font-semibold text-zinc-100">{question.prompt}</h2>
         <DrillVisual question={question} answer={answer} setAnswer={setAnswer} onSubmit={submit} disabled={feedback !== null} />
         {feedback === null ? (
-          question.type !== 'full-puzzle' && <button onClick={() => submit()} disabled={answer === null} className="mt-6 rounded-lg bg-sky-600 px-5 py-2 font-semibold disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-600">Valider · Entrée</button>
+          question.type !== 'full-puzzle' && <button onClick={() => submit()} disabled={answer === null} className="mt-6 rounded-lg bg-sky-600 px-5 py-2 font-semibold text-white disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500">Valider · Entrée</button>
         ) : (
           <div className={`mt-6 rounded-lg p-4 ${feedback ? 'bg-green-950/35 text-green-200' : 'bg-red-950/35 text-red-200'}`}>
             <p className="font-semibold">{feedback ? 'Bonne réponse' : 'Réponse incorrecte'}</p>
-            <DrillCorrection question={question} />
+            {question.type === 'full-puzzle' ? (
+              <div className="mt-4 text-zinc-100">
+                <CubeCoachCorrection item={{ question: question.question, seed: baseSeed + index, level: 3, tags: [] }} answer={answer as CubesAnswer} />
+              </div>
+            ) : (
+              <DrillCorrection question={question} />
+            )}
             <button onClick={next} autoFocus className="mt-4 rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white hover:bg-sky-500">Continuer · Espace</button>
           </div>
         )}
@@ -222,11 +231,48 @@ function OrientationInput({ question, answer, setAnswer, disabled }: { question:
 }
 
 function DrillCorrection({ question }: { question: CubeDrillQuestion }) {
-  if (question.type === 'orientation-only') return <p className="mt-1 text-sm opacity-80">Le voisin ancre fixe le bord physique de chaque face ; le symbole tourne avec ce bord.</p>;
-  if (question.type === 'two-remaining') return <p className="mt-1 text-sm opacity-80">Les opposées laissent deux candidats. L’ordre circulaire des quatre voisins choisit {question.answer.choiceId}.</p>;
+  if (question.type === 'orientation-only') return (
+    <div className="mt-3">
+      <p className="text-sm opacity-80">Le voisin ancre fixe le bord physique de chaque face ; le symbole tourne avec ce bord.</p>
+      <div className="mt-3"><CoachNet cube={question.target} label="Orientations correctes" highlights={Object.fromEntries(question.orientationTargets.map((position) => [position, 'correct']))} compact /></div>
+    </div>
+  );
+  if (question.type === 'two-remaining') {
+    const option = question.choices.find((candidate) => candidate.id === question.answer.choiceId);
+    const center = question.reference.find((face) => face.id === question.answer.choiceId);
+    const order = center ? getClockwiseNeighbors(center.originalPosition).map((position) => question.reference[position].id) : [];
+    return (
+      <div className="mt-3">
+        <p className="text-sm opacity-80">Les opposées laissent deux candidats. L’ordre circulaire des quatre voisins choisit {option?.label ?? faceName(question.reference, question.answer.choiceId)}.</p>
+        {center && <div className="mt-3"><RingDiagram center={center.id} order={order} cube={question.reference} tone="green" label={`Anneau conservé autour de ${faceName(question.reference, center.id)}`} /></div>}
+      </div>
+    );
+  }
   if ('choices' in question) {
     const option = question.choices.find((candidate) => candidate.id === question.answer.choiceId);
-    return <p className="mt-1 text-sm opacity-80">Réponse : {option?.label ?? question.answer.choiceId}.</p>;
+    const answerText = <p className="text-sm opacity-80">Réponse : {option?.label ?? question.answer.choiceId}.</p>;
+    if (question.type === 'opposites') {
+      const opposite = getOppositePosition(question.focusPosition);
+      return <div className="mt-3">{answerText}<div className="mt-3"><CoachNet cube={question.reference} label="La paire opposée" compact highlights={{ [question.focusPosition]: 'pair-a', [opposite]: 'pair-a' }} /></div></div>;
+    }
+    if (question.type === 'adjacency') {
+      const highlights = Object.fromEntries([
+        [question.focusPosition, 'focus'],
+        ...getClockwiseNeighbors(question.focusPosition).map((position) => [position, 'correct'] as const),
+      ]);
+      return <div className="mt-3">{answerText}<div className="mt-3"><CoachNet cube={question.reference} label="Centre ambré, quatre voisines en vert" compact highlights={highlights} /></div></div>;
+    }
+    if (question.type === 'rings' && question.ringA) {
+      return <div className="mt-3">{answerText}<div className="mt-3"><RingDiagram center={question.reference[question.focusPosition].id} order={question.ringA} cube={question.reference} tone="green" label="Ordre circulaire correct" /></div></div>;
+    }
+    if (question.type === 'mirror' && question.ringA && question.ringB) {
+      const mirror = question.answer.choiceId === 'mirror';
+      return <div className="mt-3">{answerText}<div className="mt-3 grid gap-3 sm:grid-cols-2"><RingDiagram center={question.reference[question.focusPosition].id} order={question.ringA} cube={question.reference} label="Anneau de référence" /><RingDiagram center={question.reference[question.focusPosition].id} order={question.ringB} cube={question.reference} tone={mirror ? 'red' : 'green'} label={mirror ? 'Ordre inversé : miroir' : 'Même ordre, simplement décalé'} /></div></div>;
+    }
+    if (question.type === 'rotation' && question.target) {
+      return <div className="mt-3">{answerText}<div className="mt-3 grid gap-3 sm:grid-cols-2"><CoachNet cube={question.reference} label="Avant" compact /><CoachNet cube={question.target} label="Après rotation" compact highlights={{ [question.focusPosition]: 'correct' }} /></div></div>;
+    }
+    return <div className="mt-3">{answerText}</div>;
   }
   return null;
 }
