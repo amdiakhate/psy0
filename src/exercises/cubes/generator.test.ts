@@ -11,8 +11,14 @@ import {
   serializeCube,
 } from './cube-model';
 import type { Cube } from './cube-model';
+import { quarterTurn } from './domain/types';
 
-const TEST_CUBE: Cube = [0, 1, 2, 3, 4, 5].map((sym) => ({ sym, rot: sym % 4 }));
+const TEST_CUBE: Cube = [0, 1, 2, 3, 4, 5].map((sym) => ({
+  id: `face-${sym}`,
+  originalPosition: sym as 0 | 1 | 2 | 3 | 4 | 5,
+  sym,
+  rot: quarterTurn(sym),
+}));
 
 describe('cube-model : le groupe des rotations', () => {
   it('contient exactement 24 rotations distinctes', () => {
@@ -48,7 +54,12 @@ describe('cubes : patron à compléter (règle officielle)', () => {
         const filled = q.target.map((f) => (f ? { ...f } : null));
         for (const hole of q.holes) {
           const piece = q.pieces.find((p) => p.id === q.solution[hole])!;
-          filled[hole] = { sym: piece.sym, rot: q.expectedRot[hole] };
+          filled[hole] = {
+            id: piece.faceId,
+            originalPosition: piece.originalPosition,
+            sym: piece.sym,
+            rot: quarterTurn(q.expectedRot[hole]),
+          };
         }
         const complete = filled as Cube;
         expect(sameCube(complete, q.reference)).toBe(true);

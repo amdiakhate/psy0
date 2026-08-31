@@ -10,12 +10,12 @@ import { ALL_ROTATIONS, applyRotation, POS } from './cube-model';
  * Symboles : 0 flèche, 1 L, 2 drapeau, 3 T, 4 P, 5 S.
  */
 const REFERENCE: Cube = [
-  { sym: 0, rot: 0 }, // R
-  { sym: 1, rot: 0 }, // L
-  { sym: 2, rot: 0 }, // U
-  { sym: 3, rot: 0 }, // D
-  { sym: 4, rot: 0 }, // F
-  { sym: 5, rot: 0 }, // B
+  { id: 'R', originalPosition: POS.R, sym: 0, rot: 0 },
+  { id: 'L', originalPosition: POS.L, sym: 1, rot: 0 },
+  { id: 'U', originalPosition: POS.U, sym: 2, rot: 0 },
+  { id: 'D', originalPosition: POS.D, sym: 3, rot: 0 },
+  { id: 'F', originalPosition: POS.F, sym: 4, rot: 0 },
+  { id: 'B', originalPosition: POS.B, sym: 5, rot: 0 },
 ];
 
 /** Le même cube, tourné : c'est le patron à compléter. */

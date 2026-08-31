@@ -10,17 +10,13 @@
  * un patron est donc directement un état de cube, sans conversion.
  */
 
-export interface FaceState {
-  /** Index du symbole (0-5 dans la table de symboles du composant). */
-  sym: number;
-  /** Rotation du symbole en quarts de tour anti-horaires dans le repère de la face. */
-  rot: number;
-}
+import { quarterTurn } from './domain/types';
+import type { Cube, CubeFace, FacePosition } from './domain/types';
 
-/** Cube = état des 6 positions. */
-export type Cube = FaceState[];
+export type FaceState = CubeFace;
+export type { Cube } from './domain/types';
 
-export const POS = { R: 0, L: 1, U: 2, D: 3, F: 4, B: 5 } as const;
+export const POS = { R: 0, L: 1, U: 2, D: 3, F: 4, B: 5 } as const satisfies Record<string, FacePosition>;
 
 /** Une rotation du cube : position d'arrivée et twist (quarts de tour ajoutés au symbole) par position de départ. */
 export interface Rotation {
@@ -69,9 +65,9 @@ export const ALL_ROTATIONS: Rotation[] = (() => {
 })();
 
 export function applyRotation(cube: Cube, r: Rotation): Cube {
-  const out = new Array<FaceState>(6);
+  const out = new Array<CubeFace>(6);
   for (let src = 0; src < 6; src++) {
-    out[r.dest[src]] = { sym: cube[src].sym, rot: (cube[src].rot + r.twist[src]) % 4 };
+    out[r.dest[src]] = { ...cube[src], rot: quarterTurn(cube[src].rot + r.twist[src]) };
   }
   return out;
 }

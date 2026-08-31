@@ -13,12 +13,12 @@ import { NetSvg, SYMBOLS } from './CubeSvg';
  */
 
 const DEMO_CUBE: Cube = [
-  { sym: 0, rot: 0 }, // R : flèche ↑
-  { sym: 1, rot: 1 }, // L : L tourné
-  { sym: 2, rot: 0 }, // U : drapeau
-  { sym: 3, rot: 2 }, // D : T à l'envers
-  { sym: 4, rot: 0 }, // F : P
-  { sym: 5, rot: 3 }, // B : S tourné
+  { id: 'R', originalPosition: 0, sym: 0, rot: 0 },
+  { id: 'L', originalPosition: 1, sym: 1, rot: 1 },
+  { id: 'U', originalPosition: 2, sym: 2, rot: 0 },
+  { id: 'D', originalPosition: 3, sym: 3, rot: 2 },
+  { id: 'F', originalPosition: 4, sym: 4, rot: 0 },
+  { id: 'B', originalPosition: 5, sym: 5, rot: 3 },
 ];
 
 function faceTexture(sym: number, rot: number): THREE.CanvasTexture {

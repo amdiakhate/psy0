@@ -6,6 +6,9 @@ import type { SymbolFamily } from './config';
 import { LETTER_SYMS, SHAPE_SYMS } from './CubeSvg';
 import { ALL_ROTATIONS, applyRotation, POS, sameCube, serializeCube } from './cube-model';
 import type { Cube, FaceState } from './cube-model';
+import { quarterTurn } from './domain/types';
+import type { FacePosition } from './domain/types';
+import { sameCubeGeometry } from './domain/cubeGeometry';
 
 /**
  * Cubes 2D/3D (règle officielle) : un patron COMPLET est donné à gauche ; un
@@ -22,6 +25,8 @@ import type { Cube, FaceState } from './cube-model';
 /** Une pièce proposée : un symbole, toujours présenté à l'endroit. */
 export interface Piece {
   id: number;
+  faceId: string;
+  originalPosition: FacePosition;
   sym: number;
 }
 
@@ -33,7 +38,7 @@ export interface CubesQuestion {
   /** Le patron à compléter : mêmes 6 positions, `null` pour les trous. */
   target: (FaceState | null)[];
   /** Positions (0-5) des trous, dans l'ordre d'affichage. */
-  holes: number[];
+  holes: FacePosition[];
   /** Pièces proposées, mélangées. Autant que de trous — aucun leurre. */
   pieces: Piece[];
   /** Pour chaque trou, l'id de la pièce qui convient. */
@@ -47,7 +52,12 @@ export type CubesAnswer = Record<number, { pieceId: number; rot: number }>;
 
 function randomCube(rng: Rng, family: SymbolFamily): Cube {
   const syms = shuffle(rng, family === 'letters' ? LETTER_SYMS : SHAPE_SYMS);
-  return syms.map((sym) => ({ sym, rot: randInt(rng, 0, 3) }));
+  return syms.map((sym, position) => ({
+    id: `face-${position}`,
+    originalPosition: position as FacePosition,
+    sym,
+    rot: quarterTurn(randInt(rng, 0, 3)),
+  }));
 }
 
 export function generate(seed: number, level: number, forceTag?: string): Item<CubesQuestion> {
@@ -69,10 +79,12 @@ export function generate(seed: number, level: number, forceTag?: string): Item<C
 
   // `holes` est une liste de positions 0-5 : on la type en number[] pour
   // pouvoir la confronter aux index de `oriented.map`/`filter`.
-  const holes: number[] = shuffle(rng, [POS.F, POS.U, POS.R, POS.L, POS.D, POS.B])
+  const holes: FacePosition[] = shuffle(rng, [POS.F, POS.U, POS.R, POS.L, POS.D, POS.B])
     .slice(0, cfg.holes)
     .sort((a, b) => a - b);
-  const target: (FaceState | null)[] = oriented.map((f, i) => (holes.includes(i) ? null : { ...f }));
+  const target: (FaceState | null)[] = oriented.map((f, i) =>
+    holes.includes(i as FacePosition) ? null : { ...f },
+  );
 
   // Une pièce par trou, et rien de plus : Pilotest ne propose aucun leurre, ce
   // qui rend le raisonnement par élimination légitime — toutes les pièces
@@ -83,7 +95,12 @@ export function generate(seed: number, level: number, forceTag?: string): Item<C
   const expectedRot: Record<number, number> = {};
   let nextId = 0;
   for (const hole of holes) {
-    const piece: Piece = { id: nextId++, sym: oriented[hole].sym };
+    const piece: Piece = {
+      id: nextId++,
+      faceId: oriented[hole].id,
+      originalPosition: oriented[hole].originalPosition,
+      sym: oriented[hole].sym,
+    };
     pieces.push(piece);
     solution[hole] = piece.id;
     expectedRot[hole] = oriented[hole].rot;
@@ -104,23 +121,44 @@ export function generate(seed: number, level: number, forceTag?: string): Item<C
  * selon la symétrie du symbole — l'orientation d'un carré ou d'un cercle ne
  * compte donc pas, celle d'une lettre si.
  */
-export function validate(item: Item<CubesQuestion>, answer: CubesAnswer): boolean {
-  const { holes, pieces, target, reference } = item.question;
+export function completeCube(question: CubesQuestion, answer: CubesAnswer): Cube | null {
+  const { holes, pieces, target } = question;
   const filled = target.map((f) => (f === null ? null : { ...f }));
   const used = new Set<number>();
 
   for (const hole of holes) {
     const placed = answer[hole];
-    if (!placed) return false;
-    if (used.has(placed.pieceId)) return false; // une pièce ne sert qu'une fois
+    if (!placed) return null;
+    if (used.has(placed.pieceId)) return null; // une pièce ne sert qu'une fois
     used.add(placed.pieceId);
     const piece = pieces.find((p) => p.id === placed.pieceId);
-    if (!piece) return false;
-    filled[hole] = { sym: piece.sym, rot: ((placed.rot % 4) + 4) % 4 };
+    if (!piece) return null;
+    filled[hole] = {
+      id: piece.faceId,
+      originalPosition: piece.originalPosition,
+      sym: piece.sym,
+      rot: quarterTurn(placed.rot),
+    };
   }
 
-  if (filled.some((f) => f === null)) return false;
-  return sameCube(filled as Cube, reference);
+  if (filled.some((f) => f === null)) return null;
+  return filled as Cube;
+}
+
+/** Ancienne source de vérité, gardée pendant et après la migration différentielle. */
+export function validateLegacy(item: Item<CubesQuestion>, answer: CubesAnswer): boolean {
+  const filled = completeCube(item.question, answer);
+  return filled !== null && sameCube(filled, item.question.reference);
+}
+
+/** Nouveau verdict identitaire, exécuté en parallèle avant la bascule. */
+export function validateGeometry(item: Item<CubesQuestion>, answer: CubesAnswer): boolean {
+  const filled = completeCube(item.question, answer);
+  return filled !== null && sameCubeGeometry(filled, item.question.reference);
+}
+
+export function validate(item: Item<CubesQuestion>, answer: CubesAnswer): boolean {
+  return validateGeometry(item, answer);
 }
 
 /** La solution attendue, sous la forme d'une réponse valide. */
