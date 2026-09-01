@@ -21,9 +21,16 @@ import { useTimeline } from '../../hooks/useTimeline';
  */
 
 const SQRT3 = Math.sqrt(3);
+/**
+ * Le repère du pliage n'est pas celui de `cube-model` : à t=1, les normales
+ * avant/droite/dessus valent respectivement +Y/+X/-Z. La caméra doit donc
+ * regarder depuis (+X,+Y,-Z) pour afficher les mêmes faces que `IsoCubeSvg` :
+ * U au-dessus, F devant et R à droite.
+ */
+const CAMERA: V3 = [1, 1, -1];
 
 function project(p: V3): [number, number] {
-  return [(p[0] - p[2]) * 0.866, (p[0] + p[2]) * 0.5 - p[1]];
+  return [(p[0] + p[2]) * 0.866, (p[0] - p[2]) * 0.5 - p[1]];
 }
 
 /** Cadre FIXE contenant le pliage à tous les instants : un zoom qui respire distrairait du mouvement utile. */
@@ -67,7 +74,7 @@ function shadeHex(hex: string, k: number): string {
   return `rgb(${mix((v >> 16) & 255)} ${mix((v >> 8) & 255)} ${mix(v & 255)})`;
 }
 
-const LIGHT: V3 = [0.25, 0.9, 0.35];
+const LIGHT: V3 = [0.25, 0.9, -0.35];
 const LIGHT_LEN = Math.hypot(...LIGHT);
 
 export function FoldingNet({
@@ -90,10 +97,15 @@ export function FoldingNet({
     return foldedFaces(t)
       .map((f) => {
         const depth =
-          f.corners.reduce((s, c) => s + (c[0] + c[1] + c[2]), 0) / (4 * SQRT3);
+          f.corners.reduce(
+            (sum, corner) => sum + corner[0] * CAMERA[0] + corner[1] * CAMERA[1] + corner[2] * CAMERA[2],
+            0,
+          ) / (4 * SQRT3);
         const nLen = Math.hypot(...f.normal) || 1;
-        // Verso visible quand la face imprimée tourne le dos au spectateur (+1,+1,+1).
-        const facing = (f.normal[0] + f.normal[1] + f.normal[2]) / (nLen * SQRT3);
+        // Verso visible quand la face imprimée tourne le dos à la caméra.
+        const facing =
+          (f.normal[0] * CAMERA[0] + f.normal[1] * CAMERA[1] + f.normal[2] * CAMERA[2]) /
+          (nLen * SQRT3);
         const shade =
           0.35 +
           0.65 *

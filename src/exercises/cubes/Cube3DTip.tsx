@@ -21,6 +21,9 @@ const DEMO_CUBE: Cube = [
   { id: 'B', originalPosition: 5, sym: 5, rot: 3 },
 ];
 
+/** Caméra standard du cube-model : elle montre U (dessus), F (avant) et R (droite). */
+export const CUBE_3D_CAMERA_POSITION = [2.6, 2.2, 2.6] as const;
+
 function faceTexture(sym: number, rot: number): THREE.CanvasTexture {
   const size = 256;
   const canvas = document.createElement('canvas');
@@ -81,7 +84,7 @@ export function Cube3DTip() {
           <p className="mt-1 text-xs text-zinc-500">le patron</p>
         </div>
         <div className="h-56 w-56 rounded-lg border border-zinc-800 bg-zinc-950">
-          <Canvas camera={{ position: [2.6, 2.2, 2.6], fov: 40 }}>
+          <Canvas camera={{ position: CUBE_3D_CAMERA_POSITION, fov: 40 }}>
             <SpinnableCube cube={DEMO_CUBE} />
             <OrbitControls enableZoom={false} enablePan={false} />
           </Canvas>
