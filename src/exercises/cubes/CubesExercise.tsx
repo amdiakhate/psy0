@@ -120,7 +120,7 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
       <div className="flex flex-wrap items-start justify-center gap-8">
         <div className="text-center">
           <p className="mb-1 text-xs uppercase tracking-widest text-zinc-500">Patron de référence</p>
-          <NetSvg cube={q.reference} size={S} />
+          <NetSvg cube={q.reference} size={S} highlightFaceIds={currentHint?.highlightReferenceFaceId ? [currentHint.highlightReferenceFaceId] : []} />
         </div>
 
         <div className="text-center">
@@ -158,10 +158,16 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
                     stroke={
                       isHole && (drag?.over === String(pos) || (selected !== null && !put))
                         ? '#0ea5e9'
+                        : currentHint?.targetHole === pos
+                          ? '#f59e0b'
                         : 'var(--ink-500)'
                     }
                     strokeWidth={
-                      isHole && (drag?.over === String(pos) || (selected !== null && !put)) ? 2.5 : 1
+                      isHole && (drag?.over === String(pos) || (selected !== null && !put))
+                        ? 2.5
+                        : currentHint?.targetHole === pos
+                          ? 3
+                          : 1
                     }
                     strokeDasharray={isHole && !put ? '4 3' : undefined}
                   />
@@ -229,7 +235,7 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
         </p>
       </div>
       <div className="w-full max-w-2xl rounded-xl border border-amber-900/50 bg-amber-950/15 p-3 text-sm">
-        <button type="button" onClick={() => setHintLevel((current) => { const next = Math.min(4, current + 1) as 1 | 2 | 3 | 4; noteCubeHint(item.seed, next); return next; })} className="font-semibold text-amber-300 hover:text-amber-200">Besoin d’un indice{hintLevel > 0 && hintLevel < 4 ? ' · niveau suivant' : ''}</button>
+        <button type="button" onClick={() => setHintLevel((current) => { const next = Math.min(4, current + 1) as 1 | 2 | 3 | 4; noteCubeHint(item.seed, next); return next; })} className="font-semibold text-amber-300 hover:text-amber-200">{hintLevel < 4 ? `Besoin d’un indice · niveau ${hintLevel + 1}/4` : 'Indices · niveau 4/4'}</button>
         {currentHint && <div className="mt-2 border-t border-amber-900/40 pt-2"><strong className="text-amber-200">{currentHint.title} — </strong><span className="text-zinc-300">{currentHint.text}</span></div>}
       </div>
     </div>

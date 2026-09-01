@@ -77,7 +77,7 @@ export function Glyph({ sym, rot, color = 'var(--ink-200)' }: { sym: number; rot
 }
 
 /** Patron en croix :  U / L F R B / D — se plie exactement sur l'état du cube. */
-export function NetSvg({ cube, size = 44 }: { cube: Cube; size?: number }) {
+export function NetSvg({ cube, size = 44, highlightFaceIds = [] }: { cube: Cube; size?: number; highlightFaceIds?: readonly string[] }) {
   const cells: Array<{ pos: number; col: number; row: number }> = [
     { pos: POS.U, col: 1, row: 0 },
     { pos: POS.L, col: 0, row: 1 },
@@ -89,14 +89,17 @@ export function NetSvg({ cube, size = 44 }: { cube: Cube; size?: number }) {
   const s = size;
   return (
     <svg width={4 * s + 2} height={3 * s + 2} viewBox={`0 0 ${4 * s + 2} ${3 * s + 2}`}>
-      {cells.map(({ pos, col, row }) => (
+      {cells.map(({ pos, col, row }) => {
+        const highlighted = highlightFaceIds.includes(cube[pos].id);
+        return (
         <g key={pos} transform={`translate(${col * s + 1} ${row * s + 1})`}>
-          <rect width={s} height={s} fill="var(--ink-800)" stroke="var(--ink-500)" />
+          <rect width={s} height={s} rx={highlighted ? 4 : 0} fill={highlighted ? '#422006' : 'var(--ink-800)'} stroke={highlighted ? '#fbbf24' : 'var(--ink-500)'} strokeWidth={highlighted ? 4 : 1} />
           <g transform={`scale(${s / 100})`}>
             <Glyph sym={cube[pos].sym} rot={cube[pos].rot} />
           </g>
+          {highlighted && <path d={`M${s - 15} 5h10v10`} fill="none" stroke="#fbbf24" strokeWidth="3" />}
         </g>
-      ))}
+      )})}
     </svg>
   );
 }

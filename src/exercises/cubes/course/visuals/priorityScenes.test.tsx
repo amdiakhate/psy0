@@ -14,11 +14,11 @@ describe('priority Cubes course scenes', () => {
 
   it('renders the recenter proof, numbered ring, and physical edge controls', () => {
     const recenter = renderToStaticMarkup(<RecenterWorkshop />);
-    expect(recenter).toContain('Même cube, nouvelle face centrale');
-    expect(recenter).toContain('même face physique');
+    expect(recenter).toContain('Recentrer sans changer de cube');
+    expect(recenter).toContain('Le patron change, mais le cube ne change pas');
     const ring = renderToStaticMarkup(<RingWorkshop />);
-    expect(ring).toContain('L’anneau des quatre voisins');
-    expect(ring).toContain('ordre horaire');
+    expect(ring).toContain('Lire l’anneau directement sur le cube');
+    expect(ring).toContain('Cube éclaté');
     const edge = renderToStaticMarkup(<PhysicalEdgeRotation />);
     expect(edge).toContain('Le même bord physique');
     expect(edge).toContain('Rejouer');

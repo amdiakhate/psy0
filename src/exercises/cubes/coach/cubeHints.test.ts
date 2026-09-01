@@ -12,7 +12,10 @@ describe('progressive cube hints', () => {
         expect(hint.text).not.toContain(`Place ${piece.sym}`);
         expect(hint.text).not.toContain(`pieceId`);
       }
-      expect(getCubeHint(question, 4).title).toBe('Placement révélé');
+      const level4 = getCubeHint(question, 4);
+      expect(level4.title).toBe('Face à repérer');
+      expect(level4.highlightReferenceFaceId).toBe(piece.faceId);
+      expect(level4.text).not.toContain('Place ');
     }
   });
 });

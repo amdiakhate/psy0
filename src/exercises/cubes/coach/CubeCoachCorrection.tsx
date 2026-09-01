@@ -54,6 +54,7 @@ export function CubeCoachCorrection({ item, answer, correct, rtMs }: ExplainProp
   const wrongHighlights = Object.fromEntries(
     analysis.incorrectFaces.map((face) => [face.position, face.identityCorrect ? 'focus' : 'wrong']),
   );
+  const firstWrongFace = analysis.incorrectFaces[0];
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -74,48 +75,16 @@ export function CubeCoachCorrection({ item, answer, correct, rtMs }: ExplainProp
         </div>
       </section>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <div className="grid grid-cols-2 gap-3 rounded-xl bg-zinc-950/55 p-4">
-          <CoachNet cube={attempted ?? item.question.target} label={attempted ? 'Ta construction' : 'Temps écoulé'} highlights={wrongHighlights} compact />
-          <CoachNet cube={solution} label="Solution" highlights={Object.fromEntries(item.question.holes.map((position) => [position, 'correct']))} compact />
+      <section className="mt-5 grid gap-5 rounded-2xl border border-zinc-800 bg-zinc-950/55 p-4 md:grid-cols-[.8fr_1.2fr]">
+        <CoachNet cube={attempted ?? item.question.target} label={attempted ? 'Ta construction · première erreur surlignée' : 'Temps écoulé'} highlights={wrongHighlights} />
+        <div className="self-center">
+          <p className="text-[10px] font-bold uppercase tracking-[.2em] text-red-400">Première erreur</p>
+          <h4 className="mt-2 text-lg font-semibold text-zinc-100">{primary ? CAUSE_LABEL[primary] : 'La réponse est incomplète.'}</h4>
+          {firstWrongFace && <p className="mt-2 text-sm text-zinc-400">Regarde d’abord {netPositionName(firstWrongFace.position)}. La correction complète reste masquée pour te laisser retrouver la règle.</p>}
+          {firstWrongFace && !firstWrongFace.identityCorrect && <button type="button" onClick={() => setOpenFace(openFace === firstWrongFace.position ? null : firstWrongFace.position)} className="mt-4 rounded-lg border border-red-800 px-3 py-2 text-sm font-semibold text-red-200">{primary === 'WRONG_OPPOSITE' ? 'Revoir l’opposée' : 'Voir pourquoi'}</button>}
+          {openFace === firstWrongFace?.position && <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-900/70 p-3 text-sm text-zinc-300"><p>{firstWrongFace.givenFaceId ? `Tu as placé ${faceName(attempted ?? solution, firstWrongFace.givenFaceId)} dans cette case.` : 'Cette case est restée vide.'}</p>{firstWrongFace.primaryCause && <p className="mt-1 font-medium text-amber-200">{CAUSE_LABEL[firstWrongFace.primaryCause]}</p>}</div>}
         </div>
-        <section className="rounded-xl bg-zinc-900/70 p-4">
-          <h4 className="font-semibold text-sky-300">Le chemin le plus court sur cette planche</h4>
-          <ol className="mt-3 space-y-3">
-            {analysis.reasoningPath.minimalSteps.map((step, index) => (
-              <ReasoningStepRow key={`${step.kind}-${index}`} step={step} index={index} solution={solution} decisive={index === analysis.reasoningPath.decisiveStepIndex} />
-            ))}
-          </ol>
-        </section>
-      </div>
-
-      {analysis.incorrectFaces.length > 0 && (
-        <section className="mt-5 rounded-xl bg-zinc-900/70 p-4">
-          <h4 className="font-semibold text-zinc-100">Pourquoi ma réponse est fausse ?</h4>
-          <p className="mt-1 text-sm text-zinc-500">Ouvre une face pour isoler la règle qui a été cassée.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {analysis.incorrectFaces.map((face) => (
-              <button
-                key={face.position}
-                onClick={() => setOpenFace(openFace === face.position ? null : face.position)}
-                className={`rounded-lg border px-3 py-2 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 ${openFace === face.position ? 'border-sky-500 bg-sky-950/50 text-sky-200' : 'border-zinc-700 text-zinc-300 hover:border-zinc-500'}`}
-              >
-                {netPositionName(face.position)} · {face.givenFaceId ? faceName(attempted ?? solution, face.givenFaceId) : 'vide'}
-              </button>
-            ))}
-          </div>
-          {analysis.incorrectFaces.map((face) => openFace === face.position ? (
-            <div key={face.position} className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/55 p-3 text-sm text-zinc-300">
-              <p>
-                {face.identityCorrect
-                  ? `Tu as placé la bonne face (${faceName(solution, face.expectedFaceId)}), mais son symbole n’a pas suivi la bonne arête physique.`
-                  : `Tu as placé ${face.givenFaceId ? faceName(attempted ?? solution, face.givenFaceId) : 'aucune face'} ici ; cette case attend ${faceName(solution, face.expectedFaceId)}.`}
-              </p>
-              {face.primaryCause && <p className="mt-1 font-medium text-amber-200">{CAUSE_LABEL[face.primaryCause]}</p>}
-            </div>
-          ) : null)}
-        </section>
-      )}
+      </section>
 
       {analysis.orientationErrors.length > 0 && (
         <section className="mt-5 rounded-xl bg-amber-950/20 p-4">
@@ -134,19 +103,10 @@ export function CubeCoachCorrection({ item, answer, correct, rtMs }: ExplainProp
           {analysis.orientationErrors.map((diagnostic) =>
             openRotation === diagnostic.position ? (
               <div key={diagnostic.position} className="mt-4">
-                <CubeRotationExplanation diagnostic={diagnostic} cube={solution} />
+                <CubeRotationExplanation diagnostic={diagnostic} reference={item.question.reference} target={solution} />
               </div>
             ) : null,
           )}
-        </section>
-      )}
-
-      {placementSteps.some((step) => step.kind === 'ring-comparison') && (
-        <section className="mt-5 grid gap-4 md:grid-cols-2">
-          {placementSteps.filter((step): step is Extract<ReasoningStep, { kind: 'ring-comparison' }> => step.kind === 'ring-comparison').slice(0, 1).flatMap((step) => [
-            <RingDiagram key="expected" center={step.chosenFaceId} order={step.expectedOrder} cube={solution} tone="green" label="Anneau autour du bon candidat" />,
-            <RingDiagram key="target" center={step.chosenFaceId} order={step.targetOrder} cube={solution} tone={analysis.mirrorDetected ? 'red' : 'blue'} label="Ordre demandé par le patron cible" />,
-          ])}
         </section>
       )}
 
@@ -159,6 +119,10 @@ export function CubeCoachCorrection({ item, answer, correct, rtMs }: ExplainProp
 
       {detailed && (
         <section className="mt-4 space-y-6 rounded-xl bg-zinc-900/60 p-5">
+          <div className="grid gap-5 border-b border-zinc-800 pb-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+            <div className="grid grid-cols-2 gap-3 rounded-xl bg-zinc-950/55 p-4"><CoachNet cube={attempted ?? item.question.target} label="Ta construction" highlights={wrongHighlights} compact /><CoachNet cube={solution} label="Solution" highlights={Object.fromEntries(item.question.holes.map((position) => [position, 'correct']))} compact /></div>
+            <div><h4 className="font-semibold text-sky-300">Le chemin le plus court sur cette planche</h4><ol className="mt-3 space-y-3">{analysis.reasoningPath.minimalSteps.map((step, index) => <ReasoningStepRow key={`${step.kind}-${index}`} step={step} index={index} solution={solution} decisive={index === analysis.reasoningPath.decisiveStepIndex} />)}</ol></div>
+          </div>
           <div>
             <h4 className="font-semibold text-zinc-100">Les trois paires opposées</h4>
             <p className="mt-1 text-sm text-zinc-400">Deux faces d’une même paire ne peuvent jamais se toucher.</p>
@@ -174,6 +138,7 @@ export function CubeCoachCorrection({ item, answer, correct, rtMs }: ExplainProp
               <RingDiagram center={error.centerFaceId} order={error.givenOrder} cube={solution} tone="red" label="Ordre construit dans ta réponse" />
             </div>
           ))}
+          {placementSteps.some((step) => step.kind === 'ring-comparison') && <div className="grid gap-4 border-t border-zinc-800 pt-5 md:grid-cols-2">{placementSteps.filter((step): step is Extract<ReasoningStep, { kind: 'ring-comparison' }> => step.kind === 'ring-comparison').slice(0, 1).flatMap((step) => [<RingDiagram key="expected" center={step.chosenFaceId} order={step.expectedOrder} cube={solution} tone="green" label="Anneau autour du bon candidat" />,<RingDiagram key="target" center={step.chosenFaceId} order={step.targetOrder} cube={solution} tone={analysis.mirrorDetected ? 'red' : 'blue'} label="Ordre demandé par le patron cible" />])}</div>}
         </section>
       )}
 

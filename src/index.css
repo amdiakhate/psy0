@@ -232,6 +232,12 @@ body {
 .cube-ring-node { transition:transform .35s ease; }
 .cube-ring-orbit,.cube-ring-label { transition:transform .48s cubic-bezier(.2,.8,.2,1); }
 .cube-physical-turn { transform-origin:center; animation:cube-course-physical .82s cubic-bezier(.2,.8,.2,1) both; }
+.cube-edge-face-turn { transform-origin:center; animation:cube-edge-journey .72s cubic-bezier(.2,.8,.2,1) both; }
+.cube-synced-ring { animation:cube-synced-ring .52s cubic-bezier(.2,.8,.2,1) both; }
+.cube-recenter-rotation { animation:cube-recenter-orbit .72s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes cube-course-arrive { from { opacity:0; transform:translate(var(--x,0),var(--y,10px)) scale(.9); } to { opacity:1; } }
 @keyframes cube-course-physical { from { transform:rotate(0deg); } to { transform:rotate(var(--cube-course-turn)); } }
-@media (prefers-reduced-motion: reduce) { .cube-recenter-face { animation:none !important; } .cube-physical-turn { animation:none !important; transform:rotate(var(--cube-course-turn)); } .cube-fold-tile,.cube-ring-node,.cube-ring-orbit,.cube-ring-label { transition:none !important; } }
+@keyframes cube-edge-journey { from { transform:rotate(0deg) scale(.92); opacity:.55; } to { transform:rotate(var(--cube-edge-turn)) scale(1); opacity:1; } }
+@keyframes cube-synced-ring { from { transform:rotate(-90deg); opacity:.55; } to { transform:rotate(0deg); opacity:1; } }
+@keyframes cube-recenter-orbit { from { transform:translateY(10px) rotate(-10deg); opacity:0; } to { transform:translateY(0) rotate(0); opacity:1; } }
+@media (prefers-reduced-motion: reduce) { .cube-recenter-face,.cube-synced-ring,.cube-recenter-rotation { animation:none !important; } .cube-physical-turn { animation:none !important; transform:rotate(var(--cube-course-turn)); } .cube-edge-face-turn { animation:none !important; transform:rotate(var(--cube-edge-turn)); } .cube-fold-tile,.cube-ring-node,.cube-ring-orbit,.cube-ring-label { transition:none !important; } }

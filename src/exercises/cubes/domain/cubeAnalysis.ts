@@ -55,6 +55,7 @@ export interface OrientationDiagnostic {
   position: FacePosition;
   faceId: FaceId;
   givenRot: QuarterTurn;
+  referenceRot: QuarterTurn;
   expectedRot: QuarterTurn;
   correction: QuarterTurn;
   cause: 'WRONG_ROTATION_90' | 'WRONG_ROTATION_180';
@@ -170,10 +171,13 @@ export function analyzeCubeAttempt(question: CubesQuestion, answer: CubesAnswer)
       const source = getSharedEdge(expected.originalPosition, anchor.originalPosition);
       const target = getSharedEdge(position, anchorPosition);
       if (source && target) {
+        const referenceFace = question.reference.find((face) => face.id === expected.id);
+        if (!referenceFace) throw new Error(`Face de référence absente : ${expected.id}`);
         orientationErrors.push({
           position,
           faceId: expected.id,
           givenRot,
+          referenceRot: referenceFace.rot,
           expectedRot,
           correction,
           cause: correction === 2 ? 'WRONG_ROTATION_180' : 'WRONG_ROTATION_90',
