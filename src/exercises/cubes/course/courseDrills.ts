@@ -1,8 +1,58 @@
 import type { CourseExercise, CourseFaceId, CubeCourseSkill } from './courseModel';
 import { COURSE_CHAPTERS } from './courseModel';
-import { COURSE_FACE_IDS, getCourseOpposite, getCourseRing } from './courseFixtures';
+import { ALL_ROTATIONS, applyRotation } from '../cube-model';
+import { getSharedEdge, rotateEdge } from '../domain/cubeGeometry';
+import type { FaceEdge, FacePosition, QuarterTurn } from '../domain/types';
+import {
+  COURSE_CUBE,
+  COURSE_FACE_IDS,
+  COURSE_FACE_TO_POSITION,
+  getCourseOpposite,
+  getCourseRing,
+} from './courseFixtures';
 
 const choice = (id: string, label = id) => ({ id, label });
+
+const EDGE_LABEL: Readonly<Record<FaceEdge, string>> = {
+  top: 'haut',
+  right: 'droite',
+  bottom: 'bas',
+  left: 'gauche',
+};
+
+const TURN_LABEL: Readonly<Record<QuarterTurn, string>> = {
+  0: 'Aucune',
+  1: '90° antihoraire',
+  2: '180°',
+  3: '90° horaire',
+};
+
+function buildOrientationContext(
+  faceId: CourseFaceId,
+  anchorFaceId: CourseFaceId,
+  turn: QuarterTurn,
+): NonNullable<CourseExercise['orientationContext']> {
+  const sourcePosition = COURSE_FACE_TO_POSITION[faceId];
+  const sourceAnchorPosition = COURSE_FACE_TO_POSITION[anchorFaceId];
+  const sourceShared = getSharedEdge(sourcePosition, sourceAnchorPosition);
+  if (!sourceShared) throw new Error(`Faces pédagogiques non adjacentes : ${faceId}/${anchorFaceId}`);
+  const targetEdge = rotateEdge(sourceShared.aEdge, turn);
+  const rotation = ALL_ROTATIONS.find((candidate) => {
+    const targetPosition = candidate.dest[sourcePosition] as FacePosition;
+    const targetAnchorPosition = candidate.dest[sourceAnchorPosition] as FacePosition;
+    return getSharedEdge(targetPosition, targetAnchorPosition)?.aEdge === targetEdge;
+  });
+  if (!rotation) throw new Error(`Rotation pédagogique introuvable : ${faceId}/${anchorFaceId}/${turn}`);
+  return {
+    originalCube: COURSE_CUBE,
+    targetCube: applyRotation(COURSE_CUBE, rotation),
+    faceId,
+    anchorFaceId,
+    sourceEdge: sourceShared.aEdge,
+    targetEdge,
+    referenceRot: COURSE_CUBE[sourcePosition].rot,
+  };
+}
 
 function faceChoices(answer: CourseFaceId): CourseExercise['choices'] {
   const distractors = COURSE_FACE_IDS.filter((face) => face !== answer).slice(0, 3);
@@ -79,8 +129,28 @@ function chapterExercises(chapterId: string): CourseExercise[] {
   }
 
   if (chapterId === 'orientation-symboles') {
-    const turns = ['0', '1', '2', '3', '1'];
-    return turns.map((turn, index) => exercise(chapterId, index, 'orientation', `Le bord rouge doit atteindre le côté ${['haut', 'gauche', 'bas', 'droite', 'gauche'][index]}. Quelle rotation appliquer ?`, [choice('0', 'Aucune'), choice('1', '90° antihoraire'), choice('2', '180°'), choice('3', '90° horaire')], turn, 'Le carré, son symbole et son bord physique tournent ensemble jusqu’au voisin ancre.'));
+    const cases = [
+      { faceId: 'B', anchorFaceId: 'E', turn: 0 },
+      { faceId: 'F', anchorFaceId: 'B', turn: 1 },
+      { faceId: 'A', anchorFaceId: 'E', turn: 2 },
+      { faceId: 'C', anchorFaceId: 'F', turn: 3 },
+      { faceId: 'D', anchorFaceId: 'E', turn: 1 },
+    ] as const satisfies ReadonlyArray<{ faceId: CourseFaceId; anchorFaceId: CourseFaceId; turn: QuarterTurn }>;
+    return cases.map(({ faceId, anchorFaceId, turn }, index) => {
+      const context = buildOrientationContext(faceId, anchorFaceId, turn);
+      return {
+        ...exercise(
+          chapterId,
+          index,
+          'orientation',
+          `Le bord ${EDGE_LABEL[context.sourceEdge]} de ${faceId} touche ${anchorFaceId}. Dans le patron cible, ${anchorFaceId} se trouve côté ${EDGE_LABEL[context.targetEdge]} de ${faceId}. Quelle rotation appliquer à ${faceId} ?`,
+          ([0, 1, 2, 3] as const).map((candidate) => choice(String(candidate), TURN_LABEL[candidate])),
+          String(turn),
+          `La face ${faceId}, son symbole et son bord physique tournent ensemble : le bord ${EDGE_LABEL[context.sourceEdge]} rejoint ${anchorFaceId} côté ${EDGE_LABEL[context.targetEdge]}.`,
+        ),
+        orientationContext: context,
+      };
+    });
   }
 
   if (chapterId === 'vrai-exercice') {

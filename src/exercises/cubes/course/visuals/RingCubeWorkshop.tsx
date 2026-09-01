@@ -31,6 +31,12 @@ export function mirrorCourseRing(ring: readonly CourseFaceId[]): readonly Course
   return [ring[0], ring[3], ring[2], ring[1]];
 }
 
+export function getFaceSelectionFeedback(selectedFace: CourseFaceId, centerFace: CourseFaceId): string {
+  return selectedFace === centerFace
+    ? `${selectedFace} est déjà face à toi.`
+    : `Mettre ${selectedFace} devant moi`;
+}
+
 const DEFAULT_LAYERS: MentalRingCubeLayers = {
   neighbors: true,
   opposite: true,
@@ -90,8 +96,8 @@ export function RingCubeWorkshop({ onProgress }: { onProgress?(): void }) {
       <div className="mt-6 grid gap-4 xl:grid-cols-[.78fr_1.25fr_1fr]">
         <PanelTitle title="1 · Patron 2D de référence"><CourseNet label="Patron neutre A–F" focus={[center]} muted={[scene.oppositeFaceId]} /></PanelTitle>
         <PanelTitle title="2 · Cube 3D manipulable">
-          <MentalRingCube3D scene={scene} hidden={cubeHidden} layers={effectiveLayers} onFaceClick={setPickedFace} />
-          {pickedFace && pickedFace !== center && <button type="button" onClick={() => chooseCenter(pickedFace)} className="mt-3 w-full rounded-lg border border-sky-700 px-3 py-2 text-sm font-semibold text-sky-200">Mettre {pickedFace} devant moi</button>}
+          <MentalRingCube3D scene={scene} hidden={cubeHidden} layers={effectiveLayers} selectedFaceId={pickedFace} onFaceClick={setPickedFace} />
+          {pickedFace && <div role="status" aria-live="polite" className="mt-3 rounded-xl border border-sky-900/70 bg-sky-950/20 p-3 text-center text-sm text-sky-100">{pickedFace === center ? <span>{getFaceSelectionFeedback(pickedFace, center)}</span> : <button type="button" onClick={() => chooseCenter(pickedFace)} className="w-full rounded-lg border border-sky-600 px-3 py-2 font-semibold">{getFaceSelectionFeedback(pickedFace, center)}</button>}</div>}
           {aidLevel === 3 && !mentalReveal && <button type="button" onClick={() => setMentalReveal(true)} className="mt-3 w-full rounded-lg bg-sky-600 px-3 py-2 text-sm font-semibold">Révéler après mon effort</button>}
         </PanelTitle>
         <PanelTitle title="3 · Anneau aplati">{cubeHidden ? <HiddenRing /> : <FlattenedRing center={center} ring={scene.displayedNeighbors} />}</PanelTitle>
@@ -104,7 +110,7 @@ export function RingCubeWorkshop({ onProgress }: { onProgress?(): void }) {
       <p className="mt-3 text-center text-sm text-sky-200"><strong>Le point de départ change. L’ordre circulaire reste le même.</strong></p>
 
       <LayerControls layers={layers} onChange={setLayers} />
-      <RingOriginSequence center={center} />
+      <RingOriginSequence center={center} onCenterChange={chooseCenter} />
       {mirrorOpen && <MirrorComparison center={center} valid={scene.displayedNeighbors} />}
       <MentalRingDrill initialAidLevel={aidLevel} initialSeed={601 + revision} onRecorded={recorded} />
       <MentalRingStatsPanel revision={revision} />
@@ -132,14 +138,19 @@ function LayerControls({ layers, onChange }: { layers: MentalRingCubeLayers; onC
   return <section className="mt-5 rounded-xl border border-zinc-800 bg-zinc-950/45 p-4"><p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Explorer le cube</p><div className="mt-3 flex flex-wrap gap-2">{entries.map(([key, label]) => <button key={key} type="button" aria-pressed={layers[key]} onClick={() => onChange({ ...layers, [key]: !layers[key] })} className={`rounded-lg border px-3 py-2 text-sm ${layers[key] ? 'border-sky-700 bg-sky-950/35 text-sky-200' : 'border-zinc-700 text-zinc-500'}`}>{layers[key] ? '✓ ' : ''}{label}</button>)}</div></section>;
 }
 
-function RingOriginSequence({ center }: { center: CourseFaceId }) {
+function RingOriginSequence({ center, onCenterChange }: {
+  center: CourseFaceId;
+  onCenterChange(face: CourseFaceId): void;
+}) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
+  const [pickedFace, setPickedFace] = useState<CourseFaceId | null>(null);
+  useEffect(() => setPickedFace(null), [center]);
   const scene = buildRingScene(center, 0);
   const labels = Object.fromEntries(Object.entries(COURSE_POSITION_TO_FACE).map(([position, face]) => [Number(position), face])) as Partial<Record<FacePosition, string>>;
   const colors = Object.fromEntries(Object.entries(COURSE_POSITION_TO_FACE).map(([position, face]) => [Number(position), COURSE_FACE_COLORS[face]])) as Partial<Record<FacePosition, string>>;
   const steps = ['Patron neutre', `Face ${center} repérée`, 'Pliage du patron', `${center} tourne vers la caméra`, 'Quatre voisines', 'Numéros 1–4', 'Anneau aplati'];
-  return <section className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950/45 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Transfert spatial</p><h4 className="mt-1 font-semibold">Montre-moi d’où vient l’anneau</h4></div><button type="button" onClick={() => { setOpen((value) => !value); setStep(0); }} className="rounded-lg border border-sky-700 px-3 py-2 text-sm text-sky-200">{open ? 'Fermer' : 'Lancer la séquence'}</button></div>{open && <><div className="mt-4 flex gap-2 overflow-x-auto pb-2">{steps.map((label, index) => <button key={label} type="button" onClick={() => setStep(index)} className={`min-w-fit rounded-lg border px-3 py-2 text-xs ${step === index ? 'border-sky-400 bg-sky-950' : 'border-zinc-800 text-zinc-500'}`}>{index + 1}. {label}</button>)}</div><div className="mt-4">{step <= 1 && <CourseNet label={steps[step]} focus={step === 1 ? [center] : []} muted={step === 1 ? COURSE_FACE_IDS.filter((face) => face !== center) : []} />}{step === 2 && <div className="flex justify-center"><FoldingNet cube={COURSE_CUBE} t={0.72} faceLabels={labels} faceColors={colors} px={320} /></div>}{step >= 3 && step <= 5 && <MentalRingCube3D scene={scene} layers={{ neighbors: step >= 4, opposite: true, numbers: step >= 5, edges: true, neighborLabels: step >= 4 }} interactive={false} />}{step === 6 && <FlattenedRing center={center} ring={scene.displayedNeighbors} />}</div><div className="mt-4 flex justify-between"><button type="button" disabled={step === 0} onClick={() => setStep((value) => Math.max(0, value - 1))} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm disabled:opacity-30">← Précédent</button><button type="button" disabled={step === 6} onClick={() => setStep((value) => Math.min(6, value + 1))} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm disabled:opacity-30">Suivant →</button></div></>}</section>;
+  return <section className="mt-5 rounded-2xl border border-zinc-800 bg-zinc-950/45 p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-wider text-zinc-500">Transfert spatial</p><h4 className="mt-1 font-semibold">Montre-moi d’où vient l’anneau</h4></div><button type="button" onClick={() => { setOpen((value) => !value); setStep(0); setPickedFace(null); }} className="rounded-lg border border-sky-700 px-3 py-2 text-sm text-sky-200">{open ? 'Fermer' : 'Lancer la séquence'}</button></div>{open && <><div className="mt-4 flex gap-2 overflow-x-auto pb-2">{steps.map((label, index) => <button key={label} type="button" onClick={() => { setStep(index); setPickedFace(null); }} className={`min-w-fit rounded-lg border px-3 py-2 text-xs ${step === index ? 'border-sky-400 bg-sky-950' : 'border-zinc-800 text-zinc-500'}`}>{index + 1}. {label}</button>)}</div><div className="mt-4">{step <= 1 && <CourseNet label={steps[step]} focus={step === 1 ? [center] : []} muted={step === 1 ? COURSE_FACE_IDS.filter((face) => face !== center) : []} />}{step === 2 && <div className="flex justify-center"><FoldingNet cube={COURSE_CUBE} t={0.72} faceLabels={labels} faceColors={colors} px={320} /></div>}{step >= 3 && step <= 5 && <><MentalRingCube3D scene={scene} layers={{ neighbors: step >= 4, opposite: true, numbers: step >= 5, edges: true, neighborLabels: step >= 4 }} interactive={false} selectedFaceId={pickedFace} onFaceClick={setPickedFace} />{pickedFace && <div role="status" aria-live="polite" className="mt-3 rounded-xl border border-sky-900/70 bg-sky-950/20 p-3 text-center text-sm text-sky-100">{pickedFace === center ? <span>{getFaceSelectionFeedback(pickedFace, center)}</span> : <button type="button" onClick={() => { onCenterChange(pickedFace); setPickedFace(null); }} className="w-full rounded-lg border border-sky-600 px-3 py-2 font-semibold">{getFaceSelectionFeedback(pickedFace, center)}</button>}</div>}</>}{step === 6 && <FlattenedRing center={center} ring={scene.displayedNeighbors} />}</div><div className="mt-4 flex justify-between"><button type="button" disabled={step === 0} onClick={() => { setStep((value) => Math.max(0, value - 1)); setPickedFace(null); }} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm disabled:opacity-30">← Précédent</button><button type="button" disabled={step === 6} onClick={() => { setStep((value) => Math.min(6, value + 1)); setPickedFace(null); }} className="rounded-lg border border-zinc-700 px-3 py-2 text-sm disabled:opacity-30">Suivant →</button></div></>}</section>;
 }
 
 function MirrorComparison({ center, valid }: { center: CourseFaceId; valid: RingOrder }) {

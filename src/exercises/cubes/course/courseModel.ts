@@ -1,3 +1,5 @@
+import type { Cube, FaceEdge, QuarterTurn } from '../domain/types';
+
 export type CourseFaceId = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 
 export type CubeCourseSkill =
@@ -36,6 +38,15 @@ export interface CourseExercise {
   choices: readonly CourseChoice[];
   answerId: string;
   explanation: string;
+  orientationContext?: {
+    originalCube: Cube;
+    targetCube: Cube;
+    faceId: CourseFaceId;
+    anchorFaceId: CourseFaceId;
+    sourceEdge: FaceEdge;
+    targetEdge: FaceEdge;
+    referenceRot: QuarterTurn;
+  };
 }
 
 export const COURSE_CHAPTERS: readonly CubeCourseChapter[] = [
@@ -54,4 +65,3 @@ export const COURSE_CHAPTERS: readonly CubeCourseChapter[] = [
 export function getCourseChapter(chapterId: string): CubeCourseChapter | undefined {
   return COURSE_CHAPTERS.find((chapter) => chapter.id === chapterId);
 }
-

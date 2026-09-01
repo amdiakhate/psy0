@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { COURSE_FACE_IDS, getCourseRing } from '../courseFixtures';
-import { RingCubeWorkshop, mirrorCourseRing, rotateCourseRing } from './RingCubeWorkshop';
+import { RingCubeWorkshop, getFaceSelectionFeedback, mirrorCourseRing, rotateCourseRing } from './RingCubeWorkshop';
 
 describe('RingCubeWorkshop', () => {
   it('keeps the same direction for rotations and reverses only the mirror', () => {
@@ -20,5 +20,10 @@ describe('RingCubeWorkshop', () => {
     expect(html).toContain('Tourner de 90°');
     expect(html).toContain('Voir l’ordre miroir');
     expect(html).toContain('Faire de tête');
+  });
+
+  it('donne un retour pour la face centrale comme pour une autre face', () => {
+    expect(getFaceSelectionFeedback('D', 'D')).toBe('D est déjà face à toi.');
+    expect(getFaceSelectionFeedback('A', 'D')).toBe('Mettre A devant moi');
   });
 });

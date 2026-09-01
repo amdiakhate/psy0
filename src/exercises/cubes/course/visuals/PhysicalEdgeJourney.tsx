@@ -34,6 +34,11 @@ export interface PhysicalEdgeJourneyProps {
   isolatedGlyph?: ReactNode;
 }
 
+export type PhysicalEdgeQuestionDiagramProps = Pick<
+  PhysicalEdgeJourneyProps,
+  'originalCube' | 'targetCube' | 'faceId' | 'anchorFaceId' | 'sourceEdge' | 'targetEdge' | 'referenceRot' | 'faceLabel'
+>;
+
 function positionOf(cube: Cube, faceId: FaceId): FacePosition {
   const index = cube.findIndex((face) => face.id === faceId);
   if (index < 0) throw new Error(`Face absente du cube : ${faceId}`);
@@ -42,6 +47,60 @@ function positionOf(cube: Cube, faceId: FaceId): FacePosition {
 
 function turnFromEdges(source: FaceEdge, target: FaceEdge): QuarterTurn {
   return ([0, 1, 2, 3] as const).find((turn) => rotateEdge(source, turn) === target) ?? 0;
+}
+
+export function PhysicalEdgeQuestionDiagram({
+  originalCube,
+  targetCube,
+  faceId,
+  anchorFaceId,
+  sourceEdge,
+  targetEdge,
+  referenceRot,
+  faceLabel,
+}: PhysicalEdgeQuestionDiagramProps) {
+  const face = originalCube[positionOf(originalCube, faceId)];
+  return (
+    <section className="mt-4 rounded-xl border border-sky-900/60 bg-sky-950/10 p-3" aria-label={`Contexte visuel de la rotation de ${faceLabel(faceId)}`}>
+      <p className="text-center text-xs font-semibold text-sky-200">
+        Suis la face <strong>{faceLabel(faceId)}</strong> et son bord rouge jusqu’au même voisin <strong>{faceLabel(anchorFaceId)}</strong>.
+      </p>
+      <div className="mt-3 grid items-center gap-3 sm:grid-cols-[1fr_92px_1fr]">
+        <EdgeNet
+          cube={originalCube}
+          faceId={faceId}
+          anchorFaceId={anchorFaceId}
+          edge={sourceEdge}
+          label="1 · Départ réel"
+          faceLabel={faceLabel}
+          description={`${faceLabel(faceId)} touche ${faceLabel(anchorFaceId)} par son bord ${EDGE_LABEL[sourceEdge]}.`}
+        />
+        <figure className="text-center">
+          <figcaption className="text-[10px] font-bold uppercase tracking-[.14em] text-zinc-500">Face à tourner</figcaption>
+          <svg viewBox="-9 -9 118 118" className="mx-auto mt-2 w-[92px]" role="img" aria-label={`Face ${faceLabel(faceId)} avec son bord ${EDGE_LABEL[sourceEdge]} rouge`}>
+            <rect width="100" height="100" rx="10" fill="var(--cube-diagram-bg)" stroke="var(--cube-axis)" strokeWidth="2" />
+            <Glyph sym={face.sym} rot={referenceRot} />
+            <line {...scaleEdge(EDGE_LINE[sourceEdge], 100 / 60)} stroke="#fb7185" strokeWidth="7" strokeLinecap="round" />
+          </svg>
+          <p className="mt-1 text-2xl text-sky-400" aria-hidden>→</p>
+          <p className="text-[10px] text-zinc-500">Choisis sa rotation</p>
+        </figure>
+        <EdgeNet
+          cube={targetCube}
+          faceId={faceId}
+          anchorFaceId={anchorFaceId}
+          edge={targetEdge}
+          label="2 · Patron cible"
+          faceLabel={faceLabel}
+          showEdge={false}
+          description={`${faceLabel(anchorFaceId)} est maintenant côté ${EDGE_LABEL[targetEdge]} de ${faceLabel(faceId)}.`}
+        />
+      </div>
+      <p className="mt-3 rounded-lg border border-rose-900/50 bg-rose-950/10 px-3 py-2 text-center text-xs text-rose-200">
+        Le trait rouge est le bord physique de départ — ce n’est pas un côté abstrait de l’écran.
+      </p>
+    </section>
+  );
 }
 
 export function PhysicalEdgeJourney({
@@ -106,8 +165,15 @@ function scaleEdge(line: { x1: number; y1: number; x2: number; y2: number }, fac
   return { x1: line.x1 * factor, y1: line.y1 * factor, x2: line.x2 * factor, y2: line.y2 * factor };
 }
 
-function EdgeNet({ cube, faceId, anchorFaceId, edge, label, faceLabel }: {
-  cube: Cube; faceId: FaceId; anchorFaceId: FaceId; edge: FaceEdge; label: string; faceLabel(id: FaceId): string;
+function EdgeNet({ cube, faceId, anchorFaceId, edge, label, faceLabel, showEdge = true, description }: {
+  cube: Cube;
+  faceId: FaceId;
+  anchorFaceId: FaceId;
+  edge: FaceEdge;
+  label: string;
+  faceLabel(id: FaceId): string;
+  showEdge?: boolean;
+  description?: string;
 }) {
   const size = 60;
   const position = positionOf(cube, faceId);
@@ -123,12 +189,12 @@ function EdgeNet({ cube, faceId, anchorFaceId, edge, label, faceLabel }: {
             <g key={pos} transform={`translate(${col * size + 4} ${row * size + 4})`} opacity={focused || anchor ? 1 : .3}>
               <rect width={size} height={size} rx="6" fill={focused ? 'var(--cube-focus-bg)' : anchor ? 'var(--cube-anchor-bg)' : 'var(--cube-diagram-bg)'} stroke={focused ? 'var(--cube-accent)' : anchor ? '#fb7185' : 'var(--cube-axis)'} strokeWidth={focused || anchor ? 3 : 1.5} />
               <text x={size / 2} y={size / 2 + 6} textAnchor="middle" fill={focused ? 'var(--cube-focus-text)' : anchor ? 'var(--cube-anchor-text)' : 'var(--cube-diagram-text)'} fontSize="18" fontWeight="900">{faceLabel(current.id)}</text>
-              {focused && <line {...EDGE_LINE[edge]} stroke="#fb7185" strokeWidth="6" strokeLinecap="round" />}
+              {focused && showEdge && <line {...EDGE_LINE[edge]} stroke="#fb7185" strokeWidth="6" strokeLinecap="round" />}
             </g>
           );
         })}
       </svg>
-      <p className="mt-2 text-center text-xs text-zinc-400">{faceLabel(faceId)} touche {faceLabel(anchorFaceId)} par son bord {EDGE_LABEL[edge]}.</p>
+      <p className="mt-2 text-center text-xs text-zinc-400">{description ?? `${faceLabel(faceId)} touche ${faceLabel(anchorFaceId)} par son bord ${EDGE_LABEL[edge]}.`}</p>
     </figure>
   );
 }

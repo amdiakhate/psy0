@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ALL_COURSE_EXERCISES, buildCourseExercises } from './courseDrills';
 import { COURSE_CHAPTERS } from './courseModel';
+import { rotateEdge } from '../domain/cubeGeometry';
 
 describe('cube course validations', () => {
   it('builds the declared amount with valid answers and explanations', () => {
@@ -15,5 +16,15 @@ describe('cube course validations', () => {
       }
     }
   });
-});
 
+  it('donne à chaque validation d’orientation un cas géométrique visible et cohérent', () => {
+    const exercises = buildCourseExercises('orientation-symboles');
+    for (const exercise of exercises) {
+      expect(exercise.orientationContext).toBeDefined();
+      const context = exercise.orientationContext!;
+      expect(rotateEdge(context.sourceEdge, Number(exercise.answerId) as 0 | 1 | 2 | 3)).toBe(context.targetEdge);
+      expect(exercise.prompt).toContain(context.faceId);
+      expect(exercise.prompt).toContain(context.anchorFaceId);
+    }
+  });
+});

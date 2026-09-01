@@ -24,6 +24,14 @@ export interface RingFaceVisual {
   neighborNumber: number | null;
   center: boolean;
   opposite: boolean;
+  selected: boolean;
+}
+
+export function getCubeInteractionHint(interactive: boolean, faceSelectionEnabled: boolean): string {
+  if (interactive && faceSelectionEnabled) return 'Glisse pour explorer · clique une face pour la sélectionner';
+  if (interactive) return 'Glisse pour explorer';
+  if (faceSelectionEnabled) return 'Clique une face pour la sélectionner';
+  return 'Vue guidée · utilise les contrôles de la séquence';
 }
 
 const DEFAULT_LAYERS: MentalRingCubeLayers = {
@@ -39,6 +47,7 @@ export function getRingFaceVisual(
   faceId: CourseFaceId,
   showNumbers: boolean,
   showNeighborLabels: boolean,
+  selectedFaceId?: CourseFaceId | null,
 ): RingFaceVisual {
   const index = scene.displayedNeighbors.indexOf(faceId);
   const neighbor = index >= 0;
@@ -47,6 +56,7 @@ export function getRingFaceVisual(
     neighborNumber: neighbor && showNumbers ? index + 1 : null,
     center: faceId === scene.centerFaceId,
     opposite: faceId === scene.oppositeFaceId,
+    selected: faceId === selectedFaceId,
   };
 }
 
@@ -80,8 +90,8 @@ function makeTexture(faceId: CourseFaceId, visual: RingFaceVisual): THREE.Canvas
   const base = visual.label === '?' ? '#3f3f46' : visual.opposite ? '#27272a' : COURSE_FACE_COLORS[faceId];
   context.fillStyle = base;
   context.fillRect(0, 0, 256, 256);
-  context.strokeStyle = visual.center ? '#ffffff' : visual.neighborNumber ? '#38bdf8' : '#52525b';
-  context.lineWidth = visual.center ? 18 : 10;
+  context.strokeStyle = visual.selected ? '#facc15' : visual.center ? '#ffffff' : visual.neighborNumber ? '#38bdf8' : '#52525b';
+  context.lineWidth = visual.selected ? 24 : visual.center ? 18 : 10;
   context.strokeRect(7, 7, 242, 242);
   context.fillStyle = visual.opposite ? '#a1a1aa' : '#111827';
   context.font = '900 112px ui-monospace, monospace';
@@ -103,16 +113,17 @@ function makeTexture(faceId: CourseFaceId, visual: RingFaceVisual): THREE.Canvas
   return texture;
 }
 
-function FacePlane({ faceId, scene, layers, onFaceClick }: {
+function FacePlane({ faceId, scene, layers, selectedFaceId, onFaceClick }: {
   faceId: CourseFaceId;
   scene: RingScene;
   layers: MentalRingCubeLayers;
+  selectedFaceId?: CourseFaceId | null;
   onFaceClick?(faceId: CourseFaceId): void;
 }) {
   const position = COURSE_FACE_TO_POSITION[faceId];
   const frame = FACE_FRAMES[position];
-  const visual = getRingFaceVisual(scene, faceId, layers.numbers, layers.neighborLabels);
-  const texture = useMemo(() => makeTexture(faceId, visual), [faceId, visual.label, visual.neighborNumber, visual.center, visual.opposite]);
+  const visual = getRingFaceVisual(scene, faceId, layers.numbers, layers.neighborLabels, selectedFaceId);
+  const texture = useMemo(() => makeTexture(faceId, visual), [faceId, visual.label, visual.neighborNumber, visual.center, visual.opposite, visual.selected]);
   useEffect(() => () => texture.dispose(), [texture]);
   const opacity = visual.opposite && layers.opposite ? 0.28 : 1;
   const neighborHidden = scene.displayedNeighbors.includes(faceId) && !layers.neighbors;
@@ -120,7 +131,7 @@ function FacePlane({ faceId, scene, layers, onFaceClick }: {
     <mesh
       position={[frame.normal[0] * 1.01, frame.normal[1] * 1.01, frame.normal[2] * 1.01]}
       quaternion={faceQuaternion(position)}
-      onClick={(event) => { event.stopPropagation(); onFaceClick?.(faceId); }}
+      onClick={onFaceClick ? (event) => { event.stopPropagation(); onFaceClick(faceId); } : undefined}
     >
       <planeGeometry args={[1.92, 1.92]} />
       <meshBasicMaterial
@@ -134,9 +145,10 @@ function FacePlane({ faceId, scene, layers, onFaceClick }: {
   );
 }
 
-function AnimatedCube({ scene, layers, onFaceClick, theme }: {
+function AnimatedCube({ scene, layers, selectedFaceId, onFaceClick, theme }: {
   scene: RingScene;
   layers: MentalRingCubeLayers;
+  selectedFaceId?: CourseFaceId | null;
   onFaceClick?(faceId: CourseFaceId): void;
   theme: ResolvedTheme;
 }) {
@@ -150,7 +162,7 @@ function AnimatedCube({ scene, layers, onFaceClick, theme }: {
   });
   return (
     <group ref={group}>
-      {COURSE_FACE_IDS.map((faceId) => <FacePlane key={faceId} faceId={faceId} scene={scene} layers={layers} onFaceClick={onFaceClick} />)}
+      {COURSE_FACE_IDS.map((faceId) => <FacePlane key={faceId} faceId={faceId} scene={scene} layers={layers} selectedFaceId={selectedFaceId} onFaceClick={onFaceClick} />)}
       {layers.edges && (
         <mesh>
           <boxGeometry args={[2.03, 2.03, 2.03]} />
@@ -178,12 +190,14 @@ export function MentalRingCube3D({
   hidden = false,
   layers = DEFAULT_LAYERS,
   interactive = true,
+  selectedFaceId,
   onFaceClick,
 }: {
   scene: RingScene;
   hidden?: boolean;
   layers?: MentalRingCubeLayers;
   interactive?: boolean;
+  selectedFaceId?: CourseFaceId | null;
   onFaceClick?(faceId: CourseFaceId): void;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -200,6 +214,7 @@ export function MentalRingCube3D({
   if (hidden) {
     return <div className="grid min-h-[320px] place-items-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-950/55 p-6 text-center text-zinc-400"><p><strong className="block text-zinc-200">Cube 3D masqué avant ta réponse</strong>Reconstruis l’anneau depuis le patron, puis révèle le cube en correction.</p></div>;
   }
+  const interactionHint = getCubeInteractionHint(interactive, onFaceClick !== undefined);
   return (
     <figure className="cube-3d-stage relative min-h-[320px] overflow-hidden rounded-2xl border border-zinc-800" aria-label={`Cube 3D, face ${scene.centerFaceId} devant`}>
       <figcaption className="absolute left-3 top-3 z-10 rounded-lg bg-zinc-950/90 px-3 py-2 text-xs font-semibold text-zinc-200">Face centrale {scene.centerFaceId} · Face opposée {scene.oppositeFaceId}</figcaption>
@@ -212,7 +227,7 @@ export function MentalRingCube3D({
         <div data-cube-canvas className="h-[340px] w-full">
           <Canvas camera={{ position: [0, 0, 5.4], fov: 38 }} dpr={[1, 1.75]}>
             <CameraReset scene={scene} />
-            <AnimatedCube scene={scene} layers={layers} onFaceClick={onFaceClick} theme={theme} />
+            <AnimatedCube scene={scene} layers={layers} selectedFaceId={selectedFaceId} onFaceClick={onFaceClick} theme={theme} />
             <OrbitControls makeDefault enabled={interactive} enablePan={false} minDistance={4.2} maxDistance={7} />
           </Canvas>
         </div>
@@ -229,7 +244,7 @@ export function MentalRingCube3D({
           })}
         </div>
       )}
-      <p className="absolute inset-x-3 bottom-3 text-center text-[11px] text-zinc-400">Glisse pour explorer · clique une face pour la sélectionner</p>
+      <p className="pointer-events-none absolute inset-x-3 bottom-3 text-center text-[11px] text-zinc-400">{interactionHint}</p>
     </figure>
   );
 }

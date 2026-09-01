@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { buildRingScene } from '../ringSceneModel';
-import { MentalRingCube3D, getRingFaceVisual } from './MentalRingCube3D';
+import { MentalRingCube3D, getCubeInteractionHint, getRingFaceVisual } from './MentalRingCube3D';
 
 describe('MentalRingCube3D', () => {
   it('attribue les numéros 1–4 à l’ordre géométrique affiché', () => {
@@ -10,6 +10,8 @@ describe('MentalRingCube3D', () => {
       expect(getRingFaceVisual(scene, faceId, true, true)).toMatchObject({ neighborNumber: index + 1, label: faceId });
     });
     expect(getRingFaceVisual(scene, scene.oppositeFaceId, true, true).opposite).toBe(true);
+    expect(getRingFaceVisual(scene, 'A', true, true, 'A').selected).toBe(true);
+    expect(getRingFaceVisual(scene, 'A', true, true, 'B').selected).toBe(false);
   });
 
   it('ne rend aucune scène ni aucun voisin lorsque le cube est caché en mode mental', () => {
@@ -35,5 +37,24 @@ describe('MentalRingCube3D', () => {
     );
     expect(html).toContain('Face centrale E');
     expect(html).not.toContain('Voisin 1');
+  });
+
+  it('n’annonce le clic et le glisser que lorsque ces interactions sont disponibles', () => {
+    expect(getCubeInteractionHint(true, true)).toBe('Glisse pour explorer · clique une face pour la sélectionner');
+    expect(getCubeInteractionHint(false, true)).toBe('Clique une face pour la sélectionner');
+    expect(getCubeInteractionHint(true, false)).toBe('Glisse pour explorer');
+    expect(getCubeInteractionHint(false, false)).toBe('Vue guidée · utilise les contrôles de la séquence');
+
+    const selectableHtml = renderToStaticMarkup(
+      <MentalRingCube3D scene={buildRingScene('D', 0)} interactive={false} onFaceClick={() => undefined} />,
+    );
+    expect(selectableHtml).toContain('Clique une face pour la sélectionner');
+    expect(selectableHtml).not.toContain('Glisse pour explorer');
+
+    const guidedHtml = renderToStaticMarkup(
+      <MentalRingCube3D scene={buildRingScene('D', 0)} interactive={false} />,
+    );
+    expect(guidedHtml).toContain('Vue guidée · utilise les contrôles de la séquence');
+    expect(guidedHtml).not.toContain('clique une face');
   });
 });
