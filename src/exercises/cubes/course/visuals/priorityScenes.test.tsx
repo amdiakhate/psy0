@@ -17,8 +17,8 @@ describe('priority Cubes course scenes', () => {
     expect(recenter).toContain('Recentrer sans changer de cube');
     expect(recenter).toContain('Le patron change, mais le cube ne change pas');
     const ring = renderToStaticMarkup(<RingWorkshop />);
-    expect(ring).toContain('Lire l’anneau directement sur le cube');
-    expect(ring).toContain('Cube éclaté');
+    expect(ring).toContain('Reconstruire l’anneau de tête');
+    expect(ring).toContain('Cube 3D manipulable');
     const edge = renderToStaticMarkup(<PhysicalEdgeRotation />);
     expect(edge).toContain('Le même bord physique');
     expect(edge).toContain('Rejouer');

@@ -6,13 +6,13 @@ import { CourseFace, CourseNet } from './visuals/CourseNet';
 import { PhysicalEdgeRotation, RecenterWorkshop, RingWorkshop } from './visuals/PriorityWorkshops';
 import { GuidedRealBoards } from './visuals/GuidedRealBoards';
 
-export function ChapterVisual({ order }: { order: number }) {
+export function ChapterVisual({ order, onProgress }: { order: number; onProgress?(): void }) {
   if (order === 1) return <FoldIntro />;
   if (order === 2) return <Opposites />;
   if (order === 3) return <Adjacency />;
   if (order === 4) return <Belt />;
   if (order === 5) return <RecenterWorkshop />;
-  if (order === 6) return <RingWorkshop />;
+  if (order === 6) return <RingWorkshop onProgress={onProgress} />;
   if (order === 7) return <Mirror />;
   if (order === 8) return <PhysicalEdgeRotation />;
   if (order === 9) return <GuidedRealBoards />;

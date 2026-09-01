@@ -75,7 +75,7 @@ function makeTexture(faceId: CourseFaceId, visual: RingFaceVisual): THREE.Canvas
   canvas.height = 256;
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas 2D indisponible');
-  const base = visual.opposite ? '#27272a' : COURSE_FACE_COLORS[faceId];
+  const base = visual.label === '?' ? '#3f3f46' : visual.opposite ? '#27272a' : COURSE_FACE_COLORS[faceId];
   context.fillStyle = base;
   context.fillRect(0, 0, 256, 256);
   context.strokeStyle = visual.center ? '#ffffff' : visual.neighborNumber ? '#38bdf8' : '#52525b';
@@ -185,9 +185,11 @@ export function MentalRingCube3D({
   return (
     <figure className="relative min-h-[320px] overflow-hidden rounded-2xl border border-zinc-800 bg-[radial-gradient(circle_at_50%_35%,#172554,#09090b_68%)]" aria-label={`Cube 3D, face ${scene.centerFaceId} devant`}>
       <figcaption className="absolute left-3 top-3 z-10 rounded-lg bg-zinc-950/90 px-3 py-2 text-xs font-semibold text-zinc-200">Face centrale {scene.centerFaceId} · Face opposée {scene.oppositeFaceId}</figcaption>
-      <div className="sr-only">
-        {scene.displayedNeighbors.map((faceId, index) => <span key={faceId}>Voisin {index + 1} : {faceId}. </span>)}
-      </div>
+      {layers.neighborLabels && (
+        <div className="sr-only">
+          {scene.displayedNeighbors.map((faceId, index) => <span key={faceId}>Voisin {index + 1} : {faceId}. </span>)}
+        </div>
+      )}
       {mounted ? (
         <div data-cube-canvas className="h-[340px] w-full">
           <Canvas camera={{ position: [0, 0, 5.4], fov: 38 }} dpr={[1, 1.75]}>

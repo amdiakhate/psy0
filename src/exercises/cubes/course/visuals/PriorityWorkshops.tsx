@@ -11,8 +11,8 @@ export function RecenterWorkshop() {
   return <RecenterSequence />;
 }
 
-export function RingWorkshop() {
-  return <RingCubeWorkshop />;
+export function RingWorkshop({ onProgress }: { onProgress?(): void }) {
+  return <RingCubeWorkshop onProgress={onProgress} />;
 }
 
 export function PhysicalEdgeRotation() {

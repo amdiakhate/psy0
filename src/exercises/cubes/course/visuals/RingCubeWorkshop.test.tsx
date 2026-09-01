@@ -7,17 +7,18 @@ describe('RingCubeWorkshop', () => {
   it('keeps the same direction for rotations and reverses only the mirror', () => {
     for (const center of COURSE_FACE_IDS) {
       const ring = getCourseRing(center);
-      expect(rotateCourseRing(ring, 1)).toEqual([ring[1], ring[2], ring[3], ring[0]]);
+      expect(rotateCourseRing(ring, 1)).toEqual([ring[3], ring[0], ring[1], ring[2]]);
       expect(mirrorCourseRing(ring)).toEqual([ring[0], ring[3], ring[2], ring[1]]);
     }
   });
 
   it('renders synchronized numbered cube and ring views', () => {
     const html = renderToStaticMarkup(<RingCubeWorkshop />);
-    expect(html).toContain('Cube éclaté');
+    expect(html).toContain('Patron 2D de référence');
+    expect(html).toContain('Cube 3D manipulable');
     expect(html).toContain('anneau aplati');
-    expect(html).toContain('Tourner cube + anneau');
+    expect(html).toContain('Tourner de 90°');
     expect(html).toContain('Voir l’ordre miroir');
+    expect(html).toContain('Faire de tête');
   });
 });
-
