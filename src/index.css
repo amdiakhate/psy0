@@ -230,7 +230,8 @@ body {
 .cube-fold-tile { position:absolute; display:grid; width:76px; aspect-ratio:1; place-items:center; border:2px solid currentColor; border-radius:.65rem; background:#202126; font:900 1.5rem ui-monospace,monospace; transition:transform .18s ease; box-shadow:0 18px 40px rgba(0,0,0,.28); }
 .cube-recenter-face { animation:cube-course-arrive .55s cubic-bezier(.2,.8,.2,1) both; }
 .cube-ring-node { transition:transform .35s ease; }
+.cube-ring-orbit,.cube-ring-label { transition:transform .48s cubic-bezier(.2,.8,.2,1); }
 .cube-physical-turn { transform-origin:center; animation:cube-course-physical .82s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes cube-course-arrive { from { opacity:0; transform:translate(var(--x,0),var(--y,10px)) scale(.9); } to { opacity:1; } }
 @keyframes cube-course-physical { from { transform:rotate(0deg); } to { transform:rotate(var(--cube-course-turn)); } }
-@media (prefers-reduced-motion: reduce) { .cube-recenter-face { animation:none !important; } .cube-physical-turn { animation:none !important; transform:rotate(var(--cube-course-turn)); } .cube-fold-tile,.cube-ring-node { transition:none !important; } }
+@media (prefers-reduced-motion: reduce) { .cube-recenter-face { animation:none !important; } .cube-physical-turn { animation:none !important; transform:rotate(var(--cube-course-turn)); } .cube-fold-tile,.cube-ring-node,.cube-ring-orbit,.cube-ring-label { transition:none !important; } }
