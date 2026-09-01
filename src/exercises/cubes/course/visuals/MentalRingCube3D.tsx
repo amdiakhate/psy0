@@ -121,7 +121,13 @@ function FacePlane({ faceId, scene, layers, onFaceClick }: {
       onClick={(event) => { event.stopPropagation(); onFaceClick?.(faceId); }}
     >
       <planeGeometry args={[1.92, 1.92]} />
-      <meshBasicMaterial map={texture} transparent opacity={neighborHidden ? 0.2 : opacity} side={THREE.DoubleSide} />
+      <meshBasicMaterial
+        map={texture}
+        transparent={neighborHidden || opacity < 1}
+        opacity={neighborHidden ? 0.2 : opacity}
+        depthWrite={!neighborHidden && opacity === 1}
+        side={THREE.FrontSide}
+      />
     </mesh>
   );
 }
@@ -134,10 +140,10 @@ function AnimatedCube({ scene, layers, onFaceClick }: {
   const group = useRef<THREE.Group>(null);
   const reduced = useReducedMotion();
   const target = useMemo(() => sceneQuaternion(scene), [scene]);
-  useFrame(() => {
+  useFrame((_, delta) => {
     if (!group.current) return;
     if (reduced) group.current.quaternion.copy(target);
-    else group.current.quaternion.slerp(target, 0.12);
+    else group.current.quaternion.slerp(target, 1 - Math.exp(-8 * delta));
   });
   return (
     <group ref={group}>
@@ -199,6 +205,18 @@ export function MentalRingCube3D({
           </Canvas>
         </div>
       ) : <div className="h-[340px]" aria-hidden />}
+      {layers.neighbors && (
+        <div className="pointer-events-none absolute inset-0" aria-hidden>
+          {scene.displayedNeighbors.map((faceId, index) => {
+            const positions = ['left-1/2 top-12 -translate-x-1/2', 'right-3 top-1/2 -translate-y-1/2', 'bottom-10 left-1/2 -translate-x-1/2', 'left-3 top-1/2 -translate-y-1/2'] as const;
+            return (
+              <span key={faceId} className={`absolute rounded-full border border-sky-400/70 bg-zinc-950/90 px-2.5 py-1 font-mono text-xs font-black text-sky-200 shadow-lg ${positions[index]}`}>
+                {index + 1}{layers.neighborLabels ? ` · ${faceId}` : ''}
+              </span>
+            );
+          })}
+        </div>
+      )}
       <p className="absolute inset-x-3 bottom-3 text-center text-[11px] text-zinc-400">Glisse pour explorer · clique une face pour la sélectionner</p>
     </figure>
   );
