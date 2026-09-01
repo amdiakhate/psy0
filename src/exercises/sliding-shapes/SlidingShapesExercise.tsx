@@ -118,7 +118,7 @@ export function SlidingShapesExercise({
     },
     [placeShape],
   );
-  const { drag, startDrag, moved } = useDragDrop<number>(onDrop);
+  const { drag, startDrag, wasDragged } = useDragDrop<number>(onDrop);
 
   const remove = (id: number) => {
     setPlaced((prev) => {
@@ -224,7 +224,7 @@ export function SlidingShapesExercise({
               onPointerDown={startDrag(shape.id)}
               // Un glissement ne doit pas déclencher le clic de sélection.
               onClick={() => {
-                if (moved) return;
+                if (wasDragged()) return;
                 if (pos) remove(shape.id);
                 else setSelected(shape.id);
               }}

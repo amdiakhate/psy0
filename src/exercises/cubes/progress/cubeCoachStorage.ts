@@ -52,18 +52,50 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
+const VALID_SKILLS = new Set<CubeSkill>([
+  'opposites',
+  'adjacency',
+  'deductive-placement',
+  'two-candidates-ring',
+  'mirror',
+  'rotation-90',
+  'rotation-180',
+  'full-puzzle',
+]);
+
+const VALID_CAUSES = new Set<CubeErrorCause>([
+  'WRONG_OPPOSITE',
+  'WRONG_ADJACENCY',
+  'MIRROR_ORDER',
+  'WRONG_ROTATION_90',
+  'WRONG_ROTATION_180',
+  'SWAPPED_OPPOSITE_PAIR',
+  'CORRECT_FACE_WRONG_ORIENTATION',
+  'FACE_CORRECT_BY_ELIMINATION',
+]);
+
+const VALID_DRILL_TYPES = new Set<CubeDrillType>([
+  'opposites', 'adjacency', 'rings', 'mirror', 'rotation', 'full-puzzle', 'two-remaining', 'orientation-only',
+]);
+
+function isSkillResult(value: unknown): value is CubeSkillResult {
+  return isRecord(value) && VALID_SKILLS.has(value.skill as CubeSkill) && typeof value.correct === 'boolean';
+}
+
 function isAttempt(value: unknown): value is CubeAttemptRecord {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
-    typeof value.answeredAt === 'string' &&
+    typeof value.answeredAt === 'string' && Number.isFinite(Date.parse(value.answeredAt)) &&
     (value.mode === 'full' || value.mode === 'guided' || value.mode === 'drill') &&
-    typeof value.seed === 'number' &&
-    typeof value.level === 'number' &&
-    typeof value.durationMs === 'number' &&
+    (value.sessionId === undefined || typeof value.sessionId === 'string') &&
+    (value.drillType === undefined || VALID_DRILL_TYPES.has(value.drillType as CubeDrillType)) &&
+    typeof value.seed === 'number' && Number.isFinite(value.seed) &&
+    typeof value.level === 'number' && Number.isFinite(value.level) &&
+    typeof value.durationMs === 'number' && Number.isFinite(value.durationMs) && value.durationMs >= 0 &&
     typeof value.correct === 'boolean' &&
-    Array.isArray(value.skills) &&
-    Array.isArray(value.errorCauses)
+    Array.isArray(value.skills) && value.skills.every(isSkillResult) &&
+    Array.isArray(value.errorCauses) && value.errorCauses.every((cause) => VALID_CAUSES.has(cause as CubeErrorCause))
   );
 }
 
@@ -88,7 +120,10 @@ export function skillsForCubeDrill(question: CubeDrillQuestion, correct: boolean
   if (question.type === 'adjacency') return [{ skill: 'adjacency', correct }];
   if (question.type === 'rings' || question.type === 'two-remaining') return [{ skill: 'two-candidates-ring', correct }];
   if (question.type === 'mirror') return [{ skill: 'mirror', correct }];
-  if (question.type === 'rotation') return [{ skill: question.answer.choiceId === '2' ? 'rotation-180' : 'rotation-90', correct }];
+  if (question.type === 'rotation') {
+    if (question.answer.choiceId === '0') return [];
+    return [{ skill: question.answer.choiceId === '2' ? 'rotation-180' : 'rotation-90', correct }];
+  }
   if (question.type === 'orientation-only') {
     const skills = new Set<'rotation-90' | 'rotation-180'>();
     for (const position of question.orientationTargets) {

@@ -88,7 +88,7 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
     },
     [placePiece],
   );
-  const { drag, startDrag, moved } = useDragDrop<number>(onDrop);
+  const { drag, startDrag, wasDragged } = useDragDrop<number>(onDrop);
 
   const clearHole = (hole: number) =>
     setPlaced((prev) => {
@@ -185,7 +185,7 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
               // quart de tour. » Le clic tourne donc, il ne sélectionne pas ;
               // c'est le glissement qui pose. Un micro-mouvement pendant un
               // glisser ne doit pas passer pour un clic.
-              if (moved) return;
+              if (wasDragged()) return;
               turn(piece.id);
               setSelected(piece.id);
             }}

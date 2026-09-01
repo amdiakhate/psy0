@@ -25,4 +25,20 @@ describe('garde des corrections Cubes historisées', () => {
     expect(isCubesQuestionSnapshot({ ...question, reference: question.reference.map((face, index) => index === 0 ? { ...face, originalPosition: 99 } : face) })).toBe(false);
     expect(isCubesQuestionSnapshot({ ...question, expectedRot: Object.fromEntries(question.holes.map((hole) => [hole, 7])) })).toBe(false);
   });
+
+  it('refuse une solution qui réutilise la même pièce dans deux trous', () => {
+    const question = generate(42, 4, 'letters').question;
+    if (question.holes.length < 2) throw new Error('Fixture attendue avec au moins deux trous');
+    const solution = { ...question.solution, [question.holes[1]]: question.solution[question.holes[0]] };
+    expect(isCubesQuestionSnapshot({ ...question, solution })).toBe(false);
+  });
+
+  it('refuse une face visible dupliquée dans le patron cible', () => {
+    const question = generate(42, 4, 'letters').question;
+    const visible = question.target.flatMap((face, position) => face ? [{ face, position }] : []);
+    if (visible.length < 2) throw new Error('Fixture attendue avec deux faces visibles');
+    const target = [...question.target];
+    target[visible[1].position] = { ...visible[0].face };
+    expect(isCubesQuestionSnapshot({ ...question, target })).toBe(false);
+  });
 });

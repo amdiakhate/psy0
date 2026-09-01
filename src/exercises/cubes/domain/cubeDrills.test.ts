@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { generateCubeDrill, validateCubeDrill } from './cubeDrills';
 import type { CubeDrillType } from './cubeDrills';
 import { symbolName } from '../CubeSvg';
+import { skillsForCubeDrill } from '../progress/cubeCoachStorage';
 
 const TYPES: CubeDrillType[] = [
   'opposites',
@@ -69,6 +70,43 @@ describe('générateurs de drills Cubes', () => {
         const piece = drill.pieces.find((candidate) => candidate.faceId === option.id);
         expect(piece, `seed ${seed}, choix ${option.id}`).toBeDefined();
         expect(option.label).toBe(symbolName(piece!.sym));
+      }
+    }
+  });
+
+  it('conserve des identités de faces dans les anneaux du drill miroir', () => {
+    for (let seed = 0; seed < 1_000; seed++) {
+      const drill = generateCubeDrill(seed, 'mirror');
+      const ids = new Set(drill.reference.map((face) => face.id));
+      expect(drill.ringA?.every((id) => ids.has(id)), `anneau A, seed ${seed}`).toBe(true);
+      expect(drill.ringB?.every((id) => ids.has(id)), `anneau B, seed ${seed}`).toBe(true);
+    }
+  });
+
+  it('refuse une orientation omise même lorsque la réponse attendue vaut 3', () => {
+    const drill = Array.from({ length: 2_000 }, (_, seed) => generateCubeDrill(seed, 'orientation-only'))
+      .find((candidate) => candidate.orientationTargets.every((position) => candidate.answer.rotations[position] === 3));
+    expect(drill).toBeDefined();
+    expect(validateCubeDrill(drill!, { rotations: {} })).toBe(false);
+  });
+
+  it('ne classe pas « aucune rotation » comme une rotation à 90°', () => {
+    const drill = Array.from({ length: 100 }, (_, seed) => generateCubeDrill(seed, 'rotation'))
+      .find((candidate) => candidate.answer.choiceId === '0');
+    expect(drill).toBeDefined();
+    expect(skillsForCubeDrill(drill!, true)).toEqual([]);
+  });
+
+  it('génère des choix uniques avec une seule réponse acceptée', () => {
+    const choiceTypes = ['opposites', 'adjacency', 'rings', 'mirror', 'rotation', 'two-remaining'] as const;
+    for (const type of choiceTypes) {
+      for (let seed = 0; seed < 2_000; seed++) {
+        const drill = generateCubeDrill(seed, type);
+        if (!('choices' in drill) || !('choiceId' in drill.answer)) throw new Error(`Drill à choix attendu : ${type}`);
+        expect(new Set(drill.choices.map((option) => option.id)).size, `${type}, seed ${seed}`).toBe(drill.choices.length);
+        const accepted = drill.choices.filter((option) => validateCubeDrill(drill, { choiceId: option.id }));
+        expect(accepted, `${type}, seed ${seed}`).toHaveLength(1);
+        expect(accepted[0].id).toBe(drill.answer.choiceId);
       }
     }
   });

@@ -55,4 +55,23 @@ describe('persistance du Coach Cubes', () => {
     ));
     expect(new Set(skillsForCubeDrill(drill, true).map((result) => result.skill))).toEqual(required);
   });
+
+  it('écarte une tentative dont les compétences sont corrompues', () => {
+    store.set('psy0.cubes-coach', JSON.stringify({
+      schemaVersion: 1,
+      attempts: [{ ...record(), skills: [null] }],
+    }));
+    expect(loadCubeCoachState().attempts).toEqual([]);
+  });
+
+  it('écarte les dates et durées invalides', () => {
+    store.set('psy0.cubes-coach', JSON.stringify({
+      schemaVersion: 1,
+      attempts: [
+        { ...record(), answeredAt: 'pas-une-date' },
+        { ...record(), id: 'attempt-2', durationMs: -4 },
+      ],
+    }));
+    expect(loadCubeCoachState().attempts).toEqual([]);
+  });
 });

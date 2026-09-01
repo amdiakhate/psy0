@@ -24,8 +24,15 @@ export function isCubesQuestionSnapshot(value: unknown): value is CubesQuestion 
   if (new Set(pieces.map((piece) => piece.id)).size !== pieces.length) return false;
   if (pieces.some((piece) => !references.some((face) => face.id === piece.faceId && face.originalPosition === piece.originalPosition && face.sym === piece.sym))) return false;
 
+  const visibleFaces = value.target.filter((face): face is NonNullable<typeof face> => face !== null);
+  if (visibleFaces.some((face) => !references.some((reference) => reference.id === face.id && reference.originalPosition === face.originalPosition && reference.sym === face.sym))) return false;
+  const representedIds = [...visibleFaces.map((face) => face.id), ...pieces.map((piece) => piece.faceId)];
+  if (representedIds.length !== 6 || new Set(representedIds).size !== 6) return false;
+
   const solution = value.solution as Record<string, unknown>;
   const expectedRot = value.expectedRot as Record<string, unknown>;
+  const solutionPieceIds = holes.map((hole) => solution[String(hole)]);
+  if (new Set(solutionPieceIds).size !== holes.length) return false;
   return holes.every((hole) => {
     const pieceId = solution[String(hole)];
     const rotation = expectedRot[String(hole)];

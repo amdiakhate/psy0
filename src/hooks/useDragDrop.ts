@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * Glisser-déposer au pointeur, comme sur Pilotest (Cubes, Formes glissées).
@@ -24,9 +24,21 @@ export interface DragState<T> {
 /** Distance en pixels au-delà de laquelle on considère que c'est un glissement. */
 const DRAG_THRESHOLD = 4;
 
+interface Point {
+  x: number;
+  y: number;
+}
+
+export function dragThresholdExceeded(origin: Point, current: Point): boolean {
+  return Math.hypot(current.x - origin.x, current.y - origin.y) > DRAG_THRESHOLD;
+}
+
 export function useDragDrop<T>(onDrop: (payload: T, zone: string) => void) {
   const [drag, setDrag] = useState<DragState<T> | null>(null);
   const [moved, setMoved] = useState(false);
+  const originRef = useRef<Point | null>(null);
+  const movedRef = useRef(false);
+  const payloadRef = useRef<T | null>(null);
 
   const zoneAt = (x: number, y: number): string | null =>
     document.elementFromPoint(x, y)?.closest('[data-drop]')?.getAttribute('data-drop') ?? null;
@@ -37,6 +49,9 @@ export function useDragDrop<T>(onDrop: (payload: T, zone: string) => void) {
       if (e.button !== 0) return;
       e.preventDefault();
       setMoved(false);
+      movedRef.current = false;
+      originRef.current = { x: e.clientX, y: e.clientY };
+      payloadRef.current = payload;
       setDrag({ payload, x: e.clientX, y: e.clientY, over: zoneAt(e.clientX, e.clientY) });
     },
     [],
@@ -46,19 +61,32 @@ export function useDragDrop<T>(onDrop: (payload: T, zone: string) => void) {
     if (!drag) return;
 
     const move = (e: PointerEvent) => {
-      setMoved((m) => m || Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > DRAG_THRESHOLD);
+      if (originRef.current && dragThresholdExceeded(originRef.current, e)) {
+        movedRef.current = true;
+        setMoved(true);
+      }
       setDrag((d) => (d ? { ...d, x: e.clientX, y: e.clientY, over: zoneAt(e.clientX, e.clientY) } : d));
     };
 
     const finish = (e: PointerEvent) => {
+      if (originRef.current && dragThresholdExceeded(originRef.current, e)) {
+        movedRef.current = true;
+        setMoved(true);
+      }
       const zone = zoneAt(e.clientX, e.clientY);
-      if (zone) onDrop(drag.payload, zone);
+      if (zone && payloadRef.current !== null) onDrop(payloadRef.current, zone);
       setDrag(null);
+      originRef.current = null;
+      payloadRef.current = null;
     };
 
     // `pointercancel` : un glissement interrompu (geste système, perte de focus)
     // ne doit rien déposer — sinon une pièce atterrit à un endroit non voulu.
-    const cancel = () => setDrag(null);
+    const cancel = () => {
+      setDrag(null);
+      originRef.current = null;
+      payloadRef.current = null;
+    };
 
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', finish);
@@ -68,7 +96,9 @@ export function useDragDrop<T>(onDrop: (payload: T, zone: string) => void) {
       window.removeEventListener('pointerup', finish);
       window.removeEventListener('pointercancel', cancel);
     };
-  }, [drag, onDrop]);
+  }, [drag !== null, onDrop]);
+
+  const wasDragged = useCallback(() => movedRef.current, []);
 
   return {
     drag,
@@ -79,5 +109,6 @@ export function useDragDrop<T>(onDrop: (payload: T, zone: string) => void) {
      * une face (Cubes) sans qu'un micro-mouvement ne l'annule.
      */
     moved,
+    wasDragged,
   };
 }

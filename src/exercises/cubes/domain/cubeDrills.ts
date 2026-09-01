@@ -168,7 +168,7 @@ function choiceDrill(seed: number, type: ChoiceCubeDrill['type']): ChoiceCubeDri
   }
 
   if (type === 'mirror') {
-    const ring = getClockwiseNeighbors(focusPosition).map((position) => faceLabel(reference, position));
+    const ring = getClockwiseNeighbors(focusPosition).map((position) => faceId(reference, position));
     const mirrored = [ring[0], ring[3], ring[2], ring[1]];
     const isMirror = seed % 2 === 1;
     return {
@@ -278,7 +278,7 @@ export function validateCubeDrill(question: CubeDrillQuestion, answer: unknown):
     if (typeof answer !== 'object' || answer === null || !('rotations' in answer)) return false;
     const rotations = (answer as { rotations: Readonly<Record<number, number>> }).rotations;
     return question.orientationTargets.every(
-      (position) => quarterTurn(rotations[position] ?? -1) === question.answer.rotations[position],
+      (position) => Number.isInteger(rotations[position]) && quarterTurn(rotations[position]) === question.answer.rotations[position],
     );
   }
   if (question.type === 'full-puzzle') {
