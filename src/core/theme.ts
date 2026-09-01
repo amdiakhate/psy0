@@ -56,6 +56,15 @@ export interface ChartColors {
   tooltipBorder: string;
 }
 
+export interface CubeSceneColors {
+  edge: string;
+}
+
+/** Couleurs Three.js qui ne peuvent pas consommer directement les variables CSS. */
+export function cubeSceneColors(resolved: ResolvedTheme): CubeSceneColors {
+  return resolved === 'clair' ? { edge: '#52525b' } : { edge: '#e4e4e7' };
+}
+
 export function chartColors(resolved: ResolvedTheme): ChartColors {
   return resolved === 'clair'
     ? {

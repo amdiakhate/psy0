@@ -2,6 +2,8 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Edges, OrbitControls } from '@react-three/drei';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { cubeSceneColors } from '../../../../core/theme';
+import type { ResolvedTheme } from '../../../../core/theme';
 import { FACE_FRAMES } from '../../domain/cubeGeometry';
 import type { FacePosition } from '../../domain/types';
 import { COURSE_FACE_COLORS, COURSE_FACE_IDS, COURSE_FACE_TO_POSITION } from '../courseFixtures';
@@ -132,10 +134,11 @@ function FacePlane({ faceId, scene, layers, onFaceClick }: {
   );
 }
 
-function AnimatedCube({ scene, layers, onFaceClick }: {
+function AnimatedCube({ scene, layers, onFaceClick, theme }: {
   scene: RingScene;
   layers: MentalRingCubeLayers;
   onFaceClick?(faceId: CourseFaceId): void;
+  theme: ResolvedTheme;
 }) {
   const group = useRef<THREE.Group>(null);
   const reduced = useReducedMotion();
@@ -152,7 +155,7 @@ function AnimatedCube({ scene, layers, onFaceClick }: {
         <mesh>
           <boxGeometry args={[2.03, 2.03, 2.03]} />
           <meshBasicMaterial transparent opacity={0} />
-          <Edges color="#e4e4e7" threshold={15} />
+          <Edges color={cubeSceneColors(theme).edge} threshold={15} />
         </mesh>
       )}
     </group>
@@ -184,12 +187,21 @@ export function MentalRingCube3D({
   onFaceClick?(faceId: CourseFaceId): void;
 }) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const [theme, setTheme] = useState<ResolvedTheme>('sombre');
+  useEffect(() => {
+    setMounted(true);
+    const root = document.documentElement;
+    const updateTheme = () => setTheme(root.dataset.theme === 'light' ? 'clair' : 'sombre');
+    updateTheme();
+    const observer = new MutationObserver(updateTheme);
+    observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
   if (hidden) {
     return <div className="grid min-h-[320px] place-items-center rounded-2xl border border-dashed border-zinc-700 bg-zinc-950/55 p-6 text-center text-zinc-400"><p><strong className="block text-zinc-200">Cube 3D masqué avant ta réponse</strong>Reconstruis l’anneau depuis le patron, puis révèle le cube en correction.</p></div>;
   }
   return (
-    <figure className="relative min-h-[320px] overflow-hidden rounded-2xl border border-zinc-800 bg-[radial-gradient(circle_at_50%_35%,#172554,#09090b_68%)]" aria-label={`Cube 3D, face ${scene.centerFaceId} devant`}>
+    <figure className="cube-3d-stage relative min-h-[320px] overflow-hidden rounded-2xl border border-zinc-800" aria-label={`Cube 3D, face ${scene.centerFaceId} devant`}>
       <figcaption className="absolute left-3 top-3 z-10 rounded-lg bg-zinc-950/90 px-3 py-2 text-xs font-semibold text-zinc-200">Face centrale {scene.centerFaceId} · Face opposée {scene.oppositeFaceId}</figcaption>
       {layers.neighborLabels && (
         <div className="sr-only">
@@ -200,7 +212,7 @@ export function MentalRingCube3D({
         <div data-cube-canvas className="h-[340px] w-full">
           <Canvas camera={{ position: [0, 0, 5.4], fov: 38 }} dpr={[1, 1.75]}>
             <CameraReset scene={scene} />
-            <AnimatedCube scene={scene} layers={layers} onFaceClick={onFaceClick} />
+            <AnimatedCube scene={scene} layers={layers} onFaceClick={onFaceClick} theme={theme} />
             <OrbitControls makeDefault enabled={interactive} enablePan={false} minDistance={4.2} maxDistance={7} />
           </Canvas>
         </div>

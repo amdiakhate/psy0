@@ -5,7 +5,7 @@ export function CourseFace({ face, size = 72, muted = false }: { face: CourseFac
   const color = COURSE_FACE_COLORS[face];
   return (
     <div className="grid aspect-square place-items-center rounded-xl border-2 font-mono text-xl font-black shadow-lg transition-all"
-      style={{ width: size, borderColor: color, color, background: muted ? '#18181b' : `color-mix(in srgb, ${color} 14%, #18181b)` }}>
+      style={{ width: size, borderColor: color, color, background: muted ? 'var(--cube-ring-bg)' : `color-mix(in srgb, ${color} 14%, var(--cube-diagram-bg))` }}>
       {face}
     </div>
   );
@@ -33,7 +33,7 @@ export function CourseNet({
           const isMuted = muted.includes(faceId);
           return (
             <g key={faceId} transform={`translate(${col * size + 4} ${row * size + 4})`} opacity={isMuted ? 0.28 : 1}>
-              <rect width={size} height={size} rx="7" fill={isFocus ? color : '#202126'} fillOpacity={isFocus ? 0.2 : 1} stroke={color} strokeWidth={isFocus ? 4 : 2} />
+              <rect width={size} height={size} rx="7" fill={isFocus ? color : 'var(--cube-diagram-bg)'} fillOpacity={isFocus ? 0.2 : 1} stroke={color} strokeWidth={isFocus ? 4 : 2} />
               <text x={size / 2} y={size / 2 + 8} textAnchor="middle" fill={color} fontSize={size * 0.34} fontWeight="900" fontFamily="ui-monospace, monospace">{faceId}</text>
             </g>
           );
@@ -42,4 +42,3 @@ export function CourseNet({
     </figure>
   );
 }
-

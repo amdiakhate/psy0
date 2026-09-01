@@ -72,7 +72,7 @@ export function PhysicalEdgeJourney({
           <figcaption className="text-[11px] font-bold uppercase tracking-[.16em] text-zinc-500">2 · Face isolée</figcaption>
           <svg key={`${replay}-${displayedTurn}`} viewBox="-18 -18 136 136" className="mx-auto mt-3 w-full max-w-[190px]" role="img" aria-label={`Face ${faceLabel(faceId)}, rotation ${TURN_LABEL[displayedTurn]}`}>
             <g className="cube-edge-face-turn" style={{ '--cube-edge-turn': `${-90 * displayedTurn}deg`, transformOrigin: '50px 50px' } as React.CSSProperties}>
-              <rect width="100" height="100" rx="10" fill="#202126" stroke="#71717a" strokeWidth="2" />
+              <rect width="100" height="100" rx="10" fill="var(--cube-diagram-bg)" stroke="var(--cube-axis)" strokeWidth="2" />
               {isolatedGlyph ?? <Glyph sym={face.sym} rot={referenceRot} />}
               <line {...scaleEdge(EDGE_LINE[sourceEdge], 100 / 60)} stroke="#fb7185" strokeWidth="7" strokeLinecap="round" />
             </g>
@@ -121,8 +121,8 @@ function EdgeNet({ cube, faceId, anchorFaceId, edge, label, faceLabel }: {
           const anchor = current.id === anchorFaceId;
           return (
             <g key={pos} transform={`translate(${col * size + 4} ${row * size + 4})`} opacity={focused || anchor ? 1 : .3}>
-              <rect width={size} height={size} rx="6" fill={focused ? '#172554' : anchor ? '#3f1d2e' : '#202126'} stroke={focused ? '#38bdf8' : anchor ? '#fb7185' : '#52525b'} strokeWidth={focused || anchor ? 3 : 1.5} />
-              <text x={size / 2} y={size / 2 + 6} textAnchor="middle" fill={focused ? '#7dd3fc' : anchor ? '#fda4af' : '#a1a1aa'} fontSize="18" fontWeight="900">{faceLabel(current.id)}</text>
+              <rect width={size} height={size} rx="6" fill={focused ? 'var(--cube-focus-bg)' : anchor ? 'var(--cube-anchor-bg)' : 'var(--cube-diagram-bg)'} stroke={focused ? 'var(--cube-accent)' : anchor ? '#fb7185' : 'var(--cube-axis)'} strokeWidth={focused || anchor ? 3 : 1.5} />
+              <text x={size / 2} y={size / 2 + 6} textAnchor="middle" fill={focused ? 'var(--cube-focus-text)' : anchor ? 'var(--cube-anchor-text)' : 'var(--cube-diagram-text)'} fontSize="18" fontWeight="900">{faceLabel(current.id)}</text>
               {focused && <line {...EDGE_LINE[edge]} stroke="#fb7185" strokeWidth="6" strokeLinecap="round" />}
             </g>
           );

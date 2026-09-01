@@ -5,6 +5,7 @@ import {
   THEME_STORAGE_KEY,
   chartColors,
   colorScheme,
+  cubeSceneColors,
   parsePreference,
   resolveTheme,
   themeAttribute,
@@ -68,6 +69,13 @@ describe('chartColors', () => {
     // recharts ne gère pas tout seul, ses couleurs étant passées en props.
     expect(chartColors('clair').tooltipBg).toBe('#ffffff');
     expect(chartColors('sombre').tooltipBg).toBe('#18181b');
+  });
+});
+
+describe('cubeSceneColors', () => {
+  it('utilise une arête sombre en clair et claire en sombre', () => {
+    expect(cubeSceneColors('clair').edge).toBe('#52525b');
+    expect(cubeSceneColors('sombre').edge).toBe('#e4e4e7');
   });
 });
 
