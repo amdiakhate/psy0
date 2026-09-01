@@ -1,0 +1,10 @@
+# PSY0 Trainer
+
+PSY0 Trainer est une application web indépendante de préparation aux sélections pilotes.
+Elle propose des exercices psychotechniques, un cours visuel Cubes 2D/3D et un module Culture Aéro.
+
+- Accueil : https://psy.makht.art/
+- Cubes 2D/3D : https://psy.makht.art/cubes
+- Culture Aéro : https://psy.makht.art/culture
+
+L'application n'est ni officielle, ni affiliée à Air France, Pilotest ou KD Tools.
