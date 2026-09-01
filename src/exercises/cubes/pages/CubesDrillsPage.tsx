@@ -1,0 +1,4 @@
+import { Link } from 'react-router-dom';
+const DRILLS=[['opposites','Opposées'],['adjacency','Adjacence'],['rings','Anneaux'],['mirror','Miroir'],['rotation','Rotation'],['two-remaining','2 faces restantes'],['orientation-only','Face correcte, orientation fausse'],['full-puzzle','Exercice complet']] as const;
+export function CubesDrillsPage(){return <div className="max-w-5xl"><Link to="/cubes" className="text-sm text-sky-400">← Hub Cubes</Link><h2 className="mt-4 text-3xl font-bold">Drills par sous-compétence</h2><div className="mt-6 grid gap-3 sm:grid-cols-2">{DRILLS.map(([type,label])=><Link key={type} to={`/cubes/drills/${type}`} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 font-semibold hover:border-sky-600">{label}<span className="float-right text-sky-500">→</span></Link>)}</div></div>}
+

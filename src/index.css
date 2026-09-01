@@ -214,3 +214,23 @@ body {
     animation-delay: 0ms !important;
   }
 }
+/* Cubes course — technical workshop, motion only when it carries geometry. */
+.cube-hero { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:1.5rem; overflow:hidden; border:1px solid #27272a; border-radius:1.25rem; padding:clamp(1.4rem,4vw,2.4rem); background:radial-gradient(circle at 85% 10%,rgba(14,165,233,.14),transparent 36%),linear-gradient(135deg,rgba(24,24,27,.96),rgba(9,9,11,.96)); }
+.cube-hero h2 { margin-top:.4rem; font-size:clamp(2rem,5vw,3.5rem); font-weight:800; letter-spacing:-.045em; }
+.cube-hero p:not(.cube-kicker) { margin-top:.6rem; max-width:44rem; color:#a1a1aa; }
+.cube-kicker { font-size:.68rem; font-weight:800; letter-spacing:.24em; text-transform:uppercase; color:#38bdf8; }
+.cube-primary { border-radius:.75rem; background:#0284c7; padding:.75rem 1.1rem; font-weight:750; color:white; box-shadow:0 14px 34px rgba(2,132,199,.2); }
+.cube-workshop { overflow:hidden; border:1px solid #27272a; border-radius:1.25rem; padding:clamp(1rem,3vw,1.75rem); background:linear-gradient(145deg,rgba(24,24,27,.88),rgba(9,9,11,.92)); box-shadow:inset 0 1px rgba(255,255,255,.035); }
+.cube-workshop header h3 { margin-top:.3rem; font-size:clamp(1.25rem,3vw,1.75rem); font-weight:750; letter-spacing:-.025em; }
+.cube-workshop header > p:last-child { margin-top:.45rem; max-width:48rem; color:#a1a1aa; font-size:.92rem; }
+.cube-rule { margin-top:1.25rem; border-left:3px solid #38bdf8; background:rgba(8,47,73,.22); padding:.8rem 1rem; color:#d4d4d8; font-size:.88rem; }
+.cube-axis { display:flex; flex-direction:column; align-items:center; gap:.45rem; color:#71717a; font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; }
+.cube-axis > span:last-child { color:#38bdf8; font-size:2rem; }
+.cube-fold-stage { position:relative; display:grid; min-height:280px; place-items:center; perspective:700px; border-radius:1rem; background:radial-gradient(circle,rgba(14,165,233,.1),transparent 56%); }
+.cube-fold-tile { position:absolute; display:grid; width:76px; aspect-ratio:1; place-items:center; border:2px solid currentColor; border-radius:.65rem; background:#202126; font:900 1.5rem ui-monospace,monospace; transition:transform .18s ease; box-shadow:0 18px 40px rgba(0,0,0,.28); }
+.cube-recenter-face { animation:cube-course-arrive .55s cubic-bezier(.2,.8,.2,1) both; }
+.cube-ring-node { transition:transform .35s ease; }
+.cube-physical-turn { transform-origin:center; animation:cube-course-physical .82s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes cube-course-arrive { from { opacity:0; transform:translate(var(--x,0),var(--y,10px)) scale(.9); } to { opacity:1; } }
+@keyframes cube-course-physical { from { transform:rotate(0deg); } to { transform:rotate(var(--cube-course-turn)); } }
+@media (prefers-reduced-motion: reduce) { .cube-recenter-face { animation:none !important; } .cube-physical-turn { animation:none !important; transform:rotate(var(--cube-course-turn)); } .cube-fold-tile,.cube-ring-node { transition:none !important; } }

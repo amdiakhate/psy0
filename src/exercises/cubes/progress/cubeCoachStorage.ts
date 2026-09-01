@@ -6,6 +6,7 @@ import type { CubeErrorCause } from '../domain/cubeAnalysis';
 import { analyzeCubeAttempt } from '../domain/cubeAnalysis';
 import type { CubeDrillQuestion, CubeDrillType } from '../domain/cubeDrills';
 import { quarterTurn } from '../domain/types';
+import { consumeCubeHints } from '../coach/cubeHintRuntime';
 
 export type CubeSkill =
   | 'opposites'
@@ -32,6 +33,7 @@ export interface CubeAttemptRecord {
   level: number;
   durationMs: number;
   correct: boolean;
+  hintsUsed?: number;
   /** Instantané sérialisable. `null` reste accepté pour les anciens tests/imports. */
   question: unknown;
   answer: unknown;
@@ -94,6 +96,7 @@ function isAttempt(value: unknown): value is CubeAttemptRecord {
     typeof value.level === 'number' && Number.isFinite(value.level) &&
     typeof value.durationMs === 'number' && Number.isFinite(value.durationMs) && value.durationMs >= 0 &&
     typeof value.correct === 'boolean' &&
+    (value.hintsUsed === undefined || (Number.isInteger(value.hintsUsed) && Number(value.hintsUsed) >= 0 && Number(value.hintsUsed) <= 4)) &&
     Array.isArray(value.skills) && value.skills.every(isSkillResult) &&
     Array.isArray(value.errorCauses) && value.errorCauses.every((cause) => VALID_CAUSES.has(cause as CubeErrorCause))
   );
@@ -195,6 +198,7 @@ export function recordCubeFullAttempt(
     level: context.item.level,
     durationMs: Math.round(context.rtMs),
     correct: context.correct,
+    hintsUsed: consumeCubeHints(context.item.seed),
     question: context.item.question,
     answer: answer ?? null,
     solution: solutionAnswer(context.item.question),

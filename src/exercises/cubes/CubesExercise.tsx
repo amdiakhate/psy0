@@ -5,6 +5,8 @@ import { Glyph, NetSvg } from './CubeSvg';
 import { POS } from './cube-model';
 import { useKeys } from '../../hooks/useKeys';
 import { useDragDrop } from '../../hooks/useDragDrop';
+import { getCubeHint } from './coach/cubeHints';
+import { noteCubeHint } from './coach/cubeHintRuntime';
 
 const CELLS: Array<{ pos: number; col: number; row: number }> = [
   { pos: POS.U, col: 1, row: 0 },
@@ -34,11 +36,13 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
   // l'endroit : produire l'orientation EST l'exercice.
   const [rots, setRots] = useState<Record<number, number>>({});
   const [selected, setSelected] = useState<number | null>(null);
+  const [hintLevel, setHintLevel] = useState<0 | 1 | 2 | 3 | 4>(0);
 
   useEffect(() => {
     setPlaced({});
     setRots({});
     setSelected(null);
+    setHintLevel(0);
   }, [item.seed]);
 
   const rotOf = (pieceId: number) => rots[pieceId] ?? 0;
@@ -58,6 +62,7 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
   const usedPieceIds = new Set(Object.values(placed).map((p) => p.pieceId));
   const available = q.pieces.filter((p) => !usedPieceIds.has(p.id));
   const complete = q.holes.every((h) => placed[h]);
+  const currentHint = hintLevel === 0 ? null : getCubeHint(q, hintLevel);
 
   /** Pose une pièce DONNÉE dans un trou : nécessaire au glisser-déposer. */
   const placePiece = useCallback(
@@ -222,6 +227,10 @@ export function CubesExercise({ item, onAnswer }: ExerciseComponentProps<CubesQu
           (posée ou non) · clic droit pour la retirer · au clavier : touches 1-{available.length}
           puis <kbd className="rounded bg-zinc-800 px-1">R</kbd>
         </p>
+      </div>
+      <div className="w-full max-w-2xl rounded-xl border border-amber-900/50 bg-amber-950/15 p-3 text-sm">
+        <button type="button" onClick={() => setHintLevel((current) => { const next = Math.min(4, current + 1) as 1 | 2 | 3 | 4; noteCubeHint(item.seed, next); return next; })} className="font-semibold text-amber-300 hover:text-amber-200">Besoin d’un indice{hintLevel > 0 && hintLevel < 4 ? ' · niveau suivant' : ''}</button>
+        {currentHint && <div className="mt-2 border-t border-amber-900/40 pt-2"><strong className="text-amber-200">{currentHint.title} — </strong><span className="text-zinc-300">{currentHint.text}</span></div>}
       </div>
     </div>
   );

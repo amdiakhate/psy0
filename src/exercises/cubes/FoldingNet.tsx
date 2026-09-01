@@ -74,12 +74,16 @@ export function FoldingNet({
   cube,
   t,
   pairColors = false,
+  faceLabels,
+  faceColors,
   px = 340,
 }: {
   cube: Cube;
   /** 0 = patron à plat, 1 = cube fermé. */
   t: number;
   pairColors?: boolean;
+  faceLabels?: Readonly<Partial<Record<number, string>>>;
+  faceColors?: Readonly<Partial<Record<number, string>>>;
   px?: number;
 }) {
   const faces = useMemo(() => {
@@ -132,7 +136,7 @@ export function FoldingNet({
           p0[0],
           p0[1],
         ];
-        const base = pairColors ? PAIR_FILL[f.pos] : '#e8e4de';
+        const base = faceColors?.[f.pos] ?? (pairColors ? PAIR_FILL[f.pos] : '#e8e4de');
         return (
           <g key={f.pos}>
             <polygon
@@ -143,7 +147,11 @@ export function FoldingNet({
               strokeLinejoin="round"
             />
             <g transform={`matrix(${m.map((v) => v.toFixed(5)).join(' ')})`}>
-              <Glyph sym={cube[f.pos].sym} rot={cube[f.pos].rot} color="#26221f" />
+              {faceLabels?.[f.pos] ? (
+                <text x="50" y="58" textAnchor="middle" fill="#18181b" fontSize="38" fontWeight="900" fontFamily="ui-monospace, monospace">{faceLabels[f.pos]}</text>
+              ) : (
+                <Glyph sym={cube[f.pos].sym} rot={cube[f.pos].rot} color="#26221f" />
+              )}
             </g>
           </g>
         );
@@ -158,12 +166,12 @@ export function FoldingNet({
  * faire avancer soi-même, c'est le moment où l'animation devient un modèle
  * mental. En `prefers-reduced-motion`, rien ne bouge seul — le curseur reste.
  */
-export function FoldPlayer({ cube, pairColors = false }: { cube: Cube; pairColors?: boolean }) {
+export function FoldPlayer({ cube, pairColors = false, faceLabels, faceColors }: { cube: Cube; pairColors?: boolean; faceLabels?: Readonly<Partial<Record<number, string>>>; faceColors?: Readonly<Partial<Record<number, string>>> }) {
   const { value, playing, toggle, scrub } = useTimeline(foldCycle());
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="rounded-lg border-2 border-zinc-700 px-3 py-1" style={{ background: '#e7e5e4' }}>
-        <FoldingNet cube={cube} t={value} pairColors={pairColors} />
+        <FoldingNet cube={cube} t={value} pairColors={pairColors} faceLabels={faceLabels} faceColors={faceColors} />
       </div>
       <div className="flex w-full max-w-sm items-center gap-3">
         <button

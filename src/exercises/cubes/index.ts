@@ -2,7 +2,6 @@ import type { ExerciseModule } from '../../core/types';
 import { generate, validate } from './generator';
 import type { CubesAnswer, CubesQuestion } from './generator';
 import { tips } from './tips';
-import { lesson } from './lesson';
 import { CubesExercise } from './CubesExercise';
 import { Cube3DTip } from './Cube3DTip';
 import { LEVELS } from './config';
@@ -33,7 +32,6 @@ export const cubes: ExerciseModule<CubesQuestion, CubesAnswer> = {
       .map((h) => `${h}:${item.question.solution[h]}↻${item.question.expectedRot[h]}`)
       .join(' '),
   tips,
-  lesson,
   Component: CubesExercise,
   TipsIllustration: Cube3DTip,
   Explain: CubeCoachCorrection,

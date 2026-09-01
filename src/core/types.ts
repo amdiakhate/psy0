@@ -167,6 +167,8 @@ export interface ExerciseComponentProps<Q = unknown, A = unknown> {
 export interface ExplainProps<Q = unknown, A = unknown> {
   item: Item<Q>;
   answer: A;
+  correct?: boolean;
+  rtMs?: number;
 }
 
 export interface AttemptResultContext<Q = unknown, A = unknown> {

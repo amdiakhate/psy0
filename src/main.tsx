@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import './index.css';
 import App from './app/App';
 import { CrashScreen } from './app/CrashScreen';
@@ -27,10 +27,13 @@ import { CultureFavoritesPage } from './culture/pages/CultureFavoritesPage';
 import { CultureExpressPage } from './culture/pages/CultureExpressPage';
 import { CultureDrillsPage } from './culture/pages/CultureDrillsPage';
 import { CultureAirFrancePage } from './culture/pages/CultureAirFrancePage';
-import { CubesCoachPage } from './exercises/cubes/pages/CubesCoachPage';
+import { CubesHubPage } from './exercises/cubes/pages/CubesHubPage';
 import { CubesDrillPlayer } from './exercises/cubes/pages/CubesDrillPlayer';
-import { CubesGuidedSolve } from './exercises/cubes/pages/CubesGuidedSolve';
 import { CubesHistoryPage } from './exercises/cubes/pages/CubesHistoryPage';
+import { CubesCoursePage } from './exercises/cubes/course/CubesCoursePage';
+import { CubesTrainPage } from './exercises/cubes/pages/CubesTrainPage';
+import { CubesDrillsPage } from './exercises/cubes/pages/CubesDrillsPage';
+import { CubesProgressPage } from './exercises/cubes/pages/CubesProgressPage';
 
 const router = createBrowserRouter([
   {
@@ -49,10 +52,16 @@ const router = createBrowserRouter([
       { path: 'tips/:id', element: <Tips /> },
       { path: 'mental', element: <Mental /> },
       { path: 'mental/:id', element: <Mental /> },
-      { path: 'cubes', element: <CubesCoachPage /> },
+      { path: 'cubes', element: <CubesHubPage /> },
+      { path: 'cubes/learn', element: <CubesCoursePage /> },
+      { path: 'cubes/learn/:chapterId', element: <CubesCoursePage /> },
+      { path: 'cubes/train', element: <CubesTrainPage /> },
+      { path: 'cubes/drills', element: <CubesDrillsPage /> },
+      { path: 'cubes/drills/:type', element: <CubesDrillPlayer /> },
       { path: 'cubes/drill/:type', element: <CubesDrillPlayer /> },
-      { path: 'cubes/guided', element: <CubesGuidedSolve /> },
+      { path: 'cubes/guided', element: <Navigate to="/cubes/learn/vrai-exercice" replace /> },
       { path: 'cubes/history', element: <CubesHistoryPage /> },
+      { path: 'cubes/progress', element: <CubesProgressPage /> },
       {
         path: 'culture',
         element: <Culture />,
@@ -70,6 +79,7 @@ const router = createBrowserRouter([
         ],
       },
       { path: 'learn', element: <Learn /> },
+      { path: 'learn/cubes', element: <Navigate to="/cubes/learn" replace /> },
       { path: 'learn/:id', element: <Learn /> },
       { path: 'settings', element: <Settings /> },
       { path: 'bilan', element: <Bilan /> },

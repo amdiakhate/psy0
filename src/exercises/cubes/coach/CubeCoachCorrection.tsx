@@ -25,7 +25,7 @@ const CAUSE_LABEL: Record<CubeErrorCause, string> = {
 
 const EMPTY_ANSWER: CubesAnswer = {};
 
-export function CubeCoachCorrection({ item, answer }: ExplainProps<CubesQuestion, CubesAnswer>) {
+export function CubeCoachCorrection({ item, answer, correct, rtMs }: ExplainProps<CubesQuestion, CubesAnswer>) {
   const safeAnswer = answer ?? EMPTY_ANSWER;
   const analysis = useMemo(() => analyzeCubeAttempt(item.question, safeAnswer), [item.question, safeAnswer]);
   const solution = useMemo(() => solutionCubeFor(item.question), [item.question]);
@@ -34,6 +34,7 @@ export function CubeCoachCorrection({ item, answer }: ExplainProps<CubesQuestion
   const [openRotation, setOpenRotation] = useState<number | null>(null);
   const [openFace, setOpenFace] = useState<number | null>(null);
   const coachEnabled = getPrefs().cubeCoachEnabled;
+  const isCorrect = correct ?? analysis.isCorrect;
 
   if (!coachEnabled) {
     return (
@@ -42,6 +43,10 @@ export function CubeCoachCorrection({ item, answer }: ExplainProps<CubesQuestion
         <CoachNet cube={solution} label="Solution" highlights={Object.fromEntries(item.question.holes.map((position) => [position, 'correct']))} />
       </div>
     );
+  }
+
+  if (isCorrect) {
+    return <section className="mx-auto max-w-3xl rounded-2xl border border-green-900 bg-green-950/20 p-5"><p className="text-xs font-bold uppercase tracking-[.18em] text-green-400">Planche correcte</p><div className="mt-3 flex flex-wrap items-baseline gap-5"><p className="text-2xl font-semibold">{rtMs === undefined ? 'Méthode validée' : `${(rtMs / 1000).toFixed(1)} s`}</p><p className="text-sm text-zinc-400">{analysis.reasoningPath.minimalSteps.length} déduction{analysis.reasoningPath.minimalSteps.length > 1 ? 's' : ''} dans le chemin minimal</p></div><p className="mt-3 text-sm text-zinc-300">Continue à commencer par les opposées ; n’ouvre l’anneau que lorsque deux candidats restent réellement.</p></section>;
   }
 
   const primary = analysis.incorrectFaces.find((face) => face.primaryCause)?.primaryCause;

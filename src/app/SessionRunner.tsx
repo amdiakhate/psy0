@@ -485,7 +485,7 @@ function BlockRunner({
   // Item raté mis de côté pour la correction visuelle. Tant qu'il est là, la
   // séance est en pause : on ne génère PAS l'item suivant, sinon l'explication
   // porterait sur une figure qui n'est plus à l'écran.
-  const [review, setReview] = useState<{ item: Item; answer: unknown; correct: boolean } | null>(null);
+  const [review, setReview] = useState<{ item: Item; answer: unknown; correct: boolean; rtMs: number } | null>(null);
   // Temps passé dans les corrections, retranché du chrono du bloc : lire une
   // explication ne doit pas manger le temps d'entraînement que le coach a prévu.
   const explainedMs = useRef(0);
@@ -628,7 +628,7 @@ function BlockRunner({
       const freeze = plan.mode !== 'simulation' && (pause === 'toujours' || (pause === 'erreurs' && !correct));
       if (freeze) {
         reviewStart.current = Date.now();
-        setReview({ item, answer, correct });
+        setReview({ item, answer, correct, rtMs });
         return;
       }
 
@@ -713,7 +713,7 @@ function BlockRunner({
     const pause = getPrefs().pauseAfterAnswer;
     if (plan.mode !== 'simulation' && pause !== 'jamais') {
       reviewStart.current = Date.now();
-      setReview({ item, answer: undefined, correct: false });
+      setReview({ item, answer: undefined, correct: false, rtMs: Math.round((itemLimitSec ?? 0) * 1000) });
       return;
     }
 
@@ -937,6 +937,7 @@ function BlockRunner({
             item={review.item}
             answer={review.answer}
             correct={review.correct}
+            rtMs={review.rtMs}
             onNext={closeReview}
           />
         ) : (
@@ -965,12 +966,14 @@ function Review({
   item,
   answer,
   correct,
+  rtMs,
   onNext,
 }: {
   module_: AnyExerciseModule;
   item: Item;
   answer: unknown;
   correct: boolean;
+  rtMs: number;
   onNext: () => void;
 }) {
   useKeys((e) => {
@@ -1013,7 +1016,7 @@ function Review({
         </div>
 
         {Explain ? (
-          <Explain item={item} answer={answer} />
+          <Explain item={item} answer={answer} correct={correct} rtMs={rtMs} />
         ) : (
           /* Pas de schéma dédié : on REFIGE la question elle-même. `onAnswer`
              est neutralisé — l'arrêt sur image ne doit rien enregistrer — et
